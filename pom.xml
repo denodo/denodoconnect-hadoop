@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <!-- *************************** -->
+    <!-- BASIC PROJECT INFO -->
+    <!-- *************************** -->
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.denodo.devkit.hadoop</groupId>
+    <artifactId>hadoop-customwrapper</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>hadoop-customwrapper</name>
+
+    <!-- *************************** -->
+    <!-- BUILD INFO -->
+    <!-- *************************** -->
+    <build>
+        <resources>
+              <!-- ========================================= -->
+              <!-- "Non-java" resources (src/main/resources) -->
+              <!--  * Mainly Spring-related XML files -->
+              <!-- ========================================= -->
+              <resource>
+                  <directory>src/main/resources</directory>
+                  <excludes>
+        			<exclude>my-jar-with-dependencies.xml</exclude>
+      			  </excludes>                   
+              </resource>
+              
+              <!-- ========================================================= -->
+              <!-- "Java" resources (disperse through the package structure) -->
+              <!--  * ".properties": plugins, i18n and other uses -->
+              <!--  * ".xml": Hibernate mappings and other uses -->
+              <!-- ========================================================= -->
+              <resource>
+                  <directory>src/main/java</directory>
+                  <includes>
+                     <include>**/*.properties</include>
+                     <include>**/*.xml</include>
+                  </includes>
+              </resource>              
+        </resources>
+                
+        <!-- ============================================================== -->
+        <!-- Test-related directory locations -->
+        <!-- ============================================================== -->
+
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+        <testOutputDirectory>target/test-classes</testOutputDirectory>
+
+        <testResources>
+          <testResource>
+              <directory>src/test/resources</directory>
+          </testResource>
+        </testResources>
+        
+        <plugins>
+        
+            <!-- ========================================================== -->
+            <!-- Compiler plugin -->
+            <!--  * Set the Java version (source and bytecode) to J2SE 6 -->
+            <!--  * Other possible values if required: "1.4" | "1.5" -->
+            <!-- ========================================================== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                  <descriptors>
+                     <descriptor>src/main/resources/my-jar-with-dependencies.xml</descriptor>            
+                  </descriptors>
+                </configuration>
+                
+                <executions>
+                    <execution>
+                    	<id>make-assembly</id>                    
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>clean</phase>
+                        <configuration>
+                            <tasks>
+                                <delete>
+                                    <fileset dir="." includes="**/deleteme.txt" />
+		                        </delete>
+                                <delete dir="target" />
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.antlr</groupId>
+                        <artifactId>antlr</artifactId>
+                        <version>3.0</version>
+                        <scope>compile</scope>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+   
+   <profiles>
+      <!-- development environment A Coruna office -->
+      <profile>
+           <id>denodo-ac</id>
+           <build>
+             <resources>
+                <!-- ========================================================== -->
+                <!-- Configuration (src/main/conf/denodo-ac) -->
+                <!-- ========================================================== -->
+                <resource>
+                  <directory>src/main/conf/denodo-ac</directory>
+                </resource>
+             </resources>
+           </build>
+      </profile>
+      
+      <!-- development environment London office -->
+      <profile>
+            <id>denodo-lo</id>
+            <build>
+              <resources>
+                <!-- ========================================================== -->
+                <!-- Configuration (src/main/conf/denodo-lo)                    -->
+                <!-- ========================================================== -->
+                <resource>
+                    <directory>src/main/conf/denodo-lo</directory>
+                </resource>
+              </resources>
+            </build>
+        </profile>
+        
+        <!-- development environment Madrid office -->        
+        <profile>   
+            <id>denodo-ma</id>
+            <build>
+              <resources>
+                <!-- ========================================================== -->
+                <!-- Configuration (src/main/conf/denodo-ma)                    -->
+                <!-- ========================================================== -->
+                <resource>
+                    <directory>src/main/conf/denodo-ma</directory>
+                </resource>
+              </resources>
+            </build>
+        </profile>
+        
+        <!-- development environment Palo Alto office -->
+        <profile>
+            <id>denodo-pa</id>
+            <build>
+              <resources>
+                <!-- ========================================================== -->
+                <!-- Configuration (src/main/conf/denodo-pa)                    -->
+                <!-- ========================================================== -->
+                <resource>
+                    <directory>src/main/conf/denodo-pa</directory>
+                </resource>
+              </resources>
+            </build>
+        </profile>        
+    </profiles>
+
+    <!-- ****************************************************************** -->
+    <!-- DEPENDENCIES -->
+    <!-- ****************************************************************** -->
+    <dependencies>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.15</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- Custom Wrapper necessary libraries  -->
+        <dependency>
+            <groupId>com.denodo.commons</groupId>
+            <artifactId>denodo-util</artifactId>
+            <version>2.43</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.denodo.commons</groupId>
+            <artifactId>denodo-store</artifactId>
+            <version>1.4</version>
+            <scope>provided</scope>
+        </dependency>        
+        <dependency>
+            <groupId>com.denodo.vdp</groupId>
+            <artifactId>denodo-vdp-server-base</artifactId>
+            <version>4.7.0_1</version>
+            <scope>provided</scope>
+        </dependency>             
+        <!-- ***  -->
+        <dependency>
+	      <groupId>junit</groupId>
+	      <artifactId>junit</artifactId>
+	      <version>3.8.1</version>
+	      <scope>test</scope>
+	    </dependency>
+	    <dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-core</artifactId>
+			<version>0.20.2-cdh3u0</version>
+		</dependency>
+		<dependency>
+	    	<groupId>commons-logging</groupId>
+	    	<artifactId>commons-logging</artifactId>
+	    	<version>1.0.4</version>
+	  	</dependency>
+	  	<dependency>
+	    	<groupId>commons-lang</groupId>
+	    	<artifactId>commons-lang</artifactId>
+	    	<version>2.4</version>
+	  	</dependency>
+	  	<dependency>
+	  		<groupId>org.codehaus.jackson</groupId>
+	  		<artifactId>jackson-mapper-asl</artifactId>
+	  		<version>1.5.2</version>
+		</dependency> 
+	  	<dependency>
+	  		<groupId>com.denodo.devkit.hadoop</groupId>
+	  		<artifactId>hadoop-first-example</artifactId>
+	  		<version>1.0-SNAPSHOT</version>
+		</dependency> 		         
+    </dependencies>
+    
+
+</project>
