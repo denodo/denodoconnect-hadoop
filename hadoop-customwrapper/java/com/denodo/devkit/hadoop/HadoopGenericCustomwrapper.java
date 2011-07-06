@@ -51,8 +51,7 @@ public class HadoopGenericCustomwrapper
     
     private static final Logger logger = Logger.getLogger(HadoopGenericCustomwrapper.class);
 
-    //TODO cambiar al run
-	public static String OUTPUT_DIR = "denodo_output"+RandomStringUtils.randomAlphabetic(8);
+    
     
 	//Parameters
 	public static String DATANODE_IP = "Datanode IP";
@@ -111,8 +110,6 @@ public class HadoopGenericCustomwrapper
         final CustomWrapperSchemaParameter[] parameters = 
             new CustomWrapperSchemaParameter[] {
         
-                // TODO Substitute this by your wrapper's real schema
-                
                 new CustomWrapperSchemaParameter(
                         HADOOP_KEY, 
                         Types.VARCHAR,
@@ -146,7 +143,8 @@ public class HadoopGenericCustomwrapper
             throws CustomWrapperException {
     	
     	
-    	
+    		String executionId = RandomStringUtils.randomAlphabetic(8);  
+    		String outputDir = "denodo_output"+executionId;
     	
         	//Establishing job configuration
     	    Configuration conf = new Configuration();
@@ -159,22 +157,23 @@ public class HadoopGenericCustomwrapper
     	    //Custom job configuration. This will be retrieved by the destination class 
     	    conf.set("input.selectedword", inputValues.get(WORD_TO_COUNT));
     	    //Output Path
-    	    Path outputPath = new Path(OUTPUT_DIR);
+    	    Path outputPath = new Path(outputDir);
+    	    SequenceFile.Reader reader  = null; 
+    	    
     	    
     	    try {
     	    
         	FileSystem fileSystem = FileSystem.get(conf);
     	    	    
     	    //Job creation 
-        	//TODO cambiar el nombre a denodo_excution_resultado de randomstringutilss
-    	    Job job = new Job(conf, "Example Hadoop 0.20.2 WordCount");
+    	    Job job = new Job(conf, "Denodo execution: "+executionId);
     	    job.setJarByClass(WordCount.class);
     	    job.setMapperClass(TokenCounterMapper.class);
     	    job.setReducerClass(TokenCounterReducer.class);    
     	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
     	    job.setOutputKeyClass(Text.class);
     	    //TODO probar con un string
-    	    job.setOutputValueClass(IntWritable.class);
+    	    job.setOutputValueClass(Text.class);
     	    
     	    //The file path in this case must begin with "../.." because the ssh is not connecting with the same 
     	    //user that has the info we are processing
@@ -193,16 +192,12 @@ public class HadoopGenericCustomwrapper
     		    for (FileStatus status : fss) {
     		        Path path = status.getPath();
     		        if (!status.isDir()) {
-    		        	//TODO asegurarse de si hay que cerrarlo
-    			        SequenceFile.Reader reader = new SequenceFile.Reader(fileSystem, path, conf);
+    			        reader = new SequenceFile.Reader(fileSystem, path, conf);
     			        Text key = new Text();
     			        //TODo probar con String
     			        IntWritable value = new IntWritable();
     			        
-    			        
-    			        
     			        KeyValueProjection keyValueProjection = null;
-    			        
     			            			        
     			        //Actually only supports retrieving key/value
     			        if (projectedFields.size()>2 || projectedFields.size()<1) {
@@ -264,8 +259,6 @@ public class HadoopGenericCustomwrapper
 	    			        	default: throw new UnexpectedException("Key value can never reach this state at this point");
     			        	}
     			        }
-    			        
-    			        //TODO moverlo al finally
     			        reader.close();
     		        }
     		    }
@@ -281,6 +274,9 @@ public class HadoopGenericCustomwrapper
         	try {
         		FileSystem fileSystem = FileSystem.get(conf);
 				fileSystem.delete(outputPath, true);
+				if (reader != null) {
+					reader.close();
+				}
 			} catch (IOException e) {
 				throw new CustomWrapperException("Exception while executing hadoop wrapper", e);
 			}
