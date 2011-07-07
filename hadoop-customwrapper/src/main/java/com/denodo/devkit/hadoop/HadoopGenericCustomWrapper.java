@@ -16,10 +16,13 @@ package com.denodo.devkit.hadoop;
 import java.io.IOException;
 import java.rmi.UnexpectedException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -35,6 +38,7 @@ import org.apache.log4j.Logger;
 
 import com.denodo.devkit.hadoop.WordCount.TokenCounterMapper;
 import com.denodo.devkit.hadoop.WordCount.TokenCounterReducer;
+import com.denodo.devkit.hadoop.exceptions.CustomParametersParsingException;
 import com.denodo.devkit.hadoop.exceptions.UnsupportedProjectionException;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
@@ -45,21 +49,25 @@ import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
-public class HadoopGenericCustomwrapper 
+public class HadoopGenericCustomWrapper 
         extends AbstractCustomWrapper {
 
     
-    private static final Logger logger = Logger.getLogger(HadoopGenericCustomwrapper.class);
+    private static final Logger logger = Logger.getLogger(HadoopGenericCustomWrapper.class);
 
     
     
 	//Parameters
 	public static String DATANODE_IP = "Datanode IP";
-	public static String DATANODE_PORT = "Datanode Port";
+	public static String DATANODE_PORT = "Datanode port";
 	public static String JOBTRACKER_IP = "Jobtracker IP";
-	public static String JOBTRACKER_PORT = "Jobtracker Port";
+	public static String JOBTRACKER_PORT = "Jobtracker port";
 	public static String INPUT_FILE_PATH = "Input file path";
-	public static String WORD_TO_COUNT = "Word to count";
+	
+	//Hadoop custom parameters syntax: 
+	//key:value pairs divided by "," characters
+	//Both key and value can be escaped by surrounded each one with either " or ' characters
+	public static String HADOOP_CUSTOM_PARAMETERS = "Custom parameters";
 	
 	public static String HADOOP_KEY = "word";
 	public static String HADOOP_VALUE = "count";
@@ -79,12 +87,12 @@ public class HadoopGenericCustomwrapper
             new CustomWrapperInputParameter(JOBTRACKER_IP, true),
             new CustomWrapperInputParameter(JOBTRACKER_PORT, true),
             new CustomWrapperInputParameter(INPUT_FILE_PATH, true),
-            new CustomWrapperInputParameter(WORD_TO_COUNT, false)
+            new CustomWrapperInputParameter(HADOOP_CUSTOM_PARAMETERS, false)
         };
 
     
     
-    public HadoopGenericCustomwrapper() {
+    public HadoopGenericCustomWrapper() {
         super();
     }
     
@@ -135,7 +143,7 @@ public class HadoopGenericCustomwrapper
     }
 
     
-    @Override
+	@Override
     public void run(final CustomWrapperConditionHolder condition, 
             final List<CustomWrapperFieldExpression> projectedFields, 
             final CustomWrapperResult result, 
@@ -154,8 +162,15 @@ public class HadoopGenericCustomwrapper
     	    conf.set("mapred.job.tracker",inputValues.get(JOBTRACKER_IP)+":"+inputValues.get(JOBTRACKER_PORT));
     	    //Remove SUCESS file from output dir
     	    conf.set("mapreduce.fileoutputcommitter.marksuccessfuljobs","false");
-    	    //Custom job configuration. This will be retrieved by the destination class 
-    	    conf.set("input.selectedword", inputValues.get(WORD_TO_COUNT));
+
+    	    //Custom parameters parsing
+    	    if (inputValues.get(HADOOP_CUSTOM_PARAMETERS)!= null) {
+    	    	Map<String,String> customParameters = calculateCustomParametersMap(splitCustomParameters(inputValues.get(HADOOP_CUSTOM_PARAMETERS)));
+    	    	for (String key : customParameters.keySet()) {
+    	    		conf.set(key,customParameters.get(key));
+				}
+    	    }
+//    	    conf.set("input.selectedword", inputValues.get(WORD_TO_COUNT));
     	    //Output Path
     	    Path outputPath = new Path(outputDir);
     	    SequenceFile.Reader reader  = null; 
@@ -172,8 +187,7 @@ public class HadoopGenericCustomwrapper
     	    job.setReducerClass(TokenCounterReducer.class);    
     	    job.setOutputFormatClass(SequenceFileOutputFormat.class);
     	    job.setOutputKeyClass(Text.class);
-    	    //TODO probar con un string
-    	    job.setOutputValueClass(Text.class);
+    	    job.setOutputValueClass(IntWritable.class);
     	    
     	    //The file path in this case must begin with "../.." because the ssh is not connecting with the same 
     	    //user that has the info we are processing
@@ -283,5 +297,69 @@ public class HadoopGenericCustomwrapper
         }
         
     }
+    
+    //
+    private List<String> splitCustomParameters(String input){
+    	List<String> result = new ArrayList<String>();
+    	boolean quoteOpened = false;
+
+    	StringBuffer keyValuePair = new StringBuffer();
+    	for (char character : input.toCharArray()) {
+    		if (!quoteOpened && character == ',') {
+    			result.add(keyValuePair.toString());
+    			keyValuePair = new StringBuffer();
+    		}else if (character == '"' || character == '\'') {
+    			quoteOpened = !quoteOpened;
+    			keyValuePair.append(character);
+    		}else {
+    			keyValuePair.append(character);
+    		}
+		}
+    	result.add(keyValuePair.toString());
+    	
+    	if (quoteOpened) {
+    		throw new CustomParametersParsingException("Quotation marks are not correctly closed");
+    	}
+    	
+    	return result;
+
+    }
+    
+    
+    private Map<String,String> calculateCustomParametersMap(List<String> splittedCustomParameters){
+    	Map<String,String> customParameters = new HashMap<String, String>();    	
+    	for (String customParameter : splittedCustomParameters) {
+    		boolean quoteOpened = false;
+    		boolean keyValueSeparatorFound = false;
+    		String key = null;
+    		String value = null;
+    		StringBuffer storedCharacters = new StringBuffer();
+    		
+			for (char character : customParameter.toCharArray()) {
+				if (character == '"' || character == '\'') {
+					quoteOpened = !quoteOpened;
+				}else if (!quoteOpened && character == ':') {
+					//We expect only keyValueSeparator
+					if (keyValueSeparatorFound) {
+						throw new CustomParametersParsingException("More than one key/separator character found outside quotation marks within a key/value pair");
+					}
+					keyValueSeparatorFound = true;
+					key = storedCharacters.toString();
+					storedCharacters = new StringBuffer();
+				}else {
+					storedCharacters.append(character);
+				}
+			}
+			value = storedCharacters.toString();
+			if (StringUtils.isBlank(key) || StringUtils.isBlank(value)) {
+				throw new CustomParametersParsingException("Empty key or value are not allowed");
+			}
+			customParameters.put(key, value);
+		}
+    	return customParameters;
+    }
+    
+    
+    
 
 }

@@ -241,7 +241,7 @@
 	  		<groupId>com.denodo.devkit.hadoop</groupId>
 	  		<artifactId>hadoop-first-example</artifactId>
 	  		<version>1.0-SNAPSHOT</version>
-		</dependency> 		         
+		</dependency>	         
     </dependencies>
     
 
