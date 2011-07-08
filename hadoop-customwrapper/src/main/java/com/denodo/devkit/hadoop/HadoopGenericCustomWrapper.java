@@ -299,12 +299,15 @@ public class HadoopGenericCustomWrapper
     }
     
     //
-    private List<String> splitCustomParameters(String input){
-    	List<String> result = new ArrayList<String>();
+	
+	
+    private static List<String> splitCustomParameters(final String input){
+        
+    	final List<String> result = new ArrayList<String>();
     	boolean quoteOpened = false;
     	boolean backslashOpened = false;
     	StringBuffer keyValuePair = new StringBuffer();
-    	for (char character : input.toCharArray()) {
+    	for (final char character : input.toCharArray()) {
     		if (character == '\\') {
    				keyValuePair.append(character);
     			backslashOpened = !backslashOpened;
@@ -330,53 +333,78 @@ public class HadoopGenericCustomWrapper
     	}
     	
     	return result;
+    	
     }
     
     
-    private Map<String,String> calculateCustomParametersMap(List<String> splittedCustomParameters){
-    	Map<String,String> customParameters = new HashMap<String, String>();    	
-    	for (String customParameter : splittedCustomParameters) {
-    		boolean quoteOpened = false;
-    		boolean backslashOpened = false;
-    		boolean keyValueSeparatorFound = false;
-    		String key = null;
-    		String value = null;
-    		StringBuffer storedCharacters = new StringBuffer();
-    		
-			for (char character : customParameter.toCharArray()) {
-				if (character == '\\') {
-					if (backslashOpened) {
-						storedCharacters.append(character);
-					}
-					backslashOpened =!backslashOpened;
-				}else if (character == '"') {
-					if (!backslashOpened) {
-						quoteOpened = !quoteOpened;
-					}else {
-						storedCharacters.append(character);
-					}
-					backslashOpened = false;
-				}else if (!quoteOpened && character == ':') {
-					//We expect only keyValueSeparator
-					if (keyValueSeparatorFound) {
-						throw new CustomParametersParsingException("More than one key/separator character found outside quotation marks within a key/value pair");
-					}
-					keyValueSeparatorFound = true;
-					key = storedCharacters.toString();
-					storedCharacters = new StringBuffer();
-					backslashOpened = false;
-				}else {
-					storedCharacters.append(character);
-					backslashOpened = false;
-				}
-			}
-			value = storedCharacters.toString();
-			if (StringUtils.isBlank(key) || StringUtils.isBlank(value)) {
-				throw new CustomParametersParsingException("Empty key or value are not allowed");
-			}
-			customParameters.put(key, value);
-		}
-    	return customParameters;
+    private static Map<String,String> calculateCustomParametersMap(final List<String> splitCustomParameters){
+        
+        final Map<String,String> customParameters = new HashMap<String, String>();      
+        for (final String customParameter : splitCustomParameters) {
+            
+            boolean quoteOpened = false;
+            boolean backslashOpened = false;
+            boolean keyValueSeparatorFound = false;
+            boolean itemFinished = false;
+            boolean commasUsed = false;
+            String key = null;
+            String value = null;
+            StringBuffer storedCharacters = new StringBuffer();
+            
+            for (final char character : customParameter.toCharArray()) {
+                if (character == '\\') {
+                    if (backslashOpened) {
+                        storedCharacters.append(character);
+                    }
+                    backslashOpened =!backslashOpened;
+                }else if (character == '"') {
+                    if (!backslashOpened) {
+                        if (quoteOpened) {
+                            quoteOpened = false;
+                            itemFinished = true;
+                        } else {
+                            quoteOpened = true;
+                            storedCharacters = new StringBuffer();
+                            commasUsed = true;
+                        }
+                    }else {
+                        storedCharacters.append(character);
+                    }
+                    backslashOpened = false;
+                }else if (!quoteOpened && character == ':') {
+                    //We expect only keyValueSeparator
+                    if (keyValueSeparatorFound) {
+                        throw new CustomParametersParsingException("More than one key/separator character found outside quotation marks within a key/value pair");
+                    }
+                    keyValueSeparatorFound = true;
+                    key = storedCharacters.toString();
+                    if (!commasUsed) {
+                        key = key.trim();
+                    }
+                    itemFinished = false;
+                    commasUsed = false;
+                    storedCharacters = new StringBuffer();
+                    backslashOpened = false;
+                }else if (!itemFinished) {
+                    storedCharacters.append(character);
+                    backslashOpened = false;
+                } else {
+                    backslashOpened = false;
+                }
+            }
+            value = storedCharacters.toString();
+            if (!commasUsed) {
+                value = value.trim();
+            }
+            if ((key == null || key.trim().equals("")) || (value == null || value.trim().equals(""))) {
+                throw new CustomParametersParsingException("Empty key or value are not allowed");
+            }
+            customParameters.put(key, value);
+            
+        }
+        
+        return customParameters;
+        
     }
     
     
