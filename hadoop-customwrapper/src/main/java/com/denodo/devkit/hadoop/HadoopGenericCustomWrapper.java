@@ -302,17 +302,25 @@ public class HadoopGenericCustomWrapper
     private List<String> splitCustomParameters(String input){
     	List<String> result = new ArrayList<String>();
     	boolean quoteOpened = false;
-
+    	boolean backslashOpened = false;
     	StringBuffer keyValuePair = new StringBuffer();
     	for (char character : input.toCharArray()) {
-    		if (!quoteOpened && character == ',') {
+    		if (character == '\\') {
+   				keyValuePair.append(character);
+    			backslashOpened = !backslashOpened;
+    		}else if (!quoteOpened && character == ',') {
     			result.add(keyValuePair.toString());
     			keyValuePair = new StringBuffer();
-    		}else if (character == '"' || character == '\'') {
-    			quoteOpened = !quoteOpened;
+    			backslashOpened = false;
+    		}else if (character == '"') {
+    			if (!backslashOpened) {
+    				quoteOpened = !quoteOpened;
+    			}
     			keyValuePair.append(character);
+    			backslashOpened = false;
     		}else {
     			keyValuePair.append(character);
+    			backslashOpened = false;
     		}
 		}
     	result.add(keyValuePair.toString());
@@ -322,7 +330,6 @@ public class HadoopGenericCustomWrapper
     	}
     	
     	return result;
-
     }
     
     
@@ -330,14 +337,25 @@ public class HadoopGenericCustomWrapper
     	Map<String,String> customParameters = new HashMap<String, String>();    	
     	for (String customParameter : splittedCustomParameters) {
     		boolean quoteOpened = false;
+    		boolean backslashOpened = false;
     		boolean keyValueSeparatorFound = false;
     		String key = null;
     		String value = null;
     		StringBuffer storedCharacters = new StringBuffer();
     		
 			for (char character : customParameter.toCharArray()) {
-				if (character == '"' || character == '\'') {
-					quoteOpened = !quoteOpened;
+				if (character == '\\') {
+					if (backslashOpened) {
+						storedCharacters.append(character);
+					}
+					backslashOpened =!backslashOpened;
+				}else if (character == '"') {
+					if (!backslashOpened) {
+						quoteOpened = !quoteOpened;
+					}else {
+						storedCharacters.append(character);
+					}
+					backslashOpened = false;
 				}else if (!quoteOpened && character == ':') {
 					//We expect only keyValueSeparator
 					if (keyValueSeparatorFound) {
@@ -346,8 +364,10 @@ public class HadoopGenericCustomWrapper
 					keyValueSeparatorFound = true;
 					key = storedCharacters.toString();
 					storedCharacters = new StringBuffer();
+					backslashOpened = false;
 				}else {
 					storedCharacters.append(character);
+					backslashOpened = false;
 				}
 			}
 			value = storedCharacters.toString();
