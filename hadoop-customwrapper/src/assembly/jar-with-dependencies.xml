@@ -1,5 +1,5 @@
 <assembly>
-  <id>my-jar-with-dependencies</id>
+  <id>jar-with-dependencies</id>
   <formats>
     <format>jar</format>
   </formats>
@@ -11,7 +11,8 @@
       <unpack>true</unpack>
       <scope>runtime</scope>
       <excludes>
-        <exclude>com.denodo.devkit.hadoop:hadoop-customwrapper</exclude>
+        <exclude>com.denodo.devkit.hadoop:denodo-hadoop-wrapper</exclude>
+        <exclude>log4j:log4j</exclude>
       </excludes>      
     </dependencySet>
   </dependencySets>
