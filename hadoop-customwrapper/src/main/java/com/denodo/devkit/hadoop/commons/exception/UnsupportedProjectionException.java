@@ -1,4 +1,4 @@
-package com.denodo.devkit.hadoop.exceptions;
+package com.denodo.devkit.hadoop.commons.exception;
 
 public class UnsupportedProjectionException extends RuntimeException {
 
