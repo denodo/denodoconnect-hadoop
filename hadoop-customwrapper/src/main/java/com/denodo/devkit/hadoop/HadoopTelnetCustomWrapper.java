@@ -134,6 +134,12 @@ public class HadoopTelnetCustomWrapper
     		logger.debug("INPUT_FILE_PATH: " + inputValues.get(ParameterNaming.INPUT_FILE_PATH));
     		logger.debug("DELETE_OUTPUT_FILE: " + inputValues.get(ParameterNaming.DELETE_OUTPUT_FILE));
     		logger.debug("MAPREDUCE_CUSTOM_PARAMETERS: " + inputValues.get(ParameterNaming.MAPREDUCE_CUSTOM_PARAMETERS));
+    	
+    		logger.debug("Classloader previous to change");
+    		logger.debug("Context classloader: " + Thread.currentThread().getContextClassLoader());
+    		logger.debug("Configuration classloader: " + Configuration.class.getClassLoader());
+    		logger.debug("Classloader End");
+
     	}
     	
     	// Due to getContextClassLoader returning the  platform classloader, we need to modify it in order to allow
