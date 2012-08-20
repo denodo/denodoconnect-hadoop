@@ -206,24 +206,38 @@ public class HadoopTelnetCustomWrapper
     			logger.debug("*** Shell output end ***");
     		}
 
+    		int exitStatus = channel.getExitStatus();
+    		logger.debug("Exit status: " + exitStatus);
+    		
     		channel.disconnect();
     		session.disconnect();
     		
-    		// Process output
-    		logger.debug("Processing output...");
-    		List<Object[]> rows = HadoopUtils.getRows(inputValues, outputPath, projectedFields);
-    		for (Object[] row : rows) {
-				result.addRow(row, projectedFields);
-			}
+    		// If ok -> process output
+    		if (exitStatus == 0) {
+    		    // Process output
+                logger.debug("Processing output...");
+                List<Object[]> rows = HadoopUtils.getRows(inputValues, outputPath, projectedFields);
+                for (Object[] row : rows) {
+                    result.addRow(row, projectedFields);
+                }
+                
+                // Delete output folder
+                HadoopUtils.deleteFileIfNecessary(inputValues, outputPath);
+    		} else {    		    
+    		    throw new CustomWrapperException("Exit status returned '" + exitStatus
+    		            + "'. You may set logging  to debug in order to see shell output");
+    		}
     		
-    		// Delete output folder
-    		HadoopUtils.deleteFileIfNecessary(inputValues, outputPath);
+    		
     		
     	} catch (Exception e) {
     		logger.error("There has been an error", e);
     		if (e instanceof DeleteFileException) {
     			throw (DeleteFileException) e;
     		}
+    		if (e instanceof CustomWrapperException) {
+                throw (CustomWrapperException) e;
+            }
     		throw new CustomWrapperException("There has been an error", e);
     	}
     	
