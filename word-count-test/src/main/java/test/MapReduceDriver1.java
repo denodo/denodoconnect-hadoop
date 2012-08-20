@@ -1,5 +1,8 @@
 package test;
 
+import java.util.Random;
+
+import org.apache.commons.lang.math.RandomUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -13,16 +16,18 @@ import org.apache.hadoop.mapred.SequenceFileOutputFormat;
 public class MapReduceDriver1 {
 
 	public static void main(String[] args) {
-		System.out.println("Starting MapReduceDriver1");
+		int exitCode = -1;
+	    
+	    System.out.println("Starting MapReduceDriver1");
 		
 		
-		String datanodeIp = args[1];
-		String datanodePort = args[2];
-		String jobtrackerIp = args[3];
-		String jobtrackerPort = args[4];
-		String input = args[5];
-		String output = args[6];
-		String customParams = args[7];
+		String datanodeIp = args[0];
+		String datanodePort = args[1];
+		String jobtrackerIp = args[2];
+		String jobtrackerPort = args[3];
+		String input = args[4];
+		String output = args[5];
+		String customParams = args[6];
 		
 		System.out.println("datanodeIp: " + datanodeIp);
 		System.out.println("datanodePort: " + datanodePort);
@@ -39,7 +44,7 @@ public class MapReduceDriver1 {
 		//fs.default.name
 		conf.set("defaultFS", "hdfs://" + datanodeIp + ":" + datanodePort);
 		conf.set("mapreduce.jobtracker.address", jobtrackerIp + ":" + jobtrackerPort);
-		//Remove SUCESS file from output dir
+		//Remove SUCCESS file from output dir
 	    conf.set("mapreduce.fileoutputcommitter.marksuccessfuljobs","false");
 		
 		conf.setOutputKeyClass(Text.class);
@@ -55,18 +60,27 @@ public class MapReduceDriver1 {
 	    FileOutputFormat.setOutputPath(conf, new Path(output));
 
 	    
+	    if (RandomUtils.nextBoolean()) {
+	        System.out.println("Throw exception");
+	        throw new UnsupportedOperationException("Exception thrown to check how this works");
+	    } else {
+	        System.out.println("Run job");
+	        try {
+	            
+	            RunningJob rj = JobClient.runJob(conf);
+	            
+	            System.out.println("Job id: " + rj.getID().getId());
+	            
+	            
+	        } catch (Exception e) {
+	            System.out.println("Errror: " + e.getMessage());
+	            e.printStackTrace();
+	        }
+    
+	    }
 	    
-		try {
-			RunningJob rj = JobClient.runJob(conf);
-			
-			System.out.println("Job id: " + rj.getID().getId());
-			
-		} catch (Exception e) {
-			System.out.println("Errror: " + e.getMessage());
-			e.printStackTrace();
-		}
-
 		System.out.println("Ending MapReduceDriver1");
+		
 	}
 
 }
