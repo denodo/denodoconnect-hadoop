@@ -14,18 +14,19 @@
 package com.denodo.devkit.hadoop;
 
 import java.io.InputStream;
-import java.sql.Types;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.Writable;
 import org.apache.log4j.Logger;
 
+import com.denodo.devkit.hadoop.commons.configuration.IHadoopTaskHandler;
 import com.denodo.devkit.hadoop.commons.exception.DeleteFileException;
 import com.denodo.devkit.hadoop.commons.naming.ParameterNaming;
 import com.denodo.devkit.hadoop.util.HadoopUtils;
+import com.denodo.devkit.hadoop.util.type.TypeUtils;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
@@ -54,13 +55,10 @@ public class HadoopTelnetCustomWrapper
 			new CustomWrapperInputParameter(ParameterNaming.HOST_TIMEOUT, true),
 			new CustomWrapperInputParameter(ParameterNaming.PATH_TO_JAR_IN_HOST, true),
 			new CustomWrapperInputParameter(ParameterNaming.MAIN_CLASS_IN_JAR, true),
-            new CustomWrapperInputParameter(ParameterNaming.DATANODE_IP, true),
-            new CustomWrapperInputParameter(ParameterNaming.DATANODE_PORT, true),
-            new CustomWrapperInputParameter(ParameterNaming.JOBTRACKER_IP, true),
-            new CustomWrapperInputParameter(ParameterNaming.JOBTRACKER_PORT, true),
-            new CustomWrapperInputParameter(ParameterNaming.INPUT_FILE_PATH, true),
-            new CustomWrapperInputParameter(ParameterNaming.DELETE_OUTPUT_FILE, false),
-            new CustomWrapperInputParameter(ParameterNaming.MAPREDUCE_CUSTOM_PARAMETERS, false)
+            new CustomWrapperInputParameter(ParameterNaming.HADOOP_KEY_CLASS, true),
+            new CustomWrapperInputParameter(ParameterNaming.HADOOP_VALUE_CLASS, true),
+            new CustomWrapperInputParameter(ParameterNaming.CLASS_IMPLEMENTING_IHADOOPTASKHANDLER, true),
+            new CustomWrapperInputParameter(ParameterNaming.MAPREDUCE_PARAMETERS, false)
         };
 
     
@@ -80,12 +78,12 @@ public class HadoopTelnetCustomWrapper
     @Override
     public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues) 
             throws CustomWrapperException {
-
+        
     	final CustomWrapperSchemaParameter[] parameters = 
             new CustomWrapperSchemaParameter[] {
         		new CustomWrapperSchemaParameter(
         				ParameterNaming.HADOOP_KEY, 
-        				Types.VARCHAR,
+        				TypeUtils.getSqlType(inputValues.get(ParameterNaming.HADOOP_KEY_CLASS)),
         				null,     // complex columns
         				false,    // searchable
         				CustomWrapperSchemaParameter.NOT_SORTABLE, // sortable status
@@ -94,7 +92,7 @@ public class HadoopTelnetCustomWrapper
         				false),   //mandatory
                 new CustomWrapperSchemaParameter(
                 		ParameterNaming.HADOOP_VALUE, 
-                		Types.INTEGER,
+                		TypeUtils.getSqlType(inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS)),
                 		null,     // complex columns
                 		false,    // searchable
                 		CustomWrapperSchemaParameter.NOT_SORTABLE, // sortable status
@@ -126,14 +124,9 @@ public class HadoopTelnetCustomWrapper
     		logger.debug("PATH_TO_JAR_IN_HOST: " + inputValues.get(ParameterNaming.PATH_TO_JAR_IN_HOST));
     		logger.debug("MAIN_CLASS_IN_JAR: " + inputValues.get(ParameterNaming.MAIN_CLASS_IN_JAR));
     		
-    		logger.debug("DATANODE_IP: " + inputValues.get(ParameterNaming.DATANODE_IP));
-    		logger.debug("DATANODE_PORT: " + inputValues.get(ParameterNaming.DATANODE_PORT));
-    		logger.debug("JOBTRACKER_IP: " + inputValues.get(ParameterNaming.JOBTRACKER_IP));
-    		logger.debug("JOBTRACKER_PORT: " + inputValues.get(ParameterNaming.JOBTRACKER_PORT));
-    		
-    		logger.debug("INPUT_FILE_PATH: " + inputValues.get(ParameterNaming.INPUT_FILE_PATH));
-    		logger.debug("DELETE_OUTPUT_FILE: " + inputValues.get(ParameterNaming.DELETE_OUTPUT_FILE));
-    		logger.debug("MAPREDUCE_CUSTOM_PARAMETERS: " + inputValues.get(ParameterNaming.MAPREDUCE_CUSTOM_PARAMETERS));
+    		logger.debug("HADOOP_KEY_TYPE: " + inputValues.get(ParameterNaming.HADOOP_KEY_CLASS));
+    		logger.debug("HADOOP_VALUE_TYPE: " + inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS));
+    		logger.debug("MAPREDUCEPARAMETERS: " + inputValues.get(ParameterNaming.MAPREDUCE_PARAMETERS));
     	
     		logger.debug("Classloader previous to change");
     		logger.debug("Context classloader: " + Thread.currentThread().getContextClassLoader());
@@ -156,12 +149,8 @@ public class HadoopTelnetCustomWrapper
         
     	try {
 
-    		String executionId = RandomStringUtils.randomAlphabetic(5) + "_" + System.nanoTime();  
-
-    		//Output Path (absolute path..it will be created in the root)
-    		String outputDir = "/denodo_output_" + executionId;
-    		Path outputPath = new Path(outputDir);
-    		logger.debug("Output path: " + outputDir);
+    		IHadoopTaskHandler hadoopTaskHandler = (IHadoopTaskHandler) Class.forName(inputValues
+    		        .get(ParameterNaming.CLASS_IMPLEMENTING_IHADOOPTASKHANDLER)).newInstance();
     		
     		JSch jsch=new JSch();
     		Session session=jsch.getSession(inputValues.get(ParameterNaming.HOST_USER), 
@@ -178,7 +167,7 @@ public class HadoopTelnetCustomWrapper
     		Channel channel = session.openChannel("exec");
 
     		// Set command to be executed
-    		((ChannelExec)channel).setCommand(HadoopUtils.getCommandToExecuteMapReduceTask(inputValues, outputDir));
+    		((ChannelExec)channel).setCommand(HadoopUtils.getCommandToExecuteMapReduceTask(inputValues, hadoopTaskHandler));
 
     		channel.setInputStream(null);
     		//TODO Modify outputstream??
@@ -214,15 +203,44 @@ public class HadoopTelnetCustomWrapper
     		
     		// If ok -> process output
     		if (exitStatus == 0) {
+    		    String hostIp = inputValues.get(ParameterNaming.HOST_IP);
+    	        String hostPort = inputValues.get(ParameterNaming.HOST_PORT);
+    	        String hostUser = inputValues.get(ParameterNaming.HOST_USER);
+    	        String hostPassword = inputValues.get(ParameterNaming.HOST_PASSWORD);
+    	        String hostTimeout = inputValues.get(ParameterNaming.HOST_TIMEOUT);
+    	        String pathToJarInHost = inputValues.get(ParameterNaming.PATH_TO_JAR_IN_HOST);
+    	        String mainClassInJar = inputValues.get(ParameterNaming.MAIN_CLASS_IN_JAR);
+    	        String hadoopKeyClass = inputValues.get(ParameterNaming.HADOOP_KEY_CLASS);
+    	        String hadoopValueClass = inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS);
+    	        String mapReduceParameters = inputValues.get(ParameterNaming.MAPREDUCE_PARAMETERS);
+    	        
     		    // Process output
                 logger.debug("Processing output...");
-                List<Object[]> rows = HadoopUtils.getRows(inputValues, outputPath, projectedFields);
-                for (Object[] row : rows) {
-                    result.addRow(row, projectedFields);
+                LinkedHashMap<Writable, Writable> rows = hadoopTaskHandler.readOutput(
+                        hostIp, hostPort, hostUser, hostPassword, hostTimeout, 
+                       pathToJarInHost, mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters);
+                        
+                  
+                logger.debug("Number of rows: " + rows.size());
+                for (Map.Entry<Writable, Writable> row : rows.entrySet()) {
+                    Object[] asArray = new Object[projectedFields.size()];
+                    if (projectedFields.get(0).getName().equalsIgnoreCase(ParameterNaming.HADOOP_KEY)) {
+                        asArray[0] = TypeUtils.getValue(hadoopKeyClass, row.getKey());
+                    }
+                    if (projectedFields.get(0).getName().equalsIgnoreCase(ParameterNaming.HADOOP_VALUE)) {
+                        asArray[0] = TypeUtils.getValue(hadoopValueClass, row.getValue());
+                    }
+                    if (projectedFields.size() == 2) {
+                        if (projectedFields.get(1).getName().equalsIgnoreCase(ParameterNaming.HADOOP_KEY)) {
+                            asArray[1] = TypeUtils.getValue(hadoopKeyClass, row.getKey());
+                        }
+                        if (projectedFields.get(1).getName().equalsIgnoreCase(ParameterNaming.HADOOP_VALUE)) {
+                            asArray[1] = TypeUtils.getValue(hadoopValueClass, row.getValue());
+                        }   
+                    }
+                    result.addRow(asArray, projectedFields);
                 }
-                
-                // Delete output folder
-                HadoopUtils.deleteFileIfNecessary(inputValues, outputPath);
+                                
     		} else {    		    
     		    throw new CustomWrapperException("Exit status returned '" + exitStatus
     		            + "'. You may set logging  to debug in order to see shell output");
