@@ -1,0 +1,1 @@
+Basic MapReduce project to test custom wrapper
