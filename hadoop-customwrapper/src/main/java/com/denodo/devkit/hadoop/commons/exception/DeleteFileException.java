@@ -21,18 +21,14 @@
  */
 package com.denodo.devkit.hadoop.commons.exception;
 
+import org.apache.hadoop.fs.Path;
+
 
 public class DeleteFileException extends InternalErrorException {
 
     private static final long serialVersionUID = -395472082514655225L;
 
-    
-//    public DeleteFileException(Path file) {
-//        super("There has been an error deleting file: " + file);
-//    }
-    public DeleteFileException(Object file) {
-        super("There has been an error deleting file: " + file);
+    public DeleteFileException(Path file) {
+        super("There has been an error deleting file: " + file); //$NON-NLS-1$
     }
-    
-
 }

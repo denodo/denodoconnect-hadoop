@@ -13,8 +13,9 @@
 
 package com.denodo.devkit.hadoop;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.LinkedHashMap;
+import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 
@@ -22,9 +23,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.log4j.Logger;
 
-import com.denodo.devkit.hadoop.commons.configuration.IHadoopTaskHandler;
 import com.denodo.devkit.hadoop.commons.exception.DeleteFileException;
+import com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler;
 import com.denodo.devkit.hadoop.commons.naming.ParameterNaming;
+import com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator;
 import com.denodo.devkit.hadoop.util.HadoopUtils;
 import com.denodo.devkit.hadoop.util.type.TypeUtils;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
@@ -79,11 +81,14 @@ public class HadoopTelnetCustomWrapper
     public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues) 
             throws CustomWrapperException {
         
+        int keyType = TypeUtils.getSqlType(inputValues.get(ParameterNaming.HADOOP_KEY_CLASS));
+        int valueType = TypeUtils.getSqlType(inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS));
+        
     	final CustomWrapperSchemaParameter[] parameters = 
             new CustomWrapperSchemaParameter[] {
         		new CustomWrapperSchemaParameter(
         				ParameterNaming.HADOOP_KEY, 
-        				TypeUtils.getSqlType(inputValues.get(ParameterNaming.HADOOP_KEY_CLASS)),
+        				keyType,
         				null,     // complex columns
         				false,    // searchable
         				CustomWrapperSchemaParameter.NOT_SORTABLE, // sortable status
@@ -92,8 +97,10 @@ public class HadoopTelnetCustomWrapper
         				false),   //mandatory
                 new CustomWrapperSchemaParameter(
                 		ParameterNaming.HADOOP_VALUE, 
-                		TypeUtils.getSqlType(inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS)),
-                		null,     // complex columns
+                		valueType,
+                		new CustomWrapperSchemaParameter[] {
+                		        new CustomWrapperSchemaParameter(ParameterNaming.HADOOP_VALUE, Types.VARCHAR)
+                		},     // complex columns
                 		false,    // searchable
                 		CustomWrapperSchemaParameter.NOT_SORTABLE, // sortable status
                 		false,    // updateable
@@ -113,25 +120,25 @@ public class HadoopTelnetCustomWrapper
             throws CustomWrapperException {
     	
     	if (logger.isDebugEnabled()) {
-    		logger.debug("Starting run...");	
+    		logger.debug("Starting run...");	 //$NON-NLS-1$
     		
-    		logger.debug("HOST_IP: " + inputValues.get(ParameterNaming.HOST_IP));
-    		logger.debug("HOST_PORT: " + inputValues.get(ParameterNaming.HOST_PORT));
-    		logger.debug("HOST_USER: " + inputValues.get(ParameterNaming.HOST_USER));
-    		logger.debug("HOST_PASSWORD: " + inputValues.get(ParameterNaming.HOST_PASSWORD));
-    		logger.debug("HOST_TIMEOUT: " + inputValues.get(ParameterNaming.HOST_TIMEOUT));
+    		logger.debug("HOST_IP: " + inputValues.get(ParameterNaming.HOST_IP)); //$NON-NLS-1$
+    		logger.debug("HOST_PORT: " + inputValues.get(ParameterNaming.HOST_PORT)); //$NON-NLS-1$
+    		logger.debug("HOST_USER: " + inputValues.get(ParameterNaming.HOST_USER)); //$NON-NLS-1$
+    		logger.debug("HOST_PASSWORD: " + inputValues.get(ParameterNaming.HOST_PASSWORD)); //$NON-NLS-1$
+    		logger.debug("HOST_TIMEOUT: " + inputValues.get(ParameterNaming.HOST_TIMEOUT)); //$NON-NLS-1$
     		
-    		logger.debug("PATH_TO_JAR_IN_HOST: " + inputValues.get(ParameterNaming.PATH_TO_JAR_IN_HOST));
-    		logger.debug("MAIN_CLASS_IN_JAR: " + inputValues.get(ParameterNaming.MAIN_CLASS_IN_JAR));
+    		logger.debug("PATH_TO_JAR_IN_HOST: " + inputValues.get(ParameterNaming.PATH_TO_JAR_IN_HOST)); //$NON-NLS-1$
+    		logger.debug("MAIN_CLASS_IN_JAR: " + inputValues.get(ParameterNaming.MAIN_CLASS_IN_JAR)); //$NON-NLS-1$
     		
-    		logger.debug("HADOOP_KEY_TYPE: " + inputValues.get(ParameterNaming.HADOOP_KEY_CLASS));
-    		logger.debug("HADOOP_VALUE_TYPE: " + inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS));
-    		logger.debug("MAPREDUCEPARAMETERS: " + inputValues.get(ParameterNaming.MAPREDUCE_PARAMETERS));
+    		logger.debug("HADOOP_KEY_TYPE: " + inputValues.get(ParameterNaming.HADOOP_KEY_CLASS)); //$NON-NLS-1$
+    		logger.debug("HADOOP_VALUE_TYPE: " + inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS)); //$NON-NLS-1$
+    		logger.debug("MAPREDUCEPARAMETERS: " + inputValues.get(ParameterNaming.MAPREDUCE_PARAMETERS)); //$NON-NLS-1$
     	
-    		logger.debug("Classloader previous to change");
-    		logger.debug("Context classloader: " + Thread.currentThread().getContextClassLoader());
-    		logger.debug("Configuration classloader: " + Configuration.class.getClassLoader());
-    		logger.debug("Classloader End");
+    		logger.debug("Classloader previous to change"); //$NON-NLS-1$
+    		logger.debug("Context classloader: " + Thread.currentThread().getContextClassLoader()); //$NON-NLS-1$
+    		logger.debug("Configuration classloader: " + Configuration.class.getClassLoader()); //$NON-NLS-1$
+    		logger.debug("Classloader End"); //$NON-NLS-1$
 
     	}
     	
@@ -141,12 +148,13 @@ public class HadoopTelnetCustomWrapper
     	Thread.currentThread().setContextClassLoader(Configuration.class.getClassLoader());
     	
     	if (logger.isDebugEnabled()) {
-    		logger.debug("Classloader");
-    		logger.debug("Context classloader: " + Thread.currentThread().getContextClassLoader());
-    		logger.debug("Configuration classloader: " + Configuration.class.getClassLoader());
-    		logger.debug("Classloader End");
+    		logger.debug("Classloader"); //$NON-NLS-1$
+    		logger.debug("Context classloader: " + Thread.currentThread().getContextClassLoader()); //$NON-NLS-1$
+    		logger.debug("Configuration classloader: " + Configuration.class.getClassLoader()); //$NON-NLS-1$
+    		logger.debug("Classloader End"); //$NON-NLS-1$
     	}
         
+    	InputStream in = null;
     	try {
 
     		IHadoopTaskHandler hadoopTaskHandler = (IHadoopTaskHandler) Class.forName(inputValues
@@ -158,26 +166,25 @@ public class HadoopTelnetCustomWrapper
     		session.setPassword(inputValues.get(ParameterNaming.HOST_PASSWORD));
 
     		java.util.Properties config = new java.util.Properties(); 
-    		config.put("StrictHostKeyChecking", "no");
+    		config.put("StrictHostKeyChecking", "no"); //$NON-NLS-1$ //$NON-NLS-2$
     		session.setConfig(config);
 
-    		logger.debug("Going to open channel...");
+    		logger.debug("Going to open channel..."); //$NON-NLS-1$
     		    		
     		session.connect(Integer.parseInt(inputValues.get(ParameterNaming.HOST_TIMEOUT)));   // connection with timeout.
-    		Channel channel = session.openChannel("exec");
+    		Channel channel = session.openChannel("exec"); //$NON-NLS-1$
 
     		// Set command to be executed
     		((ChannelExec)channel).setCommand(HadoopUtils.getCommandToExecuteMapReduceTask(inputValues, hadoopTaskHandler));
 
     		channel.setInputStream(null);
-    		//TODO Modify outputstream??
     		((ChannelExec)channel).setErrStream(System.err);
 
-    		InputStream in = channel.getInputStream();
+    		in = channel.getInputStream();
     		channel.connect(Integer.parseInt(inputValues.get(ParameterNaming.HOST_TIMEOUT)));
 
     		if (logger.isDebugEnabled()) {
-    			logger.debug("*** Shell output ***");
+    			logger.debug("*** Shell output ***"); //$NON-NLS-1$
     			byte[] tmp = new byte[1024];
     			while (true) {
     				while (in.available() > 0) {
@@ -188,15 +195,15 @@ public class HadoopTelnetCustomWrapper
     					logger.debug(new String(tmp, 0, i));
     				}
     				if (channel.isClosed()) {
-    					logger.debug("exit-status: " + channel.getExitStatus());
+    					logger.debug("exit-status: " + channel.getExitStatus()); //$NON-NLS-1$
     					break;
     				}
     			}
-    			logger.debug("*** Shell output end ***");
+    			logger.debug("*** Shell output end ***"); //$NON-NLS-1$
     		}
 
     		int exitStatus = channel.getExitStatus();
-    		logger.debug("Exit status: " + exitStatus);
+    		logger.debug("Exit status: " + exitStatus); //$NON-NLS-1$
     		
     		channel.disconnect();
     		session.disconnect();
@@ -215,53 +222,64 @@ public class HadoopTelnetCustomWrapper
     	        String mapReduceParameters = inputValues.get(ParameterNaming.MAPREDUCE_PARAMETERS);
     	        
     		    // Process output
-                logger.debug("Processing output...");
-                LinkedHashMap<Writable, Writable> rows = hadoopTaskHandler.readOutput(
-                        hostIp, hostPort, hostUser, hostPassword, hostTimeout, 
-                       pathToJarInHost, mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters);
-                        
-                  
-                logger.debug("Number of rows: " + rows.size());
-                for (Map.Entry<Writable, Writable> row : rows.entrySet()) {
+                logger.debug("Processing output..."); //$NON-NLS-1$
+                                
+                IHadoopResultIterator resultIterator = hadoopTaskHandler.getResultIterator(hostIp, hostPort, hostUser, hostPassword, hostTimeout, 
+                        pathToJarInHost, mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters);
+                Writable key = resultIterator.getInitKey();
+                Writable value = resultIterator.getInitValue();
+                while (resultIterator.readNext(key, value)){
                     Object[] asArray = new Object[projectedFields.size()];
                     if (projectedFields.get(0).getName().equalsIgnoreCase(ParameterNaming.HADOOP_KEY)) {
-                        asArray[0] = TypeUtils.getValue(hadoopKeyClass, row.getKey());
+                        asArray[0] = TypeUtils.getValue(hadoopKeyClass, key);
                     }
                     if (projectedFields.get(0).getName().equalsIgnoreCase(ParameterNaming.HADOOP_VALUE)) {
-                        asArray[0] = TypeUtils.getValue(hadoopValueClass, row.getValue());
+                        asArray[0] = TypeUtils.getValue(hadoopValueClass, value);
                     }
                     if (projectedFields.size() == 2) {
                         if (projectedFields.get(1).getName().equalsIgnoreCase(ParameterNaming.HADOOP_KEY)) {
-                            asArray[1] = TypeUtils.getValue(hadoopKeyClass, row.getKey());
+                            asArray[1] = TypeUtils.getValue(hadoopKeyClass, key);
                         }
                         if (projectedFields.get(1).getName().equalsIgnoreCase(ParameterNaming.HADOOP_VALUE)) {
-                            asArray[1] = TypeUtils.getValue(hadoopValueClass, row.getValue());
+                            asArray[1] = TypeUtils.getValue(hadoopValueClass, value);
                         }   
                     }
-                    result.addRow(asArray, projectedFields);
-                }
-                                
-    		} else {    		    
-    		    throw new CustomWrapperException("Exit status returned '" + exitStatus
-    		            + "'. You may set logging  to debug in order to see shell output");
-    		}
-    		
-    		
-    		
+                    result.addRow(asArray, projectedFields);    
+                }  
+                in.close();
+    		} else {    
+    		    in.close();
+    		    throw new CustomWrapperException("Exit status returned '" + exitStatus //$NON-NLS-1$
+    		            + "'. You may set logging  to debug in order to see shell output"); //$NON-NLS-1$
+    		}		
     	} catch (Exception e) {
-    		logger.error("There has been an error", e);
+    	    if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e1) {
+                    logger.warn("Error closing inputStream", e1); //$NON-NLS-1$
+                }
+            }
+    		logger.error("There has been an error", e); //$NON-NLS-1$
     		if (e instanceof DeleteFileException) {
     			throw (DeleteFileException) e;
     		}
     		if (e instanceof CustomWrapperException) {
                 throw (CustomWrapperException) e;
             }
-    		throw new CustomWrapperException("There has been an error", e);
+    		throw new CustomWrapperException("There has been an error", e); //$NON-NLS-1$
+    	} finally {
+    	    if (in != null) {
+    	        try {
+    	            in.close();
+    	        } catch (IOException e) {
+    	            logger.warn("Error closing inputStream", e); //$NON-NLS-1$
+    	        }
+    	    }
     	}
-    	
     	
     	Thread.currentThread().setContextClassLoader(originalCtxClassLoader);
     	
-    	logger.debug("Run finished");    	
+    	logger.debug("Run finished");    	 //$NON-NLS-1$
     }
 }
