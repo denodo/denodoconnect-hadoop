@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.log4j.Logger;
 
-import com.denodo.devkit.hadoop.commons.configuration.IHadoopTaskHandler;
 import com.denodo.devkit.hadoop.commons.exception.DeleteFileException;
+import com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler;
 import com.denodo.devkit.hadoop.commons.naming.ParameterNaming;
 import com.denodo.devkit.hadoop.util.configuration.HadoopConfigurationUtils;
 
@@ -25,9 +25,9 @@ public class HadoopUtils {
 	public static void deleteFile(String dataNodeIp, String dataNodePort,
 	        String hadoopKeyClass, String hadoopValueClass, Path outputPath) {
 	    try {
-	        logger.debug("Deleting... '" + outputPath + "'");
+	        logger.debug("Deleting... '" + outputPath + "'"); //$NON-NLS-1$ //$NON-NLS-2$
 	        Configuration configuration = HadoopConfigurationUtils.getConfiguration(dataNodeIp, dataNodePort, hadoopKeyClass, hadoopValueClass);
-	        DistributedFileSystem.get(configuration).delete(outputPath, true);
+	        FileSystem.get(configuration).delete(outputPath, true);
 	    } catch (IOException e) {
 	        throw new DeleteFileException(outputPath);
 	    }
@@ -48,11 +48,10 @@ public class HadoopUtils {
 	 */
 	public static String getCommandToExecuteMapReduceTask(Map<String, String> inputValues, 
 	        IHadoopTaskHandler hadoopTaskHandler) {
-		StringBuffer output = new StringBuffer("hadoop jar ");
+		StringBuffer output = new StringBuffer("hadoop jar "); //$NON-NLS-1$
 		output.append(inputValues.get(ParameterNaming.PATH_TO_JAR_IN_HOST));
-		output.append(" ");
+		output.append(" "); //$NON-NLS-1$
 		output.append(inputValues.get(ParameterNaming.MAIN_CLASS_IN_JAR));
-		
 		
 		String hostIp = inputValues.get(ParameterNaming.HOST_IP);
 		String hostPort = inputValues.get(ParameterNaming.HOST_PORT);
@@ -64,18 +63,16 @@ public class HadoopUtils {
 		String hadoopKeyClass = inputValues.get(ParameterNaming.HADOOP_KEY_CLASS);
 		String hadoopValueClass = inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS);
 		String mapReduceParameters = inputValues.get(ParameterNaming.MAPREDUCE_PARAMETERS);
+		String[] parameters = hadoopTaskHandler.getMapReduceParameters(hostIp, hostPort, hostUser, hostPassword, 
+                hostTimeout, pathToJarInHost, mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters);
 		
-		
-		
-		for (String param : hadoopTaskHandler.getMapReduceParameters(hostIp, hostPort, hostUser, hostPassword, 
-		        hostTimeout, pathToJarInHost, mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters)) {
-		    output.append(" ");
+		for (String param : parameters) {
+		    output.append(" "); //$NON-NLS-1$
 		    output.append(param);
-        }
-		
+        }		
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("Returning command: " + output.toString());
+			logger.debug("Returning command: " + output.toString()); //$NON-NLS-1$
 		}
 		
 		return output.toString();
