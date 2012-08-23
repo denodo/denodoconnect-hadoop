@@ -6,7 +6,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.log4j.Logger;
@@ -49,7 +51,9 @@ implements IHadoopResultIterator {
         this.deleteOutputPathAfterReadOutput = deleteOutputPathAfterReadOutput;
 
         try {
-            this.configuration = HadoopConfigurationUtils.getConfiguration(dataNodeIp, dataNodePort, hadoopKeyClass, hadoopValueClass);
+            this.configuration = HadoopConfigurationUtils.getConfiguration(
+                    dataNodeIp, dataNodePort, 
+                    hadoopKeyClass, hadoopValueClass);
             this.fileSystem = FileSystem.get(this.configuration);
 
             if (logger.isDebugEnabled()) {
@@ -125,9 +129,17 @@ implements IHadoopResultIterator {
     @Override
     public <V extends Writable> V getInitValue() {
         try {
-        @SuppressWarnings("unchecked")
-        V value = (V) ReflectionUtils.newInstance(Class.forName(this.hadoopValueClass), this.configuration);
-        return value;
+
+            // TODO text?
+            if (ArrayWritable.class.getName().equalsIgnoreCase(this.hadoopValueClass)) {
+                @SuppressWarnings("unchecked")
+                V value = (V) new ArrayWritable(Text.class);
+                return value;
+            } else {
+                @SuppressWarnings("unchecked")
+                V value = (V) ReflectionUtils.newInstance(Class.forName(this.hadoopValueClass), this.configuration);
+                return value;   
+            }
         } catch (ClassNotFoundException e) {
             throw new InternalErrorException("There has been an error initializing value" + this.outputPath, e); //$NON-NLS-1$
         }

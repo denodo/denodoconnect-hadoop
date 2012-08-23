@@ -43,7 +43,8 @@ public class TemporaryMapFileOutputFormatHadoopTaskHandler extends
             String hadoopKeyClass, String hadoopValueClass,
             String mapReduceParameters) {
         return getMapReduceParameters(hostIp, hostPort, hostUser, hostPassword, hostTimeout, pathToJarInHost, 
-                mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters)[0];
+                mainClassInJar,  
+                hadoopKeyClass, hadoopValueClass, mapReduceParameters)[0];
     }
 
 
@@ -55,7 +56,8 @@ public class TemporaryMapFileOutputFormatHadoopTaskHandler extends
             String hadoopKeyClass, String hadoopValueClass,
             String mapReduceParameters) {
         return getMapReduceParameters(hostIp, hostPort, hostUser, hostPassword, hostTimeout, pathToJarInHost, 
-                mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters)[1];
+                mainClassInJar, 
+                hadoopKeyClass, hadoopValueClass, mapReduceParameters)[1];
     }
 
     

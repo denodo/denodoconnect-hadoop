@@ -26,7 +26,9 @@ public class HadoopUtils {
 	        String hadoopKeyClass, String hadoopValueClass, Path outputPath) {
 	    try {
 	        logger.debug("Deleting... '" + outputPath + "'"); //$NON-NLS-1$ //$NON-NLS-2$
-	        Configuration configuration = HadoopConfigurationUtils.getConfiguration(dataNodeIp, dataNodePort, hadoopKeyClass, hadoopValueClass);
+	        Configuration configuration = HadoopConfigurationUtils.getConfiguration(
+	                dataNodeIp, dataNodePort, 
+	                hadoopKeyClass, hadoopValueClass);
 	        FileSystem.get(configuration).delete(outputPath, true);
 	    } catch (IOException e) {
 	        throw new DeleteFileException(outputPath);
@@ -64,7 +66,8 @@ public class HadoopUtils {
 		String hadoopValueClass = inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS);
 		String mapReduceParameters = inputValues.get(ParameterNaming.MAPREDUCE_PARAMETERS);
 		String[] parameters = hadoopTaskHandler.getMapReduceParameters(hostIp, hostPort, hostUser, hostPassword, 
-                hostTimeout, pathToJarInHost, mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters);
+                hostTimeout, pathToJarInHost, mainClassInJar, 
+                hadoopKeyClass, hadoopValueClass, mapReduceParameters);
 		
 		for (String param : parameters) {
 		    output.append(" "); //$NON-NLS-1$

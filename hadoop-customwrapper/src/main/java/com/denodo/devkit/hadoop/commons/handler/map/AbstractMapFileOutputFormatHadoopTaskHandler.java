@@ -30,8 +30,13 @@ public abstract class AbstractMapFileOutputFormatHadoopTaskHandler implements
             String hostTimeout, String pathToJarInHost, String mainClassInJar,
             String hadoopKeyClass, String hadoopValueClass, String mapReduceParameters) {
         return new MapFileOutputFormatHadoopResultIterator(
-                getDataNodeIp(hostIp, hostPort, hostUser, hostPassword, hostTimeout, pathToJarInHost, mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters), 
-                getDataNodePort(hostIp, hostPort, hostUser, hostPassword, hostTimeout, pathToJarInHost, mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters), hadoopKeyClass, hadoopValueClass,
+                getDataNodeIp(hostIp, hostPort, hostUser, hostPassword, hostTimeout, 
+                        pathToJarInHost, mainClassInJar,  
+                        hadoopKeyClass, hadoopValueClass, mapReduceParameters), 
+                getDataNodePort(hostIp, hostPort, hostUser, hostPassword, hostTimeout, 
+                        pathToJarInHost, mainClassInJar,   
+                        hadoopKeyClass, hadoopValueClass, mapReduceParameters), 
+                hadoopKeyClass, hadoopValueClass,
                 getOutputPath(), deleteOutputPathAfterReadOutput());        
     }
        

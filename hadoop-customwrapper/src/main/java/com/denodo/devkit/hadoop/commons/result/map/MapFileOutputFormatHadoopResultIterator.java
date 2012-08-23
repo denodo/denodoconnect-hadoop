@@ -51,7 +51,9 @@ implements IHadoopResultIterator {
         this.deleteOutputPathAfterReadOutput = deleteOutputPathAfterReadOutput;
 
         try {
-            this.configuration = HadoopConfigurationUtils.getConfiguration(dataNodeIp, dataNodePort, hadoopKeyClass, hadoopValueClass);
+            this.configuration = HadoopConfigurationUtils.getConfiguration(
+                    dataNodeIp, dataNodePort, 
+                    hadoopKeyClass, hadoopValueClass);
             this.fileSystem = FileSystem.get(this.configuration);
 
             if (logger.isDebugEnabled()) {

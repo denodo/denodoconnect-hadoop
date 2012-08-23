@@ -32,7 +32,8 @@ public interface IHadoopTaskHandler {
     public String[] getMapReduceParameters(String hostIp, String hostPort,
             String hostUser, String hostPassword, 
             String hostTimeout, String pathToJarInHost,
-            String mainClassInJar, String hadoopKeyClass, String hadoopValueClass, String mapReduceParameters);
+            String mainClassInJar, 
+            String hadoopKeyClass, String hadoopValueClass, String mapReduceParameters);
     
  
 }

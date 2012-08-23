@@ -57,7 +57,7 @@ public class HadoopTelnetCustomWrapper
 			new CustomWrapperInputParameter(ParameterNaming.HOST_TIMEOUT, true),
 			new CustomWrapperInputParameter(ParameterNaming.PATH_TO_JAR_IN_HOST, true),
 			new CustomWrapperInputParameter(ParameterNaming.MAIN_CLASS_IN_JAR, true),
-            new CustomWrapperInputParameter(ParameterNaming.HADOOP_KEY_CLASS, true),
+			new CustomWrapperInputParameter(ParameterNaming.HADOOP_KEY_CLASS, true),
             new CustomWrapperInputParameter(ParameterNaming.HADOOP_VALUE_CLASS, true),
             new CustomWrapperInputParameter(ParameterNaming.CLASS_IMPLEMENTING_IHADOOPTASKHANDLER, true),
             new CustomWrapperInputParameter(ParameterNaming.MAPREDUCE_PARAMETERS, false)
@@ -98,9 +98,11 @@ public class HadoopTelnetCustomWrapper
                 new CustomWrapperSchemaParameter(
                 		ParameterNaming.HADOOP_VALUE, 
                 		valueType,
-                		new CustomWrapperSchemaParameter[] {
-                		        new CustomWrapperSchemaParameter(ParameterNaming.HADOOP_VALUE, Types.VARCHAR)
-                		},     // complex columns
+                		valueType == Types.ARRAY 
+                		    ? new CustomWrapperSchemaParameter[] {
+                                    new CustomWrapperSchemaParameter(ParameterNaming.HADOOP_VALUE, Types.VARCHAR)
+                            } 
+                		    : null,     // complex columns
                 		false,    // searchable
                 		CustomWrapperSchemaParameter.NOT_SORTABLE, // sortable status
                 		false,    // updateable
@@ -225,7 +227,8 @@ public class HadoopTelnetCustomWrapper
                 logger.debug("Processing output..."); //$NON-NLS-1$
                                 
                 IHadoopResultIterator resultIterator = hadoopTaskHandler.getResultIterator(hostIp, hostPort, hostUser, hostPassword, hostTimeout, 
-                        pathToJarInHost, mainClassInJar, hadoopKeyClass, hadoopValueClass, mapReduceParameters);
+                        pathToJarInHost, mainClassInJar, 
+                        hadoopKeyClass, hadoopValueClass, mapReduceParameters);
                 Writable key = resultIterator.getInitKey();
                 Writable value = resultIterator.getInitValue();
                 while (resultIterator.readNext(key, value)){
