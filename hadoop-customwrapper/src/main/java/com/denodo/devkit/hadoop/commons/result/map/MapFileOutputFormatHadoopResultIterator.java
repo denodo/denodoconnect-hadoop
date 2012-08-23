@@ -2,10 +2,12 @@ package com.denodo.devkit.hadoop.commons.result.map;
 
 import java.io.IOException;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
@@ -136,6 +138,11 @@ implements IHadoopResultIterator {
     @Override
     public <V extends Writable> V getInitValue() {
         try {
+            if (StringUtils.endsWith(this.hadoopValueClass, "[]")) { //$NON-NLS-1$
+                @SuppressWarnings("unchecked")
+                V value = (V) new ArrayWritable((Class<Writable>) Class.forName(StringUtils.substringBeforeLast(this.hadoopValueClass, "[]"))); //$NON-NLS-1$
+                return value;
+            }
             @SuppressWarnings("unchecked")
             V value = (V) ReflectionUtils.newInstance(Class.forName(this.hadoopValueClass), this.configuration);
             return value;
