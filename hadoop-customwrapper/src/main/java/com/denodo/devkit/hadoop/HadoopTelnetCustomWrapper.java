@@ -19,6 +19,7 @@ import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.log4j.Logger;
@@ -100,7 +101,8 @@ public class HadoopTelnetCustomWrapper
                 		valueType,
                 		valueType == Types.ARRAY 
                 		    ? new CustomWrapperSchemaParameter[] {
-                                    new CustomWrapperSchemaParameter(ParameterNaming.HADOOP_VALUE, Types.VARCHAR)
+                                    new CustomWrapperSchemaParameter(ParameterNaming.HADOOP_VALUE, 
+                                            TypeUtils.getSqlType(StringUtils.substringBeforeLast(inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS), "[]"))) //$NON-NLS-1$
                             } 
                 		    : null,     // complex columns
                 		false,    // searchable

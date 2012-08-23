@@ -1,7 +1,10 @@
 package com.denodo.devkit.hadoop.util.type;
 
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
@@ -39,7 +42,8 @@ public class TypeUtils {
         if (FloatWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Types.FLOAT;
         }
-        if (ArrayWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+        // If it ends with [] -> It's an array
+        if (StringUtils.endsWith(hadoopClass, "[]")) { //$NON-NLS-1$
             return Types.ARRAY;
         }
         
@@ -70,6 +74,15 @@ public class TypeUtils {
         if (FloatWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Float.valueOf(((FloatWritable) value).get());
         }  
+        // If it ends with [] -> It's an array
+        if (StringUtils.endsWith(hadoopClass, "[]")) { //$NON-NLS-1$
+            ArrayWritable aw = (ArrayWritable) value;
+            List<Object> data = new ArrayList<Object>();
+            for (Writable item : aw.get()) {
+                data.add(getValue(StringUtils.substringBeforeLast(hadoopClass, "[]"), item)); //$NON-NLS-1$
+            }
+            return data.toArray(new Object[data.size()]);
+        }
         if (ArrayWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return (((ArrayWritable) value).toStrings());
         }  

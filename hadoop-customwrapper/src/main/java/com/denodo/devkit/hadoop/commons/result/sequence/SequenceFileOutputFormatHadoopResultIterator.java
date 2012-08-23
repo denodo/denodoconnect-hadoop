@@ -2,13 +2,13 @@ package com.denodo.devkit.hadoop.commons.result.sequence;
 
 import java.io.IOException;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.SequenceFile;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.log4j.Logger;
@@ -129,17 +129,14 @@ implements IHadoopResultIterator {
     @Override
     public <V extends Writable> V getInitValue() {
         try {
-
-            // TODO text?
-            if (ArrayWritable.class.getName().equalsIgnoreCase(this.hadoopValueClass)) {
+            if (StringUtils.endsWith(this.hadoopValueClass, "[]")) { //$NON-NLS-1$
                 @SuppressWarnings("unchecked")
-                V value = (V) new ArrayWritable(Text.class);
+                V value = (V) new ArrayWritable((Class<Writable>) Class.forName(StringUtils.substringBeforeLast(this.hadoopValueClass, "[]"))); //$NON-NLS-1$
                 return value;
-            } else {
-                @SuppressWarnings("unchecked")
-                V value = (V) ReflectionUtils.newInstance(Class.forName(this.hadoopValueClass), this.configuration);
-                return value;   
             }
+            @SuppressWarnings("unchecked")
+            V value = (V) ReflectionUtils.newInstance(Class.forName(this.hadoopValueClass), this.configuration);
+            return value;
         } catch (ClassNotFoundException e) {
             throw new InternalErrorException("There has been an error initializing value" + this.outputPath, e); //$NON-NLS-1$
         }
