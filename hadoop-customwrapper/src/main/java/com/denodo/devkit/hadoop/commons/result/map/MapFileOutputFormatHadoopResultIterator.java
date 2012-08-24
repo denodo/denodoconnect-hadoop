@@ -2,24 +2,29 @@ package com.denodo.devkit.hadoop.commons.result.map;
 
 import java.io.IOException;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.log4j.Logger;
 
 import com.denodo.devkit.hadoop.commons.exception.InternalErrorException;
 import com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator;
 import com.denodo.devkit.hadoop.util.HadoopUtils;
 import com.denodo.devkit.hadoop.util.configuration.HadoopConfigurationUtils;
+import com.denodo.devkit.hadoop.util.type.TypeUtils;
 
 
+/**
+ * Class to iterate over a {@link MapFile}
+ * 
+ * Note: due to the {@link MapFile} requirements, key must implement
+ * {@link WritableComparable} as {@link Writable} is not enough
+ * 
+ */
 public class MapFileOutputFormatHadoopResultIterator 
 implements IHadoopResultIterator {
 
@@ -69,6 +74,9 @@ implements IHadoopResultIterator {
         }
     }
 
+    /* (non-Javadoc)
+     * @see com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator#readNext(org.apache.hadoop.io.Writable, org.apache.hadoop.io.Writable)
+     */
     @Override
     public <K extends Writable, V extends Writable> boolean readNext(K key, V value) {
 
@@ -124,31 +132,20 @@ implements IHadoopResultIterator {
         } 
     }
 
+    /* (non-Javadoc)
+     * @see com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator#getInitKey()
+     */
     @Override
     public <K extends Writable> K getInitKey() {
-        try { 
-            @SuppressWarnings("unchecked")
-            K key = (K) ReflectionUtils.newInstance(Class.forName(this.hadoopKeyClass), this.configuration);
-            return key;
-        } catch (ClassNotFoundException e) {
-            throw new InternalErrorException("There has been an error initializing key" + this.outputPath, e); //$NON-NLS-1$
-        }
+        return TypeUtils.getInitKey(this.hadoopKeyClass, this.configuration);
     }
 
+    /* (non-Javadoc)
+     * @see com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator#getInitValue()
+     */
     @Override
     public <V extends Writable> V getInitValue() {
-        try {
-            if (StringUtils.endsWith(this.hadoopValueClass, "[]")) { //$NON-NLS-1$
-                @SuppressWarnings("unchecked")
-                V value = (V) new ArrayWritable((Class<Writable>) Class.forName(StringUtils.substringBeforeLast(this.hadoopValueClass, "[]"))); //$NON-NLS-1$
-                return value;
-            }
-            @SuppressWarnings("unchecked")
-            V value = (V) ReflectionUtils.newInstance(Class.forName(this.hadoopValueClass), this.configuration);
-            return value;
-        } catch (ClassNotFoundException e) {
-            throw new InternalErrorException("There has been an error initializing value" + this.outputPath, e); //$NON-NLS-1$
-        }
+        return TypeUtils.getInitValue(this.hadoopValueClass, this.configuration);
     }
 
 }

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
@@ -14,15 +15,26 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.log4j.Logger;
+
+import com.denodo.devkit.hadoop.commons.exception.InternalErrorException;
 
 public class TypeUtils {
 
-    //TODO ArrayWritabl is of Text
-    
+        
     @SuppressWarnings("unused")
     private static final Logger logger = Logger.getLogger(TypeUtils.class);
 
+    /**
+     * @param hadoopClass hadoop class (package + class name). In case it is an 
+     * {@link ArrayWritable}({@link LongWritable}) it would be {@link LongWritable}[]
+     * 
+     * @throws UnsupportedOperationException in case the value of hadoopClass
+     * is not supported
+     * 
+     * @return the {@link Types} value for the given hadoopClass
+     */
     public static int getSqlType(String hadoopClass) {
         if (Text.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Types.VARCHAR;
@@ -50,6 +62,20 @@ public class TypeUtils {
         throw new UnsupportedOperationException("Type '" + hadoopClass + "' is not supported"); //$NON-NLS-1$ //$NON-NLS-2$
     }
     
+    /**
+     * It converts the given {@link Writable} value to a java object valid for VDP
+     * (String, Long, Int, Array). In case it is an ArrayWritable, it will
+     * return an Object[] with the values converted (based on the value of
+     * hadoopClass)
+     * 
+     * @param hadoopClass
+     * @param value
+     * 
+     * @throws UnsupportedOperationException in case the value of hadoopClass
+     * is not supported
+     * 
+     * @return
+     */
     public static Object getValue(String hadoopClass, Writable value) {
         
         if (value instanceof NullWritable) {
@@ -87,8 +113,52 @@ public class TypeUtils {
             return (((ArrayWritable) value).toStrings());
         }  
         
-        //TODO Should return tostring
         throw new UnsupportedOperationException("Type not supported " + hadoopClass); //$NON-NLS-1$
     }
+    
+    
+    /**
+     * It returns a Writable initialized necessary to read mapreduce output
+     * Key class can't be an array
+     * 
+     * @param hadoopKeyClass class of the Writable
+     * @param configuration
+     * @return the Writable of class hadoopKeyClass initialized
+     */
+    public static <K extends Writable> K getInitKey(String hadoopKeyClass, Configuration configuration) {
+        try { 
+            @SuppressWarnings("unchecked")
+            K key = (K) ReflectionUtils.newInstance(Class.forName(hadoopKeyClass), configuration);
+            return key;
+        } catch (ClassNotFoundException e) {
+            throw new InternalErrorException("There has been an error initializing key" + hadoopKeyClass, e); //$NON-NLS-1$
+        }
+    }
+
+    
+    /**
+     * It returns a Writable initialized necessary to read mapreduce output
+     * If hadoopValuClass ends with [] it will return an ArrayWritable of the 
+     * class in hadoopValueClass
+     * 
+     * @param hadoopValueClass class of the Writable
+     * @param configuration
+     * @return
+     */
+    public static <V extends Writable> V getInitValue(String hadoopValueClass, Configuration configuration) {
+        try {
+            if (StringUtils.endsWith(hadoopValueClass, "[]")) { //$NON-NLS-1$
+                @SuppressWarnings("unchecked")
+                V value = (V) new ArrayWritable((Class<Writable>) Class.forName(StringUtils.substringBeforeLast(hadoopValueClass, "[]"))); //$NON-NLS-1$
+                return value;
+            }
+            @SuppressWarnings("unchecked")
+            V value = (V) ReflectionUtils.newInstance(Class.forName(hadoopValueClass), configuration);
+            return value;
+        } catch (ClassNotFoundException e) {
+            throw new InternalErrorException("There has been an error initializing value" + hadoopValueClass, e); //$NON-NLS-1$
+        }
+    }
+
     
 }

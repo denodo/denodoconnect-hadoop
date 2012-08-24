@@ -13,7 +13,8 @@ public class HadoopConfigurationUtils {
     /**
      * 
      * @param inputValues
-     * @return the basic hadoop configuration (only including datanode ip and port) 
+     * @return the basic hadoop configuration (only including datanode ip, port,
+     * outputkeyClass and outputValueClass) 
      */
     public static Configuration getConfiguration(String dataNodeIp, String dataNodePort, 
             String hadoopKeyClass, String hadoopValueClass) {
@@ -22,8 +23,6 @@ public class HadoopConfigurationUtils {
                 + dataNodeIp + ":"  //$NON-NLS-1$
                 + dataNodePort);
         
-//        conf.set(MRJobConfig.MAP_OUTPUT_KEY_CLASS, hadoopMapKeyClass);
-//        conf.set(MRJobConfig.MAP_OUTPUT_VALUE_CLASS, hadoopMapValueClass);
         conf.set(MRJobConfig.OUTPUT_KEY_CLASS, hadoopKeyClass);
         conf.set(MRJobConfig.OUTPUT_VALUE_CLASS, hadoopValueClass);
         

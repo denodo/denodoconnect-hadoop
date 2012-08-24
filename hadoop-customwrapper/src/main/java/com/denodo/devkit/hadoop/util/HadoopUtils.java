@@ -19,7 +19,7 @@ public class HadoopUtils {
             .getLogger(HadoopUtils.class);
 	
 	/**
-	 * It deletes the given folder 
+	 * It deletes the given file or folder
 	 * 
 	 */
 	public static void deleteFile(String dataNodeIp, String dataNodePort,
@@ -45,6 +45,8 @@ public class HadoopUtils {
 	 * (i.e.  hadoop jar /home/cloudera/ssanchez/jars/hadooptestwordcount-1.0-SNAPSHOT.jar test.MapReduceDriver1 
 	 * 172.16.0.58 8020 172.16.0.58 8021 /user/cloudera/input /user/cloudera/output
 	 *  
+	 * The parameters to be added to "hadoop jar PATH_TO_JAR_IN_HOST MAIN_CLASS_IN_JAR"
+	 * come from {@link IHadoopTaskHandler#getMapReduceParameters(String, String, String, String, String, String, String, String, String, String)}
 	 * @param inputValues
 	 * @return
 	 */

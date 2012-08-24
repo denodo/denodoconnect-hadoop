@@ -2,8 +2,13 @@ package com.denodo.devkit.hadoop.commons.handler.sequence;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.SequenceFile;
 
 
+/**
+ * Handler to work with {@link SequenceFile}
+ * 
+ */
 public class TemporarySequenceFileOutputFormatHadoopTaskHandler extends
         AbstractSequenceFileOutputFormatHadoopTaskHandler {
 

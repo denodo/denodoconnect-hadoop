@@ -1,29 +1,74 @@
 package com.denodo.devkit.hadoop.commons.handler.map;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.MapFile;
 
 import com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler;
 import com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator;
 import com.denodo.devkit.hadoop.commons.result.map.MapFileOutputFormatHadoopResultIterator;
 
+/**
+ * Abstract handler to work with {@link MapFile}
+ * It implements the getResultIterator method
+ *
+ */
 public abstract class AbstractMapFileOutputFormatHadoopTaskHandler implements
         IHadoopTaskHandler {
 
+    /**
+     * @return path where the task output will be written to
+     */
     public abstract Path getOutputPath();
     
+    /**
+     * @return whether to delete outputPath once all the results are read or not
+     */
     public abstract boolean deleteOutputPathAfterReadOutput();
     
+    /**
+     * It returns the dataNodeIp. It receives all the input parameters of the base view
+     * 
+     * @param hostIp
+     * @param hostPort
+     * @param hostUser
+     * @param hostPassword
+     * @param hostTimeout
+     * @param pathToJarInHost
+     * @param mainClassInJar
+     * @param hadoopKeyClass
+     * @param hadoopValueClass
+     * @param mapReduceParameters
+     * @return
+     */
     public abstract String getDataNodeIp(String hostIp,
             String hostPort, String hostUser, String hostPassword,
             String hostTimeout, String pathToJarInHost, String mainClassInJar,
             String hadoopKeyClass, String hadoopValueClass, String mapReduceParameters);
     
+    /**
+     * It returns the dataNodePort. It receives all the input parameters of the base view
+     * 
+     * @param hostIp
+     * @param hostPort
+     * @param hostUser
+     * @param hostPassword
+     * @param hostTimeout
+     * @param pathToJarInHost
+     * @param mainClassInJar
+     * @param hadoopKeyClass
+     * @param hadoopValueClass
+     * @param mapReduceParameters
+     * @return
+     */
     public abstract String getDataNodePort(String hostIp,
             String hostPort, String hostUser, String hostPassword,
             String hostTimeout, String pathToJarInHost, String mainClassInJar,
             String hadoopKeyClass, String hadoopValueClass, String mapReduceParameters);
         
     
+    /* (non-Javadoc)
+     * @see com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler#getResultIterator(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String)
+     */
     @Override
     public IHadoopResultIterator getResultIterator(String hostIp,
             String hostPort, String hostUser, String hostPassword,

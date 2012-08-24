@@ -2,8 +2,13 @@ package com.denodo.devkit.hadoop.commons.handler.map;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.MapFile;
 
 
+/**
+ * Handler to work with {@link MapFile}
+ *
+ */
 public class TemporaryMapFileOutputFormatHadoopTaskHandler extends
         AbstractMapFileOutputFormatHadoopTaskHandler {
 
