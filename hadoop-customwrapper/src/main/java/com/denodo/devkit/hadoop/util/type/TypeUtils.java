@@ -22,8 +22,6 @@ import com.denodo.devkit.hadoop.commons.exception.InternalErrorException;
 
 public class TypeUtils {
 
-        
-    @SuppressWarnings("unused")
     private static final Logger logger = Logger.getLogger(TypeUtils.class);
 
     /**
@@ -59,7 +57,8 @@ public class TypeUtils {
             return Types.ARRAY;
         }
         
-        throw new UnsupportedOperationException("Type '" + hadoopClass + "' is not supported"); //$NON-NLS-1$ //$NON-NLS-2$
+        logger.warn("Class '" + hadoopClass + "' is not directly supported. Returning Types.VARCHAR"); //$NON-NLS-1$ //$NON-NLS-2$
+        return Types.VARCHAR;
     }
     
     /**
@@ -109,11 +108,9 @@ public class TypeUtils {
             }
             return data.toArray(new Object[data.size()]);
         }
-        if (ArrayWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
-            return (((ArrayWritable) value).toStrings());
-        }  
-        
-        throw new UnsupportedOperationException("Type not supported " + hadoopClass); //$NON-NLS-1$
+                
+        logger.warn("Class '" + hadoopClass + "' is not directly supported. Returning its writable.toString() value"); //$NON-NLS-1$ //$NON-NLS-2$
+        return value.toString();        
     }
     
     
