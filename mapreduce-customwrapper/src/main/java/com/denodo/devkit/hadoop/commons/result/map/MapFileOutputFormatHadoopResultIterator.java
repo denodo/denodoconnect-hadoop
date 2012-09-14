@@ -135,17 +135,19 @@ implements IHadoopResultIterator {
     /* (non-Javadoc)
      * @see com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator#getInitKey()
      */
+    @SuppressWarnings("unchecked")
     @Override
     public <K extends Writable> K getInitKey() {
-        return TypeUtils.getInitKey(this.hadoopKeyClass, this.configuration);
+        return (K) TypeUtils.getInitKey(this.hadoopKeyClass, this.configuration);
     }
-
+ 
     /* (non-Javadoc)
      * @see com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator#getInitValue()
      */
+    @SuppressWarnings("unchecked")
     @Override
     public <V extends Writable> V getInitValue() {
-        return TypeUtils.getInitValue(this.hadoopValueClass, this.configuration);
+        return (V) TypeUtils.getInitValue(this.hadoopValueClass, this.configuration);
     }
 
 }

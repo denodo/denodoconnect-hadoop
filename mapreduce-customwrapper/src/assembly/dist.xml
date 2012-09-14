@@ -15,10 +15,10 @@
       <directory>${basedir}/target/</directory>
       <outputDirectory>/dist</outputDirectory>
       <includes>
-        <include>denodo-hadoop-wrapper-${project.version}.jar</include>
-        <include>denodo-hadoop-wrapper-${project.version}-javadoc.jar</include>
-        <include>denodo-hadoop-wrapper-${project.version}-sources.jar</include>
-        <include>denodo-hadoop-wrapper-${project.version}-jar-with-dependencies.jar</include>
+        <include>mapreduce-customwrapper-${project.version}.jar</include>
+        <include>mapreduce-customwrapper-${project.version}-javadoc.jar</include>
+        <include>mapreduce-customwrapper-${project.version}-sources.jar</include>
+        <include>mapreduce-customwrapper-${project.version}-jar-with-dependencies.jar</include>
       </includes>
     </fileSet>
     <fileSet>
@@ -46,7 +46,7 @@
       <unpack>false</unpack>
       <scope>runtime</scope>
       <excludes>
-        <exclude>com.denodo.devkit:denodo-hadoop-wrapper</exclude>
+        <exclude>com.denodo.devkit:mapreduce-customwrapper</exclude>
       </excludes>
     </dependencySet>
   </dependencySets> 

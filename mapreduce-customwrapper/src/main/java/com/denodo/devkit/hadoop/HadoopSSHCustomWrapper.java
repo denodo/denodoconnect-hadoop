@@ -42,11 +42,11 @@ import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
-public class HadoopTelnetCustomWrapper 
+public class HadoopSSHCustomWrapper 
         extends AbstractCustomWrapper {
 
     
-    private static final Logger logger = Logger.getLogger(HadoopTelnetCustomWrapper.class);
+    private static final Logger logger = Logger.getLogger(HadoopSSHCustomWrapper.class);
 
     
 	private static final CustomWrapperInputParameter[] INPUT_PARAMETERS = 
@@ -66,7 +66,7 @@ public class HadoopTelnetCustomWrapper
 
     
     
-    public HadoopTelnetCustomWrapper() {
+    public HadoopSSHCustomWrapper() {
         super();
     }
     
