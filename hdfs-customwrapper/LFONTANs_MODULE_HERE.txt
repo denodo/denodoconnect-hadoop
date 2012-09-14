@@ -1,0 +1,3 @@
+This module will server as a container for lfontan's HDFS Custom Wrapper
+
+DELETE THIS FILE once the custom wrapper code has been uploaded to the server.
