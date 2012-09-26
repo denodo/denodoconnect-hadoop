@@ -1,0 +1,60 @@
+{
+  "type" : "record",
+  "name" : "RecordWithAllTypes",
+  "namespace" : "org.apache.avro.scala.test.generated",
+  "fields" : [
+    {
+      "name": "null_field",
+      "type": "null"
+    },
+    {
+      "name": "boolean_field",
+      "type": "boolean"
+    },
+    {
+      "name": "int_field",
+      "type": "int"
+    },
+    {
+      "name": "long_field",
+      "type": "long"
+    },
+    {
+      "name": "float_field",
+      "type": "float"
+    },
+    {
+      "name": "double_field",
+      "type": "double"
+    },
+    {
+      "name": "string_field",
+      "type": "string"
+    },
+    {
+      "name": "bytes_field",
+      "type": "bytes"
+    },
+    {
+      "name": "fixed_field",
+      "type": {"type": "fixed", "size": 16, "name": "anon_fixed_16"}
+    },
+    {
+      "name": "int_array_field",
+      "type": {"type": "array", "items": "int"}
+    },
+    {
+      "name": "int_map_field",
+      "type": {"type": "map", "values": "int"}
+    },
+    {
+      "name": "int_array_array_field",
+      "type": {"type": "array", 
+               "items": {"type": "array", "items": "int"}}
+    },
+    {
+      "name": "int_map_map_field",
+      "type": {"type": "map", "values": {"type": "map", "values": "int"}}
+    }
+  ]
+}

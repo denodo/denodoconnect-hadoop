@@ -110,8 +110,8 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
      */
     public CustomWrapperSchemaParameter[] getSchemaParameters(
             Map<String, String> inputValues) throws CustomWrapperException {
-        boolean isSearchable = false;
-        boolean isUpdeatable = false;
+        boolean isSearchable = true;
+        boolean isUpdeatable = true;
         boolean isNullable = true;
         boolean isMandatory = true;
 
@@ -120,21 +120,21 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
         }
         this.schema = new CustomWrapperSchemaParameter[] {
                 new CustomWrapperSchemaParameter(SCHEMA_PARAMETER_INPUT_FILE,
-                        java.sql.Types.VARCHAR, null, isSearchable,
+                        java.sql.Types.VARCHAR, null, !isSearchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        isUpdeatable, isNullable, isMandatory),
+                        !isUpdeatable, !isNullable, isMandatory),
                 new CustomWrapperSchemaParameter(SCHEMA_FILE_COLUMN_DELIMITER,
-                        java.sql.Types.VARCHAR, null, isSearchable,
+                        java.sql.Types.VARCHAR, null, !isSearchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        isUpdeatable, isNullable, isMandatory),
+                        !isUpdeatable, !isNullable, isMandatory),
                 new CustomWrapperSchemaParameter(SCHEMA_KEY,
-                        java.sql.Types.VARCHAR, null, isSearchable,
+                        java.sql.Types.VARCHAR, null, !isSearchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        isUpdeatable, isNullable, !isMandatory),
+                        !isUpdeatable, !isNullable, !isMandatory),
                 new CustomWrapperSchemaParameter(SCHEMA_VALUE,
-                        java.sql.Types.VARCHAR, null, isSearchable,
+                        java.sql.Types.VARCHAR, null, !isSearchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        isUpdeatable, isNullable, !isMandatory) };
+                        !isUpdeatable, isNullable, !isMandatory) };
         return this.schema;
     }
 
