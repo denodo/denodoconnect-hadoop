@@ -1,0 +1,7 @@
+.classpath
+maven-eclipse.xml
+.project
+dependency-reduced-pom.xml
+.externalToolBuilders
+.settings
+target
