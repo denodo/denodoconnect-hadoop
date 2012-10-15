@@ -57,7 +57,7 @@ public class AvroSchemaUtil {
                         + " containing more than two schemas ");
             else if (!containsNull(schemas))
                 throw new UnsupportedTypeException(schema_type.name()
-                        + " without schema NULL  ");
+                        + " without type NULL  ");
             Schema notNullSchema = getNotNull(schemas);
             if (notNullSchema != null)
                 return createSchemaParameter(notNullSchema, schema_name);
@@ -144,6 +144,16 @@ public class AvroSchemaUtil {
         return !(type.equals(Type.ARRAY) || type.equals(Type.ENUM)
                 || type.equals(Type.RECORD) || type.equals(Type.MAP)
                 || type.equals(Type.UNION) || type.equals(Type.FIXED));
+    }
+
+    /**
+     * Return true if the passed field type is simple type
+     * 
+     * @param field
+     * @return true if the passed field type is simple type
+     */
+    public static boolean isSimple(int type) {
+        return !(type == java.sql.Types.ARRAY || type == java.sql.Types.STRUCT);
     }
 
     /**

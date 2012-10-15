@@ -13,6 +13,7 @@
     <name>hdfs-customwrapper</name>
 
     <properties>
+        <!-- For CDH3u4 -->
         <hadoop.version>0.20.2-cdh3u4</hadoop.version>
         <avro.version>1.4.1</avro.version>
     </properties>
@@ -51,7 +52,6 @@
                     <include>NOTICE.txt</include>
                 </includes>
             </resource>
-
             <resource>
                 <directory>src/main/java</directory>
                 <includes>
@@ -64,18 +64,14 @@
         <!-- ============================================================== -->
         <!-- Test-related directory locations -->
         <!-- ============================================================== -->
-
         <testSourceDirectory>src/test/java</testSourceDirectory>
         <testOutputDirectory>target/test-classes</testOutputDirectory>
-
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
             </testResource>
         </testResources>
-
         <plugins>
-
             <!-- ========================================================== -->
             <!-- Compiler plugin -->
             <!-- * Set the Java version (source and bytecode) to J2SE 6 -->
@@ -191,6 +187,22 @@
             <groupId>org.apache.avro</groupId>
             <artifactId>avro</artifactId>
             <version>${avro.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.2.1</version>
         </dependency>
     </dependencies>
 </project> 

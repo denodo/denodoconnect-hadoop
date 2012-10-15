@@ -1,6 +1,5 @@
 package com.denodo.devkit.hdfs.wrapper.test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,15 +12,12 @@ import org.apache.hadoop.fs.Path;
 public class HdfsSimpleFileTest {
 
     public static void main(String[] args) {
-        String host = "192.168.153.10";
+        String host = "192.168.73.132";
         int port = 8020;
 
         // Establishing configuration
         Configuration conf = new Configuration();
         conf.set("fs.default.name", "hdfs://" + host + ":" + port);
-        // TO AVOID WEIRD "No FileSystem for scheme: hdfs" EXCEPTION
-        conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
-
         String input_file_path = "/wordcount/output";
         String column_delimiter = "\t";
         // File to read
@@ -47,8 +43,8 @@ public class HdfsSimpleFileTest {
                                 row[1] = line_array[1];
                                 row[2] = input_file_path;
                                 row[3] = column_delimiter;
-                                System.out.println(row[0] + " " + row[1] + " "
-                                        + row[2] + " " + row[3]);
+                                System.out.println(row[0] + " - " + row[1]
+                                        + " - " + row[2] + " - " + row[3]);
                                 result.add(row);
                             } else {
                                 System.out
@@ -60,16 +56,16 @@ public class HdfsSimpleFileTest {
                 }
                 if (dataInputStream != null)
                     dataInputStream.close();
-                try {
-                    // Delete path recursively after reading
-                    fileSystem.delete(input_path, true);
-                    System.out.println("Deleted path " + input_file_path);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    if (fileSystem != null)
-                        fileSystem.close();
-                }
+                // try {
+                // Delete path recursively after reading
+                // fileSystem.delete(input_path, true);
+                // System.out.println("Deleted path " + input_file_path);
+                // } catch (IOException e) {
+                // e.printStackTrace();
+                // } finally {
+                if (fileSystem != null)
+                    fileSystem.close();
+                // }
             } else {
                 System.out.println("Path not found " + input_file_path);
                 if (fileSystem != null)

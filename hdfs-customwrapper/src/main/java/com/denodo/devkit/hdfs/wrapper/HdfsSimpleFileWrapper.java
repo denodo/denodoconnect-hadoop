@@ -1,8 +1,6 @@
 package com.denodo.devkit.hdfs.wrapper;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +13,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
+import com.denodo.devkit.hdfs.wrapper.util.ExceptionUtil;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
@@ -22,7 +21,6 @@ import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
@@ -41,17 +39,15 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * @see AbstractCustomWrapper
  */
 public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
-    /**
-     * The name of the 'Namenode host' input parameter for this wrapper
-     */
-    private static final String INPUT_PARAMETER_NAMENODE_HOST = "host";
-    /**
-     * The name of the 'Namenode port' input parameter for this wrapper
-     */
-    private static final String INPUT_PARAMETER_NAMENODE_PORT = "port";
+    private static Logger logger = Logger
+            .getLogger(HdfsSimpleFileWrapper.class);
+
+    private static final String INPUT_PARAMETER_NAMENODE_HOST = "Host";
+    private static final String INPUT_PARAMETER_NAMENODE_PORT = "Port";
+    private static final String INPUT_PARAMETER_DELETE_AFTER_READING = "Delete after reading";
 
     private static final String SCHEMA_FILE_COLUMN_DELIMITER = "column_delimiter";
-    private static final String SCHEMA_PARAMETER_INPUT_FILE = "file";
+    private static final String SCHEMA_PARAMETER_INPUT_FILE = "file_path";
     private static final String SCHEMA_KEY = "key";
     private static final String SCHEMA_VALUE = "value";
 
@@ -65,24 +61,10 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
      * Stores the wrapper's schema
      */
     private CustomWrapperSchemaParameter[] schema = null;
-    private static Logger logger = Logger
-            .getLogger(HdfsSimpleFileWrapper.class);
 
-    /**
-     * Defines a custom configuration in order not to delegate the projections.
-     */
     @Override
     public CustomWrapperConfiguration getConfiguration() {
-        CustomWrapperConfiguration configuration = new CustomWrapperConfiguration();
-        configuration.setDelegateProjections(false);
-        configuration.setDelegateNotConditions(false);
-        configuration.setDelegateOrConditions(false);
-        configuration.setDelegateOrderBy(false);
-        // Equals operator is delegated in searchable fields. Other operator
-        // will be postprocessed
-        configuration
-                .setAllowedOperators(new String[] { CustomWrapperCondition.OPERATOR_EQ });
-        return configuration;
+        return super.getConfiguration();
     }
 
     /**
@@ -102,7 +84,12 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
                                 .stringType()),
                 new CustomWrapperInputParameter(INPUT_PARAMETER_NAMENODE_PORT,
                         "Namenode port, e.g., 8020 ", true,
-                        CustomWrapperInputParameterTypeFactory.integerType()) };
+                        CustomWrapperInputParameterTypeFactory.integerType()),
+                new CustomWrapperInputParameter(
+                        INPUT_PARAMETER_DELETE_AFTER_READING,
+                        "Delete file after reading it?", true,
+                        CustomWrapperInputParameterTypeFactory
+                                .booleanType(false)) };
     }
 
     /**
@@ -120,17 +107,17 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
         }
         this.schema = new CustomWrapperSchemaParameter[] {
                 new CustomWrapperSchemaParameter(SCHEMA_PARAMETER_INPUT_FILE,
-                        java.sql.Types.VARCHAR, null, !isSearchable,
+                        java.sql.Types.VARCHAR, null, isSearchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, !isNullable, isMandatory),
+                        !isUpdeatable, isNullable, isMandatory),
                 new CustomWrapperSchemaParameter(SCHEMA_FILE_COLUMN_DELIMITER,
-                        java.sql.Types.VARCHAR, null, !isSearchable,
+                        java.sql.Types.VARCHAR, null, isSearchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, !isNullable, isMandatory),
+                        !isUpdeatable, isNullable, isMandatory),
                 new CustomWrapperSchemaParameter(SCHEMA_KEY,
                         java.sql.Types.VARCHAR, null, !isSearchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, !isNullable, !isMandatory),
+                        !isUpdeatable, isNullable, !isMandatory),
                 new CustomWrapperSchemaParameter(SCHEMA_VALUE,
                         java.sql.Types.VARCHAR, null, !isSearchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE,
@@ -149,14 +136,6 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
                 .getContextClassLoader();
         Thread.currentThread().setContextClassLoader(
                 Configuration.class.getClassLoader());
-        if (logger.isDebugEnabled()) {
-            logger.debug("Classloader");
-            logger.debug("Context classloader: "
-                    + Thread.currentThread().getContextClassLoader());
-            logger.debug("Configuration classloader: "
-                    + Configuration.class.getClassLoader());
-            logger.debug("Classloader End");
-        }
 
         if (logger.isDebugEnabled()) {
             logger.debug("Running custom wrapper: " + this.getClass());
@@ -177,12 +156,12 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
                 INPUT_PARAMETER_NAMENODE_HOST).getValue();
         int port = (Integer) getInputParameterValue(
                 INPUT_PARAMETER_NAMENODE_PORT).getValue();
+        boolean delete_after_reading = (Boolean) getInputParameterValue(
+                INPUT_PARAMETER_DELETE_AFTER_READING).getValue();
 
         // Establishing configuration
         Configuration conf = new Configuration();
         conf.set("fs.default.name", "hdfs://" + host + ":" + port);
-        // TO AVOID WEIRD "No FileSystem for scheme: hdfs" EXCEPTION
-        conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
 
         Map<CustomWrapperFieldExpression, Object> conditionMap = condition
                 .getConditionMap();
@@ -207,7 +186,7 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
         }
         // File to read
         Path input_path = new Path(input_file_path);
-        FileSystem fileSystem;
+        FileSystem fileSystem = null;
         FSDataInputStream dataInputStream = null;
         try {
             fileSystem = FileSystem.get(conf);
@@ -254,14 +233,14 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
                     }
                 }
                 try {
-                    if (dataInputStream != null)
-                        dataInputStream.close();
-                    // Delete path recursively after reading
-                    fileSystem.delete(input_path, true);
-                    if (logger.isDebugEnabled())
-                        logger.debug("Deleted path " + input_file_path);
+                    if (delete_after_reading) {
+                        // Delete path recursively after reading
+                        fileSystem.delete(input_path, true);
+                        if (logger.isDebugEnabled())
+                            logger.debug("Deleted path " + input_file_path);
+                    }
                 } catch (IOException e) {
-                    String stack = getStacktraceAsString(e);
+                    String stack = ExceptionUtil.getStacktraceAsString(e);
                     logger.error("IOException: " + stack);
                     throw new CustomWrapperException("IOException: " + stack, e);
                 } finally {
@@ -269,23 +248,22 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
                         dataInputStream.close();
                     if (fileSystem != null)
                         fileSystem.close();
-                    Thread.currentThread().setContextClassLoader(
-                            originalCtxClassLoader);
                 }
             } else {
                 logger.error("Path not found " + input_file_path);
                 if (fileSystem != null)
                     fileSystem.close();
-                Thread.currentThread().setContextClassLoader(
-                        originalCtxClassLoader);
                 throw new CustomWrapperException("Path not found "
                         + input_file_path);
             }
         } catch (Exception e) {
-            String stack = getStacktraceAsString(e);
+            String stack = ExceptionUtil.getStacktraceAsString(e);
             logger.error("Exception while executing wrapper: " + stack);
             throw new CustomWrapperException(
                     "Exception while executing wrapper: " + stack, e);
+        } finally {
+            Thread.currentThread()
+                    .setContextClassLoader(originalCtxClassLoader);
         }
     }
 
@@ -305,12 +283,5 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
             this.cwColumnIndexes.put(col.getName().toLowerCase(), index);
             index++;
         }
-    }
-
-    private static String getStacktraceAsString(Exception e) {
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        String stackTrace = sw.toString();
-        return stackTrace;
     }
 }
