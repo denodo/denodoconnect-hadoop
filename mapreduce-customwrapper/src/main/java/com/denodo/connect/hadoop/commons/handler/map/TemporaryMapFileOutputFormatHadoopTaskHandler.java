@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.commons.handler.map;
+package com.denodo.connect.hadoop.commons.handler.map;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.fs.Path;

@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.util;
+package com.denodo.connect.hadoop.util;
 
 import java.io.IOException;
 import java.util.Map;
@@ -29,10 +29,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
-import com.denodo.devkit.hadoop.commons.exception.DeleteFileException;
-import com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler;
-import com.denodo.devkit.hadoop.commons.naming.ParameterNaming;
-import com.denodo.devkit.hadoop.util.configuration.HadoopConfigurationUtils;
+import com.denodo.connect.hadoop.commons.exception.DeleteFileException;
+import com.denodo.connect.hadoop.commons.handler.IHadoopTaskHandler;
+import com.denodo.connect.hadoop.commons.naming.ParameterNaming;
+import com.denodo.connect.hadoop.util.configuration.HadoopConfigurationUtils;
 
 public class HadoopUtils {
 

@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.commons.result.map;
+package com.denodo.connect.hadoop.commons.result.map;
 
 import java.io.IOException;
 
@@ -32,11 +32,11 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.log4j.Logger;
 
-import com.denodo.devkit.hadoop.commons.exception.InternalErrorException;
-import com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator;
-import com.denodo.devkit.hadoop.util.HadoopUtils;
-import com.denodo.devkit.hadoop.util.configuration.HadoopConfigurationUtils;
-import com.denodo.devkit.hadoop.util.type.TypeUtils;
+import com.denodo.connect.hadoop.commons.exception.InternalErrorException;
+import com.denodo.connect.hadoop.commons.result.IHadoopResultIterator;
+import com.denodo.connect.hadoop.util.HadoopUtils;
+import com.denodo.connect.hadoop.util.configuration.HadoopConfigurationUtils;
+import com.denodo.connect.hadoop.util.type.TypeUtils;
 
 
 /**
@@ -96,7 +96,7 @@ implements IHadoopResultIterator {
     }
 
     /* (non-Javadoc)
-     * @see com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator#readNext(org.apache.hadoop.io.Writable, org.apache.hadoop.io.Writable)
+     * @see com.denodo.connect.hadoop.commons.result.IHadoopResultIterator#readNext(org.apache.hadoop.io.Writable, org.apache.hadoop.io.Writable)
      */
     @Override
     public <K extends Writable, V extends Writable> boolean readNext(K key, V value) {
@@ -154,7 +154,7 @@ implements IHadoopResultIterator {
     }
 
     /* (non-Javadoc)
-     * @see com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator#getInitKey()
+     * @see com.denodo.connect.hadoop.commons.result.IHadoopResultIterator#getInitKey()
      */
     @SuppressWarnings("unchecked")
     @Override
@@ -163,7 +163,7 @@ implements IHadoopResultIterator {
     }
  
     /* (non-Javadoc)
-     * @see com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator#getInitValue()
+     * @see com.denodo.connect.hadoop.commons.result.IHadoopResultIterator#getInitValue()
      */
     @SuppressWarnings("unchecked")
     @Override

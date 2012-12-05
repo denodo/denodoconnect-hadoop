@@ -19,16 +19,28 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.commons.exception;
+package com.denodo.connect.hadoop.commons.exception;
 
-import org.apache.hadoop.fs.Path;
+import org.apache.commons.lang.exception.NestableRuntimeException;
 
+public class InternalErrorException extends NestableRuntimeException {
 
-public class DeleteFileException extends InternalErrorException {
+    private static final long serialVersionUID = 732593813938456066L;
 
-    private static final long serialVersionUID = -395472082514655225L;
-
-    public DeleteFileException(Path file) {
-        super("There has been an error deleting file: " + file); //$NON-NLS-1$
+    public InternalErrorException() {
+        super();
     }
+
+    public InternalErrorException(String msg, Throwable nested) {
+        super(msg, nested);
+    }
+
+    public InternalErrorException(String msg) {
+        super(msg);
+    }
+
+    public InternalErrorException(Throwable nested) {
+        super(nested);
+    }
+    
 }

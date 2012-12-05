@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.util.type;
+package com.denodo.connect.hadoop.util.type;
 
 import java.sql.Types;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.log4j.Logger;
 
-import com.denodo.devkit.hadoop.commons.exception.InternalErrorException;
+import com.denodo.connect.hadoop.commons.exception.InternalErrorException;
 
 public class TypeUtils {
 

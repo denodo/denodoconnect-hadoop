@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.commons.result;
+package com.denodo.connect.hadoop.commons.result;
 
 import org.apache.hadoop.io.Writable;
 

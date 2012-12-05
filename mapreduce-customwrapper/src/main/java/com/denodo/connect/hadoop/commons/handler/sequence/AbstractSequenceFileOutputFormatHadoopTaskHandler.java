@@ -19,13 +19,13 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.commons.handler.sequence;
+package com.denodo.connect.hadoop.commons.handler.sequence;
 
 import org.apache.hadoop.fs.Path;
 
-import com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler;
-import com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator;
-import com.denodo.devkit.hadoop.commons.result.sequence.SequenceFileOutputFormatHadoopResultIterator;
+import com.denodo.connect.hadoop.commons.handler.IHadoopTaskHandler;
+import com.denodo.connect.hadoop.commons.result.IHadoopResultIterator;
+import com.denodo.connect.hadoop.commons.result.sequence.SequenceFileOutputFormatHadoopResultIterator;
 
 /**
  * Abstract handler to work with {@link SequenceFile}
@@ -87,7 +87,7 @@ public abstract class AbstractSequenceFileOutputFormatHadoopTaskHandler implemen
         
     
     /* (non-Javadoc)
-     * @see com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler#getResultIterator(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String)
+     * @see com.denodo.connect.hadoop.commons.handler.IHadoopTaskHandler#getResultIterator(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String)
      */
     @Override
     public IHadoopResultIterator getResultIterator(String hostIp,

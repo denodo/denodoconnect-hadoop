@@ -19,9 +19,9 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.commons.handler;
+package com.denodo.connect.hadoop.commons.handler;
 
-import com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator;
+import com.denodo.connect.hadoop.commons.result.IHadoopResultIterator;
 
 
 public interface IHadoopTaskHandler {

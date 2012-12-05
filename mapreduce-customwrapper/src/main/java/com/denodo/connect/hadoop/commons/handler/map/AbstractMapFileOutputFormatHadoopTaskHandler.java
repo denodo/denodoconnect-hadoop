@@ -19,14 +19,14 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.commons.handler.map;
+package com.denodo.connect.hadoop.commons.handler.map;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.MapFile;
 
-import com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler;
-import com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator;
-import com.denodo.devkit.hadoop.commons.result.map.MapFileOutputFormatHadoopResultIterator;
+import com.denodo.connect.hadoop.commons.handler.IHadoopTaskHandler;
+import com.denodo.connect.hadoop.commons.result.IHadoopResultIterator;
+import com.denodo.connect.hadoop.commons.result.map.MapFileOutputFormatHadoopResultIterator;
 
 /**
  * Abstract handler to work with {@link MapFile}
@@ -88,7 +88,7 @@ public abstract class AbstractMapFileOutputFormatHadoopTaskHandler implements
         
     
     /* (non-Javadoc)
-     * @see com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler#getResultIterator(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String)
+     * @see com.denodo.connect.hadoop.commons.handler.IHadoopTaskHandler#getResultIterator(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String)
      */
     @Override
     public IHadoopResultIterator getResultIterator(String hostIp,

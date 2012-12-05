@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop.commons.naming;
+package com.denodo.connect.hadoop.commons.naming;
 
 public class ParameterNaming {
 
