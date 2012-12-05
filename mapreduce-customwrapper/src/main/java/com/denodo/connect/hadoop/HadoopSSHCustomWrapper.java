@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hadoop;
+package com.denodo.connect.hadoop;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,12 +32,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.log4j.Logger;
 
-import com.denodo.devkit.hadoop.commons.exception.DeleteFileException;
-import com.denodo.devkit.hadoop.commons.handler.IHadoopTaskHandler;
-import com.denodo.devkit.hadoop.commons.naming.ParameterNaming;
-import com.denodo.devkit.hadoop.commons.result.IHadoopResultIterator;
-import com.denodo.devkit.hadoop.util.HadoopUtils;
-import com.denodo.devkit.hadoop.util.type.TypeUtils;
+import com.denodo.connect.hadoop.commons.exception.DeleteFileException;
+import com.denodo.connect.hadoop.commons.handler.IHadoopTaskHandler;
+import com.denodo.connect.hadoop.commons.naming.ParameterNaming;
+import com.denodo.connect.hadoop.commons.result.IHadoopResultIterator;
+import com.denodo.connect.hadoop.util.HadoopUtils;
+import com.denodo.connect.hadoop.util.type.TypeUtils;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;

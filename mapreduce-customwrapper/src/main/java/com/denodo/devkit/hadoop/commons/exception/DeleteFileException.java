@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  * 
- *   This software is part of the denodo developer toolkit.
+ *   This software is part of the DenodoConnect component collection.
  *   
  *   Copyright (c) 2012, denodo technologies (http://www.denodo.com)
  * 
