@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hdfs.wrapper.exceptions;
+package com.denodo.connect.hdfs.wrapper.exceptions;
 
 public class UnsupportedTypeException extends RuntimeException {
     private static final long serialVersionUID = -3642408615843489702L;

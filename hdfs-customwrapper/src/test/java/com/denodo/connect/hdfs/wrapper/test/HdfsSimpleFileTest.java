@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hdfs.wrapper.test;
+package com.denodo.connect.hdfs.wrapper.test;
 
 import java.util.ArrayList;
 import java.util.List;

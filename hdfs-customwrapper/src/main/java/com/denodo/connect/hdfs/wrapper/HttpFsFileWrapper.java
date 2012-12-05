@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hdfs.wrapper;
+package com.denodo.connect.hdfs.wrapper;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -38,7 +38,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
-import com.denodo.devkit.hdfs.wrapper.util.ExceptionUtil;
+import com.denodo.connect.hdfs.wrapper.util.ExceptionUtil;
 import com.denodo.util.exceptions.UnsupportedOperationException;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapper;

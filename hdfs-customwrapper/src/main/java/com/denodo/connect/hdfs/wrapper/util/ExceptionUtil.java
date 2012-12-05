@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.devkit.hdfs.wrapper.util;
+package com.denodo.connect.hdfs.wrapper.util;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
