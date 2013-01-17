@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.connect.hdfs.wrapper.util;
+package com.denodo.connect.hadoop.hdfs.wrapper.util;
 
 import java.sql.Types;
 import java.util.List;
@@ -28,7 +28,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 
-import com.denodo.connect.hdfs.wrapper.exceptions.UnsupportedTypeException;
+import com.denodo.connect.hadoop.hdfs.wrapper.exceptions.UnsupportedTypeException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
 

@@ -19,17 +19,15 @@
  * 
  * =============================================================================
  */
-package com.denodo.connect.hdfs.wrapper.exceptions;
+package com.denodo.connect.hadoop.hdfs.wrapper.util;
 
-public class UnsupportedTypeException extends RuntimeException {
-    private static final long serialVersionUID = -3642408615843489702L;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
-    public UnsupportedTypeException(String type) {
-        super("Type " + type + " is not supported");
+public class ExceptionUtil {
+    public static String getStacktraceAsString(Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
-
-    public UnsupportedTypeException() {
-        super();
-    }
-
 }

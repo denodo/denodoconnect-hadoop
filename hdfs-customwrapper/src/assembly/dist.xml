@@ -47,7 +47,7 @@
             <unpack>false</unpack>
             <scope>runtime</scope>
             <excludes>
-                <exclude>com.denodo.connect:hdfs-customwrapper</exclude>
+                <exclude>com.denodo.connect.hadoop:hdfs-customwrapper</exclude>
             </excludes>
         </dependencySet>
     </dependencySets>

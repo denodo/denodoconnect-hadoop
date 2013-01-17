@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.connect.hdfs.wrapper;
+package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -40,7 +40,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
-import com.denodo.connect.hdfs.wrapper.util.AvroSchemaUtil;
+import com.denodo.connect.hadoop.hdfs.wrapper.util.AvroSchemaUtil;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
