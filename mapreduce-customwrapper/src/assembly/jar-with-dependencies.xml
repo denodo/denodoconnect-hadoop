@@ -11,7 +11,7 @@
       <unpack>true</unpack>
       <scope>runtime</scope>
       <excludes>
-        <exclude>com.denodo.connect.hadoop:mapreduce-customwrapper</exclude>
+        <exclude>com.denodo.connect.hadoop:denodo-mapreduce-customwrapper</exclude>
         <exclude>log4j:log4j</exclude>
       </excludes>      
     </dependencySet>

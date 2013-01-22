@@ -6,10 +6,10 @@
     <!-- *************************** -->
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
-    <artifactId>mapreduce-customwrapper</artifactId>
+    <artifactId>denodo-mapreduce-customwrapper</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>mapreduce-customwrapper</name>
+    <name>denodo-mapreduce-customwrapper</name>
 
   <properties>
     <hadoop.version>2.0.0-cdh4.0.0</hadoop.version>
@@ -128,7 +128,7 @@
                                 <descriptor>${basedir}/src/assembly/jar-with-dependencies.xml</descriptor>
                             </descriptors>
                             <appendAssemblyId>true</appendAssemblyId>
-                            <finalName>mapreduce-customwrapper-${project.version}</finalName>
+                            <finalName>denodo-mapreduce-customwrapper-${project.version}</finalName>
                         </configuration>
                     </execution>
                     <execution>
