@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <!-- *************************** -->
+    <!-- BASIC PROJECT INFO -->
+    <!-- *************************** -->
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.denodo.connect.hadoop</groupId>
+    <artifactId>denodo-hbase-customwrapper</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>denodo-hbase-customwrapper</name>
+
+    <properties>
+        <hadoop.version>0.20.2-cdh3u0</hadoop.version>
+        <hbase.version>0.90.1-cdh3u0</hbase.version>
+        <zookeeper.version>3.3.3-cdh3u0</zookeeper.version>
+    </properties>
+    <repositories>
+        <repository>
+            <id>cloudera</id>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
+    </repositories>
+    <profiles>
+        <profile>
+            <id>denodo-ma</id>
+            <build>
+                <resources>
+                    <!-- ========================================================== -->
+                    <!-- Configuration (src/main/conf/denodo-ma) -->
+                    <!-- ========================================================== -->
+                    <resource>
+                        <directory>src/main/conf/denodo-ma</directory>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+        <profile>
+            <id>pro</id>
+            <build>
+                <resources>
+                    <!-- ========================================================== -->
+                    <!-- Configuration (src/main/conf/denodo-ma) -->
+                    <!-- ========================================================== -->
+                    <resource>
+                        <directory>src/main/conf/pro</directory>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+    </profiles>
+
+    <!-- *************************** -->
+    <!-- BUILD INFO -->
+    <!-- *************************** -->
+    <build>
+        <resources>
+            <resource>
+                <directory>.</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>LICENSE.txt</include>
+                    <include>NOTICE.txt</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+
+        <!-- ============================================================== -->
+        <!-- Test-related directory locations -->
+        <!-- ============================================================== -->
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+        <testOutputDirectory>target/test-classes</testOutputDirectory>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
+        <plugins>
+            <!-- ========================================================== -->
+            <!-- Compiler plugin -->
+            <!-- * Set the Java version (source and bytecode) to J2SE 6 -->
+            <!-- * Other possible values if required: "1.4" | "1.5" -->
+            <!-- ========================================================== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.5</version>
+                <configuration>
+                    <encoding>US-ASCII</encoding>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.1.2</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2-beta-5</version>
+                <executions>
+                    <execution>
+                        <id>make-assembly-jar-with-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>${basedir}/src/assembly/jar-with-dependencies.xml</descriptor>
+                            </descriptors>
+                            <appendAssemblyId>true</appendAssemblyId>
+                            <finalName>denodo-hbase-customwrapper-${project.version}</finalName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>make-assembly-dist</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>${basedir}/src/assembly/dist.xml</descriptor>
+                            </descriptors>
+                            <appendAssemblyId>true</appendAssemblyId>
+                            <finalName>hbase-customwrapper-${project.version}</finalName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+
+
+    <!-- ****************************************************************** -->
+    <!-- DEPENDENCIES -->
+    <!-- ****************************************************************** -->
+    <dependencies>
+        <!-- Custom Wrapper necessary libraries -->
+        <dependency>
+            <groupId>com.denodo.commons</groupId>
+            <artifactId>denodo-util</artifactId>
+            <version>2.74</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.denodo.commons</groupId>
+            <artifactId>denodo-store</artifactId>
+            <version>1.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.denodo.vdp</groupId>
+            <artifactId>denodo-vdp-server-base</artifactId>
+            <version>4.7.1_14</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.denodo.vdp</groupId>
+            <artifactId>denodo-vdp-server-ext</artifactId>
+            <version>4.7.1_14</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- *** -->
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-core</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase</artifactId>
+            <version>${hbase.version}</version>
+        </dependency>
+        <dependency>
+        	<groupId>org.apache.zookeeper</groupId>
+        	<artifactId>zookeeper</artifactId>
+        	<version>${zookeeper.version}</version>
+        </dependency>
+        <dependency>
+        	<groupId>org.slf4j</groupId>
+        	<artifactId>slf4j-api</artifactId>
+        	<version>1.6.1</version>
+        </dependency>
+        <dependency>
+		    <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-log4j12</artifactId>
+		    <version>1.6.1</version>
+		</dependency>            
+        <dependency>
+        	<groupId>org.apache.thrift</groupId>
+        	<artifactId>libfb303</artifactId>
+        	<version>0.9.0</version>
+        </dependency>        
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20090211</version>
+        </dependency>
+    </dependencies>
+</project> 
