@@ -1,22 +1,22 @@
 /*
  * =============================================================================
- * 
+ *
  *   This software is part of the DenodoConnect component collection.
- *   
+ *
  *   Copyright (c) 2012, denodo technologies (http://www.denodo.com)
- * 
+ *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
  *   You may obtain a copy of the License at
- * 
+ *
  *       http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  *   Unless required by applicable law or agreed to in writing, software
  *   distributed under the License is distributed on an "AS IS" BASIS,
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
- * 
+ *
  * =============================================================================
  */
 package com.denodo.connect.hadoop.hbase;
@@ -66,7 +66,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 	private static final Logger logger = Logger.getLogger(HBaseConnector.class);
 
 	@Override
-	public CustomWrapperInputParameter[] getInputParameters() { 
+	public CustomWrapperInputParameter[] getInputParameters() {
 		return new CustomWrapperInputParameter[] {
 				new CustomWrapperInputParameter(CONF_TABLE_NAME, true),
 				new CustomWrapperInputParameter(CONF_TABLE_MAPPING, true)
@@ -88,7 +88,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
 	}
 
 
-	public CustomWrapperSchemaParameter[] getSchemaParameters(
+	@Override
+    public CustomWrapperSchemaParameter[] getSchemaParameters(
 			Map<String, String> inputValues) throws CustomWrapperException {
 
 		String mapping = inputValues.get(CONF_TABLE_MAPPING);
@@ -126,7 +127,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
 	}
 
 
-	public void run(CustomWrapperConditionHolder condition,
+	@Override
+    public void run(CustomWrapperConditionHolder condition,
 			List<CustomWrapperFieldExpression> projectedFields,
 			CustomWrapperResult result, Map<String, String> inputValues)
 	throws CustomWrapperException {
@@ -144,7 +146,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 		Configuration config = HBaseConfiguration.create();
 		HTable table;
 		try {
-			//Get table metadata 
+			//Get table metadata
 			table = new HTable(config, tableName);
 			Set<byte[]> families = table.getTableDescriptor().getFamiliesKeys();
 
@@ -177,9 +179,9 @@ public class HBaseConnector extends AbstractCustomWrapper {
 						s.addColumn(family.getBytes(), subrowData.getName().getBytes());
 					}
 				}
-				
+
 				/*
-				 * COMPLEX FILTER DELEGATION, CACHING, AND OTHER COMPLEX HBASE SCANNING 
+				 * COMPLEX FILTER DELEGATION, CACHING, AND OTHER COMPLEX HBASE SCANNING
 				 * FEATURES COULD BE ADDED HERE
 				 */
 				ResultScanner scanner = table.getScanner(s);
@@ -215,7 +217,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 		Object[] rowArray = new Object[mappingMap.keySet().size()+1];
 
 		int i = 0;
-		for (String mappingFaimilyName : mappingMap.keySet()) {     
+		for (String mappingFaimilyName : mappingMap.keySet()) {
 
 			// the row contains the mapped family
 			if (families.contains(mappingFaimilyName.getBytes())) {
@@ -230,13 +232,13 @@ public class HBaseConnector extends AbstractCustomWrapper {
 						if (subrowData.getType().equals(TYPE_TEXT)) {
 							subrowArray[j] = Bytes.toString(familyMap.get(subrowData.getName().getBytes()));
 						} else if (subrowData.getType().equals(TYPE_INTEGER)) {
-							subrowArray[j] = Bytes.toInt(familyMap.get(subrowData.getName().getBytes()));
+							subrowArray[j] = Integer.valueOf(Bytes.toInt(familyMap.get(subrowData.getName().getBytes())));
 						} else if (subrowData.getType().equals(TYPE_LONG)) {
-							subrowArray[j] = Bytes.toLong(familyMap.get(subrowData.getName().getBytes()));
+							subrowArray[j] = Long.valueOf(Bytes.toLong(familyMap.get(subrowData.getName().getBytes())));
 						} else if (subrowData.getType().equals(TYPE_FLOAT)) {
-							subrowArray[j] = Bytes.toFloat(familyMap.get(subrowData.getName().getBytes()));
+							subrowArray[j] = Float.valueOf(Bytes.toFloat(familyMap.get(subrowData.getName().getBytes())));
 						} else if (subrowData.getType().equals(TYPE_DOUBLE)) {
-							subrowArray[j] = Bytes.toDouble(familyMap.get(subrowData.getName().getBytes()));
+							subrowArray[j] = Double.valueOf(Bytes.toDouble(familyMap.get(subrowData.getName().getBytes())));
 						} else {
 							subrowArray[j] = familyMap.get(subrowData.getName().getBytes());
 						}
@@ -276,7 +278,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 		return structure;
 	}
 
-	private List<CustomWrapperFieldExpression> getGenericOutputpStructure(Map<String,List<HBaseColumnDetails>> mapping) {
+	private static List<CustomWrapperFieldExpression> getGenericOutputpStructure(Map<String,List<HBaseColumnDetails>> mapping) {
 		List<CustomWrapperFieldExpression> output = new ArrayList<CustomWrapperFieldExpression>();
 
 		for (String family: mapping.keySet()) {
@@ -286,7 +288,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 		return output;
 	}
 
-	private int getSQLType(String mappingType) {
+	private static int getSQLType(String mappingType) {
 		if (mappingType.equals(TYPE_TEXT)) {
 			return java.sql.Types.VARCHAR;
 		} else if (mappingType.equals(TYPE_INTEGER)) {
@@ -298,7 +300,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 		} else if (mappingType.equals(TYPE_DOUBLE)) {
 			return java.sql.Types.DOUBLE;
 		} else {
-			// other types will output the raw bytes in a string field 
+			// other types will output the raw bytes in a string field
 			return java.sql.Types.VARCHAR;
 		}
 	}
