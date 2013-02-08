@@ -39,17 +39,17 @@ public class HdfsSimpleFileTest {
         // Establishing configuration
         Configuration conf = new Configuration();
         conf.set("fs.default.name", "hdfs://" + host + ":" + port);
-        String input_file_path = "/wordcount/output";
-        String column_delimiter = "\t";
+        String inputFilePath = "/wordcount/output";
+        String columnDelimiter = "\t";
         // File to read
-        Path input_path = new Path(input_file_path);
+        Path inputPath = new Path(inputFilePath);
         FileSystem fileSystem;
         FSDataInputStream dataInputStream = null;
         List result = new ArrayList();
         try {
             fileSystem = FileSystem.get(conf);
-            if (fileSystem.exists(input_path)) {
-                FileStatus[] fss = fileSystem.listStatus(input_path);
+            if (fileSystem.exists(inputPath)) {
+                FileStatus[] fss = fileSystem.listStatus(inputPath);
                 for (FileStatus status : fss) {
                     Path path = status.getPath();
                     if (!status.isDir()) {
@@ -57,19 +57,17 @@ public class HdfsSimpleFileTest {
                         String line = "";
                         String[] row = new String[4];
                         while ((line = dataInputStream.readLine()) != null) {
-                            String[] line_array = line.split(column_delimiter);
-                            // column_delimiter matches the key/value delimiter
-                            if (line_array.length == 2) {
-                                row[0] = line_array[0];
-                                row[1] = line_array[1];
-                                row[2] = input_file_path;
-                                row[3] = column_delimiter;
-                                System.out.println(row[0] + " - " + row[1]
-                                        + " - " + row[2] + " - " + row[3]);
+                            String[] lineArray = line.split(columnDelimiter);
+                            // columnDelimiter matches the key/value delimiter
+                            if (lineArray.length == 2) {
+                                row[0] = lineArray[0];
+                                row[1] = lineArray[1];
+                                row[2] = inputFilePath;
+                                row[3] = columnDelimiter;
+                                System.out.println(row[0] + " - " + row[1] + " - " + row[2] + " - " + row[3]);
                                 result.add(row);
                             } else {
-                                System.out
-                                        .println("Column delimiter matches the key/value delimiter");
+                                System.out.println("Column delimiter matches the key/value delimiter");
                                 break;
                             }
                         }
@@ -79,8 +77,8 @@ public class HdfsSimpleFileTest {
                     dataInputStream.close();
                 // try {
                 // Delete path recursively after reading
-                // fileSystem.delete(input_path, true);
-                // System.out.println("Deleted path " + input_file_path);
+                // fileSystem.delete(inputPath, true);
+                // System.out.println("Deleted path " + inputFilePath);
                 // } catch (IOException e) {
                 // e.printStackTrace();
                 // } finally {
@@ -88,7 +86,7 @@ public class HdfsSimpleFileTest {
                     fileSystem.close();
                 // }
             } else {
-                System.out.println("Path not found " + input_file_path);
+                System.out.println("Path not found " + inputFilePath);
                 if (fileSystem != null)
                     fileSystem.close();
                 return;

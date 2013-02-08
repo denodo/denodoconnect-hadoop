@@ -36,7 +36,6 @@ import org.apache.log4j.Logger;
 
 import com.denodo.connect.hadoop.hdfs.wrapper.util.ExceptionUtil;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
-import com.denodo.vdb.engine.customwrapper.CustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
@@ -60,15 +59,14 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * @see AbstractCustomWrapper
  */
 public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
-    private static Logger logger = Logger
-            .getLogger(HdfsSimpleFileWrapper.class);
+    private static Logger logger = Logger.getLogger(HdfsSimpleFileWrapper.class);
 
     private static final String INPUT_PARAMETER_NAMENODE_HOST = "Host";
     private static final String INPUT_PARAMETER_NAMENODE_PORT = "Port";
     private static final String INPUT_PARAMETER_DELETE_AFTER_READING = "Delete after reading";
 
-    private static final String SCHEMA_FILE_COLUMN_DELIMITER = "column_delimiter";
-    private static final String SCHEMA_PARAMETER_INPUT_FILE = "file_path";
+    private static final String SCHEMA_FILE_COLUMN_DELIMITER = "columnDelimiter";
+    private static final String SCHEMA_PARAMETER_INPUT_FILE = "filePath";
     private static final String SCHEMA_KEY = "key";
     private static final String SCHEMA_VALUE = "value";
 
@@ -98,26 +96,18 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
         return new CustomWrapperInputParameter[] {
-                new CustomWrapperInputParameter(
-                        INPUT_PARAMETER_NAMENODE_HOST,
-                        "Namenode hostname or IP, e.g., localhost or 192.168.1.3 ",
-                        true, CustomWrapperInputParameterTypeFactory
-                                .stringType()),
-                new CustomWrapperInputParameter(INPUT_PARAMETER_NAMENODE_PORT,
-                        "Namenode port, e.g., 8020 ", true,
+                new CustomWrapperInputParameter(INPUT_PARAMETER_NAMENODE_HOST, "Namenode hostname or IP, e.g., localhost or 192.168.1.3 ",
+                        true, CustomWrapperInputParameterTypeFactory.stringType()),
+                new CustomWrapperInputParameter(INPUT_PARAMETER_NAMENODE_PORT, "Namenode port, e.g., 8020 ", true,
                         CustomWrapperInputParameterTypeFactory.integerType()),
-                new CustomWrapperInputParameter(
-                        INPUT_PARAMETER_DELETE_AFTER_READING,
-                        "Delete file after reading it?", true,
-                        CustomWrapperInputParameterTypeFactory
-                                .booleanType(false)) };
+                new CustomWrapperInputParameter(INPUT_PARAMETER_DELETE_AFTER_READING, "Delete file after reading it?", true,
+                        CustomWrapperInputParameterTypeFactory.booleanType(false)) };
     }
 
     /**
      * @see CustomWrapper#getSchemaParameters()
      */
-    public CustomWrapperSchemaParameter[] getSchemaParameters(
-            Map<String, String> inputValues) throws CustomWrapperException {
+    public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues) throws CustomWrapperException {
         boolean isSearchable = true;
         boolean isUpdeatable = true;
         boolean isNullable = true;
@@ -127,43 +117,30 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
             return this.schema;
         }
         this.schema = new CustomWrapperSchemaParameter[] {
-                new CustomWrapperSchemaParameter(SCHEMA_PARAMETER_INPUT_FILE,
-                        java.sql.Types.VARCHAR, null, isSearchable,
-                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, isNullable, isMandatory),
-                new CustomWrapperSchemaParameter(SCHEMA_FILE_COLUMN_DELIMITER,
-                        java.sql.Types.VARCHAR, null, isSearchable,
-                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, isNullable, isMandatory),
-                new CustomWrapperSchemaParameter(SCHEMA_KEY,
-                        java.sql.Types.VARCHAR, null, !isSearchable,
-                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, isNullable, !isMandatory),
-                new CustomWrapperSchemaParameter(SCHEMA_VALUE,
-                        java.sql.Types.VARCHAR, null, !isSearchable,
-                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, isNullable, !isMandatory) };
+                new CustomWrapperSchemaParameter(SCHEMA_PARAMETER_INPUT_FILE, java.sql.Types.VARCHAR, null, isSearchable,
+                        CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, isMandatory),
+                new CustomWrapperSchemaParameter(SCHEMA_FILE_COLUMN_DELIMITER, java.sql.Types.VARCHAR, null, isSearchable,
+                        CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, isMandatory),
+                new CustomWrapperSchemaParameter(SCHEMA_KEY, java.sql.Types.VARCHAR, null, !isSearchable,
+                        CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, !isMandatory),
+                new CustomWrapperSchemaParameter(SCHEMA_VALUE, java.sql.Types.VARCHAR, null, !isSearchable,
+                        CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, !isMandatory) };
         return this.schema;
     }
 
-    public void run(CustomWrapperConditionHolder condition,
-            List<CustomWrapperFieldExpression> projectedFields,
-            CustomWrapperResult result, Map<String, String> inputValues)
-            throws CustomWrapperException {
+    public void run(CustomWrapperConditionHolder condition, List<CustomWrapperFieldExpression> projectedFields, CustomWrapperResult result,
+            Map<String, String> inputValues) throws CustomWrapperException {
         // Due to getContextClassLoader returning the platform classloader, we
         // need to modify it in order to allow
         // Hadoop and Avro fetch certain classes -it uses getContextClassLoader
-        ClassLoader originalCtxClassLoader = Thread.currentThread()
-                .getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(
-                Configuration.class.getClassLoader());
+        ClassLoader originalCtxClassLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(Configuration.class.getClassLoader());
 
         if (logger.isDebugEnabled()) {
             logger.debug("Running custom wrapper: " + this.getClass());
             logger.debug("Input values: ");
             for (Entry<String, String> inputParam : inputValues.entrySet()) {
-                logger.debug(String.format("%s : %s", inputParam.getKey(),
-                        inputParam.getValue()));
+                logger.debug(String.format("%s : %s", inputParam.getKey(), inputParam.getValue()));
             }
         }
 
@@ -173,46 +150,41 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
             logger.debug("cwColumnIndexes: " + this.cwColumnIndexes + "\n");
 
         // String host = "192.168.153.10" int port = 8020
-        String host = (String) getInputParameterValue(
-                INPUT_PARAMETER_NAMENODE_HOST).getValue();
-        int port = (Integer) getInputParameterValue(
-                INPUT_PARAMETER_NAMENODE_PORT).getValue();
-        boolean delete_after_reading = (Boolean) getInputParameterValue(
-                INPUT_PARAMETER_DELETE_AFTER_READING).getValue();
+        String host = (String) getInputParameterValue(INPUT_PARAMETER_NAMENODE_HOST).getValue();
+        int port = (Integer) getInputParameterValue(INPUT_PARAMETER_NAMENODE_PORT).getValue();
+        boolean deleteAfterReading = (Boolean) getInputParameterValue(INPUT_PARAMETER_DELETE_AFTER_READING).getValue();
 
         // Establishing configuration
         Configuration conf = new Configuration();
         conf.set("fs.default.name", "hdfs://" + host + ":" + port);
 
-        Map<CustomWrapperFieldExpression, Object> conditionMap = condition
-                .getConditionMap();
-        String input_file_path = "";
-        String column_delimiter = "";
+        Map<CustomWrapperFieldExpression, Object> conditionMap = condition.getConditionMap();
+        String inputFilePath = "";
+        String columnDelimiter = "";
 
         if (conditionMap != null) {
             for (CustomWrapperFieldExpression field : conditionMap.keySet()) {
                 Object value = conditionMap.get(field);
                 if (field.getName().equals(SCHEMA_PARAMETER_INPUT_FILE)) {
-                    input_file_path = (String) value;
+                    inputFilePath = (String) value;
                 }
                 if (field.getName().equals(SCHEMA_FILE_COLUMN_DELIMITER)) {
-                    column_delimiter = (String) value;
+                    columnDelimiter = (String) value;
                 }
             }
         }
         if (logger.isDebugEnabled()) {
-            logger.debug("Accessing file: " + input_file_path + " at: "
-                    + "hdfs://" + host + ":" + port);
-            logger.debug("Using column delimiter: " + column_delimiter);
+            logger.debug("Accessing file: " + inputFilePath + " at: " + "hdfs://" + host + ":" + port);
+            logger.debug("Using column delimiter: " + columnDelimiter);
         }
         // File to read
-        Path input_path = new Path(input_file_path);
+        Path inputPath = new Path(inputFilePath);
         FileSystem fileSystem = null;
         FSDataInputStream dataInputStream = null;
         try {
             fileSystem = FileSystem.get(conf);
-            if (fileSystem.exists(input_path)) {
-                FileStatus[] fss = fileSystem.listStatus(input_path);
+            if (fileSystem.exists(inputPath)) {
+                FileStatus[] fss = fileSystem.listStatus(inputPath);
                 for (FileStatus status : fss) {
                     Path path = status.getPath();
                     if (!status.isDir()) {
@@ -220,45 +192,34 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
                         String line = "";
                         String[] row = new String[this.cwColumnIndexes.size()];
                         while ((line = dataInputStream.readLine()) != null) {
-                            String[] line_array = line.split(column_delimiter);
-                            // column_delimiter matches the key/value delimiter
-                            if (line_array.length == 2) {
-                                if (this.cwColumnIndexes
-                                        .containsKey(SCHEMA_KEY)) {
-                                    row[this.cwColumnIndexes.get(SCHEMA_KEY)
-                                            .intValue()] = line_array[0];
+                            String[] lineArray = line.split(columnDelimiter);
+                            // columnDelimiter matches the key/value delimiter
+                            if (lineArray.length == 2) {
+                                if (this.cwColumnIndexes.containsKey(SCHEMA_KEY)) {
+                                    row[this.cwColumnIndexes.get(SCHEMA_KEY).intValue()] = lineArray[0];
                                 }
-                                if (this.cwColumnIndexes
-                                        .containsKey(SCHEMA_VALUE)) {
-                                    row[this.cwColumnIndexes.get(SCHEMA_VALUE)
-                                            .intValue()] = line_array[1];
+                                if (this.cwColumnIndexes.containsKey(SCHEMA_VALUE)) {
+                                    row[this.cwColumnIndexes.get(SCHEMA_VALUE).intValue()] = lineArray[1];
                                 }
-                                if (this.cwColumnIndexes
-                                        .containsKey(SCHEMA_PARAMETER_INPUT_FILE))
-                                    row[this.cwColumnIndexes.get(
-                                            SCHEMA_PARAMETER_INPUT_FILE)
-                                            .intValue()] = input_file_path;
-                                if (this.cwColumnIndexes
-                                        .containsKey(SCHEMA_FILE_COLUMN_DELIMITER))
-                                    row[this.cwColumnIndexes.get(
-                                            SCHEMA_FILE_COLUMN_DELIMITER)
-                                            .intValue()] = column_delimiter;
+                                if (this.cwColumnIndexes.containsKey(SCHEMA_PARAMETER_INPUT_FILE))
+                                    row[this.cwColumnIndexes.get(SCHEMA_PARAMETER_INPUT_FILE).intValue()] = inputFilePath;
+                                if (this.cwColumnIndexes.containsKey(SCHEMA_FILE_COLUMN_DELIMITER))
+                                    row[this.cwColumnIndexes.get(SCHEMA_FILE_COLUMN_DELIMITER).intValue()] = columnDelimiter;
                                 result.addRow(row, projectedFields);
 
                             } else {
                                 logger.debug("Column delimiter does not match the key/value delimiter");
-                                throw new CustomWrapperException(
-                                        "Column delimiter does not match the key/value delimiter");
+                                throw new CustomWrapperException("Column delimiter does not match the key/value delimiter");
                             }
                         }
                     }
                 }
                 try {
-                    if (delete_after_reading) {
+                    if (deleteAfterReading) {
                         // Delete path recursively after reading
-                        fileSystem.delete(input_path, true);
+                        fileSystem.delete(inputPath, true);
                         if (logger.isDebugEnabled())
-                            logger.debug("Deleted path " + input_file_path);
+                            logger.debug("Deleted path " + inputFilePath);
                     }
                 } catch (IOException e) {
                     String stack = ExceptionUtil.getStacktraceAsString(e);
@@ -271,20 +232,17 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
                         fileSystem.close();
                 }
             } else {
-                logger.error("Path not found " + input_file_path);
+                logger.error("Path not found " + inputFilePath);
                 if (fileSystem != null)
                     fileSystem.close();
-                throw new CustomWrapperException("Path not found "
-                        + input_file_path);
+                throw new CustomWrapperException("Path not found " + inputFilePath);
             }
         } catch (Exception e) {
             String stack = ExceptionUtil.getStacktraceAsString(e);
             logger.error("Exception while executing wrapper: " + stack);
-            throw new CustomWrapperException(
-                    "Exception while executing wrapper: " + stack, e);
+            throw new CustomWrapperException("Exception while executing wrapper: " + stack, e);
         } finally {
-            Thread.currentThread()
-                    .setContextClassLoader(originalCtxClassLoader);
+            Thread.currentThread().setContextClassLoader(originalCtxClassLoader);
         }
     }
 
@@ -296,9 +254,7 @@ public class HdfsSimpleFileWrapper extends AbstractCustomWrapper {
      * @throws CustomWrapperException
      */
 
-    private void getColumnPositions(
-            List<CustomWrapperFieldExpression> projectedFields)
-            throws CustomWrapperException {
+    private void getColumnPositions(List<CustomWrapperFieldExpression> projectedFields) throws CustomWrapperException {
         Integer index = 0;
         for (CustomWrapperFieldExpression col : projectedFields) {
             this.cwColumnIndexes.put(col.getName().toLowerCase(), index);

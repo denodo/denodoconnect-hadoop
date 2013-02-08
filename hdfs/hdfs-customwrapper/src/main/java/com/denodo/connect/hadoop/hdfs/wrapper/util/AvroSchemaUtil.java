@@ -34,7 +34,7 @@ import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
 
 public class AvroSchemaUtil {
     public static CustomWrapperSchemaParameter createSchemaParameter(
-            Schema schema, String schema_name) throws UnsupportedTypeException,
+            Schema schema, String schemaName) throws UnsupportedTypeException,
             CustomWrapperException {
 
         boolean isSearchable = true;
@@ -42,48 +42,48 @@ public class AvroSchemaUtil {
         boolean isNullable = true;
         boolean isMandatory = true;
 
-        Type schema_type = schema.getType();
-        if (isSimple(schema_type)) {
-            return new CustomWrapperSchemaParameter(schema_name,
+        Type schemaType = schema.getType();
+        if (isSimple(schemaType)) {
+            return new CustomWrapperSchemaParameter(schemaName,
                     mapAvroSimpleType(schema.getType()), null, isSearchable,
                     CustomWrapperSchemaParameter.ASC_AND_DESC_SORT,
                     isUpdeatable, isNullable, !isMandatory);
         }
 
-        else if (isEnum(schema_type)) {
+        else if (isEnum(schemaType)) {
             return new CustomWrapperSchemaParameter(
-                    schema_name,
+                    schemaName,
                     java.sql.Types.ARRAY,
                     new CustomWrapperSchemaParameter[] { new CustomWrapperSchemaParameter(
                             "symbols", java.sql.Types.VARCHAR) }, isSearchable,
                     CustomWrapperSchemaParameter.ASC_AND_DESC_SORT,
                     isUpdeatable, isNullable, !isMandatory);
-        } else if (isArray(schema_type)) {
-            Schema array_element = schema.getElementType();
-            return new CustomWrapperSchemaParameter(schema_name,
+        } else if (isArray(schemaType)) {
+            Schema arrayElement = schema.getElementType();
+            return new CustomWrapperSchemaParameter(schemaName,
                     java.sql.Types.ARRAY,
                     new CustomWrapperSchemaParameter[] { createSchemaParameter(
-                            array_element, array_element.getName()) },
+                            arrayElement, arrayElement.getName()) },
                     isSearchable,
                     CustomWrapperSchemaParameter.ASC_AND_DESC_SORT,
                     isUpdeatable, isNullable, !isMandatory);
-        } else if (isUnion(schema_type)) {
+        } else if (isUnion(schemaType)) {
             // Currently we only support UNION types with two types, being one
             // of them NULL
             // TODO Support all UNION types
             List<Schema> schemas = schema.getTypes();
             if (schemas.size() > 2)
-                throw new UnsupportedTypeException(schema_type.name()
+                throw new UnsupportedTypeException(schemaType.name()
                         + " containing more than two schemas ");
             else if (!containsNull(schemas))
-                throw new UnsupportedTypeException(schema_type.name()
+                throw new UnsupportedTypeException(schemaType.name()
                         + " without type NULL  ");
             Schema notNullSchema = getNotNull(schemas);
             if (notNullSchema != null)
-                return createSchemaParameter(notNullSchema, schema_name);
+                return createSchemaParameter(notNullSchema, schemaName);
             else
                 throw new CustomWrapperException("This should never happen");
-        } else if (isRecord(schema_type)) {
+        } else if (isRecord(schemaType)) {
             String recordName = schema.getName();
             CustomWrapperSchemaParameter[] recordFields = new CustomWrapperSchemaParameter[schema
                     .getFields().size()];
@@ -97,7 +97,7 @@ public class AvroSchemaUtil {
                     CustomWrapperSchemaParameter.NOT_SORTABLE, isUpdeatable,
                     false, !isMandatory);
         } else
-            throw new UnsupportedTypeException(schema_type.name());
+            throw new UnsupportedTypeException(schemaType.name());
     }
 
     /**

@@ -42,7 +42,6 @@ import org.apache.log4j.Logger;
 
 import com.denodo.connect.hadoop.hdfs.wrapper.util.AvroSchemaUtil;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
-import com.denodo.vdb.engine.customwrapper.CustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
@@ -73,7 +72,7 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
      * The name of the 'Namenode host' input parameter for this wrapper
      */
     private static final String INPUT_PARAMETER_NAMENODE_HOST = "Host";
-    /** 
+    /**
      * The name of the 'Namenode port' input parameter for this wrapper
      */
     private static final String INPUT_PARAMETER_NAMENODE_PORT = "Port";
@@ -82,21 +81,20 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
     private static final String INPUT_PARAMETER_AVSC_SCHEMA = "Avsc schema";
     private static final String INPUT_PARAMETER_DELETE_AFTER_READING = "Delete after reading";
 
-    private static final String SCHEMA_PARAMETER_AVRO_FILE_PATH = "avro_filepath";
+    private static final String SCHEMA_PARAMETER_AVRO_FILE_PATH = "avroFilepath";
 
     /*
      * Stores the wrapper's schema
      */
     private CustomWrapperSchemaParameter[] schema = null;
-    private Schema avro_schema = null;
+    private Schema avroSchema = null;
 
     public HdfsAvroFileWrapper() {
         super();
         // Due to getContextClassLoader returning the platform classloader, we
         // need to modify it in order to allow
         // Hadoop and Avro fetch certain classes -it uses getContextClassLoader
-        Thread.currentThread().setContextClassLoader(
-                Configuration.class.getClassLoader());
+        Thread.currentThread().setContextClassLoader(Configuration.class.getClassLoader());
     }
 
     /**
@@ -109,29 +107,18 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
         return new CustomWrapperInputParameter[] {
-                new CustomWrapperInputParameter(
-                        INPUT_PARAMETER_NAMENODE_HOST,
-                        "Namenode hostname or IP, e.g., localhost or 192.168.1.3 ",
-                        true, CustomWrapperInputParameterTypeFactory
-                                .stringType()),
-                new CustomWrapperInputParameter(INPUT_PARAMETER_NAMENODE_PORT,
-                        "Namenode port, e.g., 8020 ", true,
+                new CustomWrapperInputParameter(INPUT_PARAMETER_NAMENODE_HOST, "Namenode hostname or IP, e.g., localhost or 192.168.1.3 ",
+                        true, CustomWrapperInputParameterTypeFactory.stringType()),
+                new CustomWrapperInputParameter(INPUT_PARAMETER_NAMENODE_PORT, "Namenode port, e.g., 8020 ", true,
                         CustomWrapperInputParameterTypeFactory.integerType()),
-                new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_FILE_PATH,
-                        "Path to the Avsc file", false,
+                new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_FILE_PATH, "Path to the Avsc file", false,
                         CustomWrapperInputParameterTypeFactory.stringType()),
-                new CustomWrapperInputParameter(INPUT_PARAMETER_USE_AVSC_FILE,
-                        "Use the Avsc file for creating the schema?", true,
-                        CustomWrapperInputParameterTypeFactory
-                                .booleanType(true)),
-                new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_SCHEMA,
-                        "JSON definition of the Avro schema", false,
+                new CustomWrapperInputParameter(INPUT_PARAMETER_USE_AVSC_FILE, "Use the Avsc file for creating the schema?", true,
+                        CustomWrapperInputParameterTypeFactory.booleanType(true)),
+                new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_SCHEMA, "JSON definition of the Avro schema", false,
                         CustomWrapperInputParameterTypeFactory.stringType()),
-                new CustomWrapperInputParameter(
-                        INPUT_PARAMETER_DELETE_AFTER_READING,
-                        "Delete file after reading it?", true,
-                        CustomWrapperInputParameterTypeFactory
-                                .booleanType(true)) };
+                new CustomWrapperInputParameter(INPUT_PARAMETER_DELETE_AFTER_READING, "Delete file after reading it?", true,
+                        CustomWrapperInputParameterTypeFactory.booleanType(true)) };
     }
 
     /**
@@ -146,8 +133,7 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
         configuration.setDelegateOrderBy(false);
         // Equals operator is delegated in searchable fields. Other operator
         // will be postprocessed
-        configuration
-                .setAllowedOperators(new String[] { CustomWrapperCondition.OPERATOR_EQ });
+        configuration.setAllowedOperators(new String[] { CustomWrapperCondition.OPERATOR_EQ });
         return configuration;
     }
 
@@ -180,8 +166,7 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
      * 
      * @see CustomWrapper#getSchemaParameters()
      */
-    public CustomWrapperSchemaParameter[] getSchemaParameters(
-            Map<String, String> inputValues) throws CustomWrapperException {
+    public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues) throws CustomWrapperException {
         boolean isSearchable = true;
         boolean isUpdateable = true;
         boolean isNullable = true;
@@ -191,168 +176,134 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
             return this.schema;
         }
         if (logger.isDebugEnabled()) {
-            logger.debug("Generating schema for custom wrapper: "
-                    + this.getClass());
+            logger.debug("Generating schema for custom wrapper: " + this.getClass());
             logger.debug("Input parameters: ");
             for (Entry<String, String> inputParam : inputValues.entrySet()) {
-                logger.debug(String.format("%s : %s", inputParam.getKey(),
-                        inputParam.getValue()));
+                logger.debug(String.format("%s : %s", inputParam.getKey(), inputParam.getValue()));
             }
         }
-        boolean use_avsc_file = (Boolean) getInputParameterValue(
-                INPUT_PARAMETER_USE_AVSC_FILE).getValue();
-        if (use_avsc_file) {
-            String host = (String) getInputParameterValue(
-                    INPUT_PARAMETER_NAMENODE_HOST).getValue();
-            int port = (Integer) getInputParameterValue(
-                    INPUT_PARAMETER_NAMENODE_PORT).getValue();
-            String avsc_file_path = (String) getInputParameterValue(
-                    INPUT_PARAMETER_AVSC_FILE_PATH).getValue();
+        boolean useAvscFile = (Boolean) getInputParameterValue(INPUT_PARAMETER_USE_AVSC_FILE).getValue();
+        if (useAvscFile) {
+            String host = (String) getInputParameterValue(INPUT_PARAMETER_NAMENODE_HOST).getValue();
+            int port = (Integer) getInputParameterValue(INPUT_PARAMETER_NAMENODE_PORT).getValue();
+            String avscFilePath = (String) getInputParameterValue(INPUT_PARAMETER_AVSC_FILE_PATH).getValue();
 
             if (logger.isDebugEnabled()) {
-                logger.debug("Accesing Avro Schema at: " + "hdfs://" + host
-                        + ":" + port + "\n File path: " + avsc_file_path);
+                logger.debug("Accesing Avro Schema at: " + "hdfs://" + host + ":" + port + "\n File path: " + avscFilePath);
             }
             Configuration conf = new Configuration();
             // TO AVOID WEIRD "No FileSystem for scheme: hdfs" EXCEPTION
-            conf.set("fs.hdfs.impl",
-                    "org.apache.hadoop.hdfs.DistributedFileSystem");
+            conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
             conf.set("fs.default.name", "hdfs://" + host + ":" + port);
 
-            Path avsc_path = new Path(avsc_file_path);
+            Path avscPath = new Path(avscFilePath);
             FileSystem fileSystem;
             FSDataInputStream dataInputStream = null;
             try {
                 fileSystem = FileSystem.get(conf);
-                dataInputStream = fileSystem.open(avsc_path);
-                this.avro_schema = Schema.parse(dataInputStream);
+                dataInputStream = fileSystem.open(avscPath);
+                this.avroSchema = Schema.parse(dataInputStream);
             } catch (IOException e) {
                 String stackTrace = getStacktraceAsString(e);
                 logger.error("Error getting Avro Schema: " + stackTrace, e);
-                throw new CustomWrapperException("Error getting Avro Schema: "
-                        + stackTrace, e);
+                throw new CustomWrapperException("Error getting Avro Schema: " + stackTrace, e);
             } catch (Exception ee) {
                 String stackTrace = getStacktraceAsString(ee);
-                logger.error(
-                        "Error generating base view schema: " + stackTrace, ee);
-                throw new CustomWrapperException(
-                        "Error generating base view schema: " + stackTrace, ee);
+                logger.error("Error generating base view schema: " + stackTrace, ee);
+                throw new CustomWrapperException("Error generating base view schema: " + stackTrace, ee);
             }
         } else {
-            String avsc_schema = (String) getInputParameterValue(
-                    INPUT_PARAMETER_AVSC_SCHEMA).getValue();
-            if (avsc_schema != null)
-                this.avro_schema = Schema.parse(avsc_schema);
+            String avscSchema = (String) getInputParameterValue(INPUT_PARAMETER_AVSC_SCHEMA).getValue();
+            if (avscSchema != null)
+                this.avroSchema = Schema.parse(avscSchema);
         }
-        if (this.avro_schema != null) {
+        if (this.avroSchema != null) {
 
-            CustomWrapperSchemaParameter avro_schema_parameter = AvroSchemaUtil
-                    .createSchemaParameter(this.avro_schema,
-                            this.avro_schema.getName());
+            CustomWrapperSchemaParameter avroSchemaParameter = AvroSchemaUtil.createSchemaParameter(this.avroSchema,
+                    this.avroSchema.getName());
             this.schema = new CustomWrapperSchemaParameter[] {
-                    new CustomWrapperSchemaParameter(
-                            SCHEMA_PARAMETER_AVRO_FILE_PATH,
-                            java.sql.Types.VARCHAR, null, !isSearchable,
-                            CustomWrapperSchemaParameter.NOT_SORTABLE,
-                            !isUpdateable, !isNullable, isMandatory),
-                    avro_schema_parameter };
+                    new CustomWrapperSchemaParameter(SCHEMA_PARAMETER_AVRO_FILE_PATH, java.sql.Types.VARCHAR, null, !isSearchable,
+                            CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, !isNullable, isMandatory), avroSchemaParameter };
             return this.schema;
         } else {
             logger.error("Error generating base view. Avro schema is null");
-            throw new CustomWrapperException(
-                    "Error generating base view. Avro schema is null");
+            throw new CustomWrapperException("Error generating base view. Avro schema is null");
         }
     }
 
-    public void run(CustomWrapperConditionHolder condition,
-            List<CustomWrapperFieldExpression> projectedFields,
-            CustomWrapperResult result, Map<String, String> inputValues)
-            throws CustomWrapperException {
+    public void run(CustomWrapperConditionHolder condition, List<CustomWrapperFieldExpression> projectedFields, CustomWrapperResult result,
+            Map<String, String> inputValues) throws CustomWrapperException {
         // FIXME this.schema is null inside this method .... !
         this.schema = getSchemaParameters(inputValues);
 
-        String host = (String) getInputParameterValue(
-                INPUT_PARAMETER_NAMENODE_HOST).getValue();
-        int port = (Integer) getInputParameterValue(
-                INPUT_PARAMETER_NAMENODE_PORT).getValue();
+        String host = (String) getInputParameterValue(INPUT_PARAMETER_NAMENODE_HOST).getValue();
+        int port = (Integer) getInputParameterValue(INPUT_PARAMETER_NAMENODE_PORT).getValue();
 
         Configuration conf = new Configuration();
         conf.set("fs.default.name", "hdfs://" + host + ":" + port);
         // TO AVOID WEIRD "No FileSystem for scheme: hdfs" EXCEPTION
         conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
 
-        Map<CustomWrapperFieldExpression, Object> conditionMap = condition
-                .getConditionMap();
-        String avro_file_path = "";
+        Map<CustomWrapperFieldExpression, Object> conditionMap = condition.getConditionMap();
+        String avroFilePath = "";
         if (conditionMap != null) {
             for (CustomWrapperFieldExpression field : conditionMap.keySet()) {
                 Object value = conditionMap.get(field);
                 if (field.getName().equals(SCHEMA_PARAMETER_AVRO_FILE_PATH)) {
-                    avro_file_path = (String) value;
+                    avroFilePath = (String) value;
                 }
             }
         } else
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Reading Avro file: " + avro_file_path + " in "
-                    + " hdfs://" + host + ":" + port);
-            logger.debug("Using Avro schema: " + this.avro_schema);
+            logger.debug("Reading Avro file: " + avroFilePath + " in " + " hdfs://" + host + ":" + port);
+            logger.debug("Using Avro schema: " + this.avroSchema);
         }
         // File to read
-        Path path = new Path(avro_file_path);
+        Path path = new Path(avroFilePath);
         try {
             FsInput inputFile = new FsInput(path, conf);
-            DatumReader<GenericData.Record> reader = new GenericDatumReader<GenericData.Record>(
-                    this.avro_schema);
-            DataFileReader<GenericData.Record> dataFileReader = new DataFileReader<GenericData.Record>(
-                    inputFile, reader);
+            DatumReader<GenericData.Record> reader = new GenericDatumReader<GenericData.Record>(this.avroSchema);
+            DataFileReader<GenericData.Record> dataFileReader = new DataFileReader<GenericData.Record>(inputFile, reader);
             // Build the output object
             // FIXME Only GenericData.Record supported. Try GenericData.Array
             // FIXME Try GenericData.Fixed and GenericData.EnumSymbol
             if (this.schema != null) {
-                for (GenericData.Record avro_record : dataFileReader) {
+                for (GenericData.Record avroRecord : dataFileReader) {
                     Object[] rowData = new Object[this.schema.length];
-                    rowData[0] = avro_file_path;
+                    rowData[0] = avroFilePath;
                     int i = 1;
                     // FIXME This only goes one level deep in the schema, it has
                     // to go to the deepest level
                     // FIXME Until no schema parameter with columns is found
-                    for (CustomWrapperSchemaParameter schema_param : this.schema) {
-                        if (!schema_param.getName().equalsIgnoreCase(
-                                SCHEMA_PARAMETER_AVRO_FILE_PATH)) {
-                            if (schema_param.getColumns().length > 0) {
-                                Object[] cols = new Object[schema_param
-                                        .getColumns().length];
+                    for (CustomWrapperSchemaParameter schemaParam : this.schema) {
+                        if (!schemaParam.getName().equalsIgnoreCase(SCHEMA_PARAMETER_AVRO_FILE_PATH)) {
+                            if (schemaParam.getColumns().length > 0) {
+                                Object[] cols = new Object[schemaParam.getColumns().length];
                                 int j = 0;
-                                for (CustomWrapperSchemaParameter schema_cols : schema_param
-                                        .getColumns()) {
-                                    cols[j++] = ((GenericData.Record) avro_record)
-                                            .get(schema_cols.getName());
+                                for (CustomWrapperSchemaParameter schemaCols : schemaParam.getColumns()) {
+                                    cols[j++] = ((GenericData.Record) avroRecord).get(schemaCols.getName());
                                 }
                                 rowData[i++] = cols;
                             } else
-                                rowData[i++] = ((GenericData.Record) avro_record)
-                                        .get(schema_param.getName());
+                                rowData[i++] = ((GenericData.Record) avroRecord).get(schemaParam.getName());
                         }
                     }
                     result.addRow(rowData, projectedFields);
                 }
             } else {
                 logger.error("This should never happen. Schema is null");
-                throw new CustomWrapperException(
-                        "his should never happen. Schema is null");
+                throw new CustomWrapperException("his should never happen. Schema is null");
             }
         } catch (IOException ie) {
             String stackTrace = getStacktraceAsString(ie);
             logger.error("Error accesing Avro file: " + stackTrace);
-            throw new CustomWrapperException("Error accesing Avro file: "
-                    + stackTrace, ie);
+            throw new CustomWrapperException("Error accesing Avro file: " + stackTrace, ie);
 
         } catch (Exception e) {
             String stackTrace = getStacktraceAsString(e);
             logger.error("Error runing custom wrapper: " + stackTrace);
-            throw new CustomWrapperException("Error runing custom wrapper: "
-                    + stackTrace, e);
+            throw new CustomWrapperException("Error runing custom wrapper: " + stackTrace, e);
         }
     }
 

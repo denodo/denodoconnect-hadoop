@@ -47,38 +47,36 @@ public class AvroFileTest {
     public static void main(String[] args) throws IOException {
         String host = "192.168.73.132";
         int port = 8020;
-        String avsc_file = "/avro/WeatherComplex2.avsc";
+        String avscFile = "/avro/WeatherComplex2.avsc";
 
-        // String avsc_file = "/avro/WeatherComplex.avsc";
-        // String avro_file = "/avro/WeatherComplex.avro";
+        // String avscFile = "/avro/WeatherComplex.avsc";
+        // String avroFile = "/avro/WeatherComplex.avro";
 
-        Schema avro_schema = null;
+        Schema avroSchema = null;
         Configuration conf = new Configuration();
         conf.set("fs.default.name", "hdfs://" + host + ":" + port);
-        Path avsc_path = new Path(avsc_file);
+        Path avscPath = new Path(avscFile);
         FileSystem fileSystem;
         FSDataInputStream dataInputStream = null;
         try {
             fileSystem = FileSystem.get(conf);
-            dataInputStream = fileSystem.open(avsc_path);
-            avro_schema = Schema.parse(dataInputStream);
+            dataInputStream = fileSystem.open(avscPath);
+            avroSchema = Schema.parse(dataInputStream);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         // // DATUM 1
-        GenericRecord datum1 = new GenericData.Record(avro_schema);
+        GenericRecord datum1 = new GenericData.Record(avroSchema);
         datum1.put("station", new Utf8("Aemet"));
         datum1.put("temp", new Integer("35"));
         datum1.put("time", new Long("201210111207"));
         List addresses = new ArrayList();
-        GenericRecord addr1 = new GenericData.Record(avro_schema.getFields()
-                .get(3).schema().getElementType());
+        GenericRecord addr1 = new GenericData.Record(avroSchema.getFields().get(3).schema().getElementType());
         addr1.put("street", "Gran Via 32");
         addr1.put("city", "Madrid");
         addr1.put("state", "Madrid");
-        GenericRecord addr2 = new GenericData.Record(avro_schema.getFields()
-                .get(3).schema().getElementType());
+        GenericRecord addr2 = new GenericData.Record(avroSchema.getFields().get(3).schema().getElementType());
         addr2.put("street", "Praza de Galicia");
         addr2.put("city", "Santiago de Compostela");
         addr2.put("state", "Galicia");
@@ -86,15 +84,13 @@ public class AvroFileTest {
         addresses.add(addr2);
         datum1.put("addresses", addresses);
         File file = new File("WeatherComplex2.avro");
-        DatumWriter<GenericRecord> writer = new GenericDatumWriter<GenericRecord>(
-                avro_schema);
-        DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<GenericRecord>(
-                writer);
-        dataFileWriter.create(avro_schema, file);
+        DatumWriter<GenericRecord> writer = new GenericDatumWriter<GenericRecord>(avroSchema);
+        DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<GenericRecord>(writer);
+        dataFileWriter.create(avroSchema, file);
         dataFileWriter.append(datum1);
         dataFileWriter.close();
         // // // DATUM 1
-        // GenericRecord datum1 = new GenericData.Record(avro_schema);
+        // GenericRecord datum1 = new GenericData.Record(avroSchema);
         // datum1.put("station", new Utf8("Aemet"));
         // datum1.put("temp", new Integer("35"));
         // datum1.put("time", new Long("201210111207"));
@@ -102,7 +98,7 @@ public class AvroFileTest {
         // tags.add("sunny");
         // tags.add("hot");
         // datum1.put("tags", tags);
-        // GenericRecord addr1 = new GenericData.Record(avro_schema.getFields()
+        // GenericRecord addr1 = new GenericData.Record(avroSchema.getFields()
         // .get(4).schema());
         // addr1.put("street", "Gran Via 32");
         // addr1.put("city", "Madrid");
@@ -110,7 +106,7 @@ public class AvroFileTest {
         // datum1.put("address", addr1);
         //
         // // DATUM 2
-        // GenericRecord datum2 = new GenericData.Record(avro_schema);
+        // GenericRecord datum2 = new GenericData.Record(avroSchema);
         // datum2.put("station", new Utf8("Meteogalicia"));
         // datum2.put("temp", new Integer("25"));
         // datum2.put("time", new Long("201210111207"));
@@ -118,7 +114,7 @@ public class AvroFileTest {
         // tags2.add("foggy");
         // tags2.add("cloudy");
         // datum2.put("tags", tags2);
-        // GenericRecord addr2 = new GenericData.Record(avro_schema.getFields()
+        // GenericRecord addr2 = new GenericData.Record(avroSchema.getFields()
         // .get(4).schema());
         // addr2.put("street", "Praza de Galicia");
         // addr2.put("city", "Santiago de Compostela");
@@ -128,11 +124,11 @@ public class AvroFileTest {
         // File file = new File("WeatherComplex.avro");
         // DatumWriter<GenericRecord> writer = new
         // GenericDatumWriter<GenericRecord>(
-        // avro_schema);
+        // avroSchema);
         // DataFileWriter<GenericRecord> dataFileWriter = new
         // DataFileWriter<GenericRecord>(
         // writer);
-        // dataFileWriter.create(avro_schema, file);
+        // dataFileWriter.create(avroSchema, file);
         // dataFileWriter.append(datum1);
         // dataFileWriter.append(datum2);
         // dataFileWriter.close();
@@ -143,12 +139,10 @@ public class AvroFileTest {
         DataFileReader<GenericData.Record> dataFileReader = null;
         try {
             inputFile = new FsInput(path, conf);
-            DatumReader<GenericData.Record> reader = new GenericDatumReader<GenericData.Record>(
-                    avro_schema);
-            dataFileReader = new DataFileReader<GenericData.Record>(inputFile,
-                    reader);
-            for (GenericData.Record avro_record : dataFileReader) {
-                System.out.println(avro_record);
+            DatumReader<GenericData.Record> reader = new GenericDatumReader<GenericData.Record>(avroSchema);
+            dataFileReader = new DataFileReader<GenericData.Record>(inputFile, reader);
+            for (GenericData.Record avroRecord : dataFileReader) {
+                System.out.println(avroRecord);
             }
 
         } catch (IOException ie) {

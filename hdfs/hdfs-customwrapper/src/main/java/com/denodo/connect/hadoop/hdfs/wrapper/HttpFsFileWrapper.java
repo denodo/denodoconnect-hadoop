@@ -41,7 +41,6 @@ import org.apache.log4j.Logger;
 import com.denodo.connect.hadoop.hdfs.wrapper.util.ExceptionUtil;
 import com.denodo.util.exceptions.UnsupportedOperationException;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
-import com.denodo.vdb.engine.customwrapper.CustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
@@ -92,12 +91,12 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
 
     private static final String SCHEMA_PARAMETER_PATH = "path";
     // private static final String SCHEMA_PARAMETER_OPERATION = "operation";
-    private static final String SCHEMA_FILE_COLUMN_DELIMITER = "column_delimiter";
-    private static final String SCHEMA_STATUSCODE = "status_code";
-    private static final String SCHEMA_STATUSMESSAGE = "status_message";
+    private static final String SCHEMA_FILE_COLUMN_DELIMITER = "columnDelimiter";
+    private static final String SCHEMA_STATUSCODE = "statusCode";
+    private static final String SCHEMA_STATUSMESSAGE = "statusMessage";
     private static final String SCHEMA_KEY = "key";
     private static final String SCHEMA_VALUE = "value";
-    private static final String SCHEMA_KEY_VALUE_PAIRS = "key_values";
+    private static final String SCHEMA_KEY_VALUE_PAIRS = "keyValues";
 
     /*
      * Stores the wrapper's schema
@@ -114,22 +113,14 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
         return new CustomWrapperInputParameter[] {
-                new CustomWrapperInputParameter(INPUT_PARAMETER_HTTPFS_HOST,
-                        "HttpFS host, e.g., localhost or 192.168.1.3 ", true,
+                new CustomWrapperInputParameter(INPUT_PARAMETER_HTTPFS_HOST, "HttpFS host, e.g., localhost or 192.168.1.3 ", true,
                         CustomWrapperInputParameterTypeFactory.stringType()),
-                new CustomWrapperInputParameter(INPUT_PARAMETER_HTTPFS_PORT,
-                        "HttpFS port, e.g., 14000 ", true,
+                new CustomWrapperInputParameter(INPUT_PARAMETER_HTTPFS_PORT, "HttpFS port, e.g., 14000 ", true,
                         CustomWrapperInputParameterTypeFactory.integerType()),
-                new CustomWrapperInputParameter(
-                        INPUT_PARAMETER_HTTPFS_USERNAME,
-                        "User that will perform the operation, e.g., cloudera",
-                        true,
-                        CustomWrapperInputParameterTypeFactory.stringType()),
-                new CustomWrapperInputParameter(
-                        INPUT_PARAMETER_DELETE_AFTER_READING,
-                        "Delete file after reading it?", true,
-                        CustomWrapperInputParameterTypeFactory
-                                .booleanType(false)) };
+                new CustomWrapperInputParameter(INPUT_PARAMETER_HTTPFS_USERNAME, "User that will perform the operation, e.g., cloudera",
+                        true, CustomWrapperInputParameterTypeFactory.stringType()),
+                new CustomWrapperInputParameter(INPUT_PARAMETER_DELETE_AFTER_READING, "Delete file after reading it?", true,
+                        CustomWrapperInputParameterTypeFactory.booleanType(false)) };
     }
 
     /*
@@ -144,16 +135,14 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
         configuration.setDelegateOrderBy(false);
         // Equals operator is delegated in searchable fields. Other operator
         // will be postprocessed
-        configuration
-                .setAllowedOperators(new String[] { CustomWrapperCondition.OPERATOR_EQ });
+        configuration.setAllowedOperators(new String[] { CustomWrapperCondition.OPERATOR_EQ });
         return configuration;
     }
 
     /**
      * @see CustomWrapper#getSchemaParameters()
      */
-    public CustomWrapperSchemaParameter[] getSchemaParameters(
-            Map<String, String> inputValues) throws CustomWrapperException {
+    public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues) throws CustomWrapperException {
         boolean isSearchable = true;
         boolean isUpdeatable = true;
         boolean isNullable = true;
@@ -163,75 +152,46 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
             return this.schema;
         }
         this.schema = new CustomWrapperSchemaParameter[] {
-                new CustomWrapperSchemaParameter(SCHEMA_PARAMETER_PATH,
-                        java.sql.Types.VARCHAR, null, isSearchable,
-                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, isNullable, isMandatory),
+                new CustomWrapperSchemaParameter(SCHEMA_PARAMETER_PATH, java.sql.Types.VARCHAR, null, isSearchable,
+                        CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, isMandatory),
                 // new CustomWrapperSchemaParameter(SCHEMA_PARAMETER_OPERATION,
                 // java.sql.Types.VARCHAR, null, !isSearchable,
                 // CustomWrapperSchemaParameter.NOT_SORTABLE,
                 // !isUpdeatable, isNullable, isMandatory),
-                new CustomWrapperSchemaParameter(SCHEMA_FILE_COLUMN_DELIMITER,
-                        java.sql.Types.VARCHAR, null, isSearchable,
-                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, isNullable, isMandatory),
-                new CustomWrapperSchemaParameter(SCHEMA_STATUSCODE,
-                        java.sql.Types.VARCHAR, null, !isSearchable,
-                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, isNullable, !isMandatory),
-                new CustomWrapperSchemaParameter(SCHEMA_STATUSMESSAGE,
-                        java.sql.Types.VARCHAR, null, !isSearchable,
-                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                        !isUpdeatable, isNullable, !isMandatory),
-                new CustomWrapperSchemaParameter(
-                        SCHEMA_KEY_VALUE_PAIRS,
-                        java.sql.Types.ARRAY,
-                        new CustomWrapperSchemaParameter[] {
-                                new CustomWrapperSchemaParameter(
-                                        SCHEMA_KEY,
-                                        java.sql.Types.VARCHAR,
-                                        null,
-                                        !isSearchable,
-                                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                                        !isUpdeatable, isNullable, !isMandatory),
-                                new CustomWrapperSchemaParameter(
-                                        SCHEMA_VALUE,
-                                        java.sql.Types.VARCHAR,
-                                        null,
-                                        !isSearchable,
-                                        CustomWrapperSchemaParameter.NOT_SORTABLE,
-                                        !isUpdeatable, isNullable, !isMandatory) }) };
+                new CustomWrapperSchemaParameter(SCHEMA_FILE_COLUMN_DELIMITER, java.sql.Types.VARCHAR, null, isSearchable,
+                        CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, isMandatory),
+                new CustomWrapperSchemaParameter(SCHEMA_STATUSCODE, java.sql.Types.VARCHAR, null, !isSearchable,
+                        CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, !isMandatory),
+                new CustomWrapperSchemaParameter(SCHEMA_STATUSMESSAGE, java.sql.Types.VARCHAR, null, !isSearchable,
+                        CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, !isMandatory),
+                new CustomWrapperSchemaParameter(SCHEMA_KEY_VALUE_PAIRS, java.sql.Types.ARRAY, new CustomWrapperSchemaParameter[] {
+                        new CustomWrapperSchemaParameter(SCHEMA_KEY, java.sql.Types.VARCHAR, null, !isSearchable,
+                                CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, !isMandatory),
+                        new CustomWrapperSchemaParameter(SCHEMA_VALUE, java.sql.Types.VARCHAR, null, !isSearchable,
+                                CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdeatable, isNullable, !isMandatory) }) };
         return this.schema;
     }
 
     @Override
-    public void run(CustomWrapperConditionHolder condition,
-            List<CustomWrapperFieldExpression> projectedFields,
-            CustomWrapperResult result, Map<String, String> inputValues)
-            throws CustomWrapperException {
+    public void run(CustomWrapperConditionHolder condition, List<CustomWrapperFieldExpression> projectedFields, CustomWrapperResult result,
+            Map<String, String> inputValues) throws CustomWrapperException {
         if (logger.isDebugEnabled()) {
             logger.debug("Running custom wrapper: " + this.getClass());
             logger.debug("Input values: ");
             for (Entry<String, String> inputParam : inputValues.entrySet()) {
-                logger.debug(String.format("%s : %s", inputParam.getKey(),
-                        inputParam.getValue()));
+                logger.debug(String.format("%s : %s", inputParam.getKey(), inputParam.getValue()));
             }
         }
-        String host = (String) getInputParameterValue(
-                INPUT_PARAMETER_HTTPFS_HOST).getValue();
-        int port = (Integer) getInputParameterValue(INPUT_PARAMETER_HTTPFS_PORT)
-                .getValue();
-        String username = (String) getInputParameterValue(
-                INPUT_PARAMETER_HTTPFS_USERNAME).getValue();
-        boolean delete_after_reading = (Boolean) getInputParameterValue(
-                INPUT_PARAMETER_DELETE_AFTER_READING).getValue();
+        String host = (String) getInputParameterValue(INPUT_PARAMETER_HTTPFS_HOST).getValue();
+        int port = (Integer) getInputParameterValue(INPUT_PARAMETER_HTTPFS_PORT).getValue();
+        String username = (String) getInputParameterValue(INPUT_PARAMETER_HTTPFS_USERNAME).getValue();
+        boolean deleteAfterReading = (Boolean) getInputParameterValue(INPUT_PARAMETER_DELETE_AFTER_READING).getValue();
 
-        Map<CustomWrapperFieldExpression, Object> conditionMap = condition
-                .getConditionMap();
+        Map<CustomWrapperFieldExpression, Object> conditionMap = condition.getConditionMap();
         // String operation = "";
         String operation = OPEN;
         String path = "";
-        String column_delimiter = "";
+        String columnDelimiter = "";
         if (conditionMap != null) {
             for (CustomWrapperFieldExpression field : conditionMap.keySet()) {
                 Object value = conditionMap.get(field);
@@ -242,7 +202,7 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
                     path = (String) value;
                 }
                 if (field.getName().equals(SCHEMA_FILE_COLUMN_DELIMITER)) {
-                    column_delimiter = (String) value;
+                    columnDelimiter = (String) value;
                 }
             }
         }
@@ -256,101 +216,71 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
             // http://goo.gl/ANfKG
             // TODO use offset and len for large files "&offset=" + offset +
             // "&len=" + len
-            uri = URI.create("http://" + host + ":" + port + URL_PREFIX + path
-                    + "?user.name=" + username + "&op=" + operation);
+            uri = URI.create("http://" + host + ":" + port + URL_PREFIX + path + "?user.name=" + username + "&op=" + operation);
             httpRequest.setURI(uri);
             if (logger.isDebugEnabled())
                 logger.debug("URI: " + uri);
             try {
                 HttpResponse response = httpClient.execute(httpRequest);
-                int status_code = response.getStatusLine().getStatusCode();
-                String status_message = response.getStatusLine()
-                        .getReasonPhrase();
-                List<String[]> key_value_pairs = new ArrayList<String[]>();
-                if (status_code == HttpStatus.SC_OK) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                String statusMessage = response.getStatusLine().getReasonPhrase();
+                List<String[]> keyValuePairs = new ArrayList<String[]>();
+                if (statusCode == HttpStatus.SC_OK) {
                     HttpEntity responseEntity = response.getEntity();
                     InputStream is = responseEntity.getContent();
-                    BufferedReader br = new BufferedReader(
-                            new InputStreamReader(is));
+                    BufferedReader br = new BufferedReader(new InputStreamReader(is));
                     String line;
                     while ((line = br.readLine()) != null) {
-                        String[] line_array = line.split(column_delimiter);
-                        if (line_array.length == 2) {
-                            key_value_pairs.add(new String[] { line_array[0],
-                                    line_array[1] });
+                        String[] lineArray = line.split(columnDelimiter);
+                        if (lineArray.length == 2) {
+                            keyValuePairs.add(new String[] { lineArray[0], lineArray[1] });
                         } else {
                             logger.debug("Column delimiter does not match the key/value delimiter");
-                            throw new CustomWrapperException(
-                                    "Column delimiter does not match the key/value delimiter");
+                            throw new CustomWrapperException("Column delimiter does not match the key/value delimiter");
                         }
                     }
                 }
-                result.addRow(
-                        new Object[] { path,/* operation, */
-                        column_delimiter, status_code, status_message,
-                                key_value_pairs.toArray() }, projectedFields);
+                result.addRow(new Object[] { path,/* operation, */
+                columnDelimiter, statusCode, statusMessage, keyValuePairs.toArray() }, projectedFields);
                 try {
-                    if (delete_after_reading) {
+                    if (deleteAfterReading) {
                         // Delete path recursively after reading
                         // "http://<host>:<port>/webhdfs/v1/<path>?op=DELETE[&recursive=<true|false>]"
-                        httpRequest.setURI(URI.create("http://" + host + ":"
-                                + port + URL_PREFIX + path + "?user.name="
-                                + username + "&op=" + DELETE
-                                + "&recursive=true"));
+                        httpRequest.setURI(URI.create("http://" + host + ":" + port + URL_PREFIX + path + "?user.name=" + username + "&op="
+                                + DELETE + "&recursive=true"));
                         response = httpClient.execute(httpRequest);
-                        status_code = response.getStatusLine().getStatusCode();
-                        if (status_code == HttpStatus.SC_OK) {
+                        statusCode = response.getStatusLine().getStatusCode();
+                        if (statusCode == HttpStatus.SC_OK) {
                             if (logger.isDebugEnabled())
                                 logger.debug("Deleted path " + path);
                             return;
                         } else {
-                            logger.error("HttpError while deleting file: '"
-                                    + path
-                                    + "' with status code: '"
-                                    + response.getStatusLine().getStatusCode()
-                                    + "' | status message: '"
-                                    + response.getStatusLine()
-                                            .getReasonPhrase() + "'");
-                            throw new CustomWrapperException(
-                                    "HttpError while deleting file: '"
-                                            + path
-                                            + "' with status code: '"
-                                            + response.getStatusLine()
-                                                    .getStatusCode()
-                                            + "' | status message: '"
-                                            + response.getStatusLine()
-                                                    .getReasonPhrase() + "'");
+                            logger.error("HttpError while deleting file: '" + path + "' with status code: '"
+                                    + response.getStatusLine().getStatusCode() + "' | status message: '"
+                                    + response.getStatusLine().getReasonPhrase() + "'");
+                            throw new CustomWrapperException("HttpError while deleting file: '" + path + "' with status code: '"
+                                    + response.getStatusLine().getStatusCode() + "' | status message: '"
+                                    + response.getStatusLine().getReasonPhrase() + "'");
                         }
                     }
                 } catch (Exception e) {
                     String stack = ExceptionUtil.getStacktraceAsString(e);
-                    logger.error("Exception when trying to delete file: '"
-                            + path + "' " + stack);
-                    throw new CustomWrapperException(
-                            "Exception when trying to delete file: '" + path
-                                    + "' " + stack, e);
+                    logger.error("Exception when trying to delete file: '" + path + "' " + stack);
+                    throw new CustomWrapperException("Exception when trying to delete file: '" + path + "' " + stack, e);
                 }
             } catch (Exception e) {
                 String stack = ExceptionUtil.getStacktraceAsString(e);
-                logger.error("Error occurred while running custom wrapper:  "
-                        + stack);
-                throw new CustomWrapperException(
-                        "Error occurred while running custom wrapper: " + stack,
-                        e);
+                logger.error("Error occurred while running custom wrapper:  " + stack);
+                throw new CustomWrapperException("Error occurred while running custom wrapper: " + stack, e);
             }
         } catch (IllegalArgumentException e) {
             String stack = ExceptionUtil.getStacktraceAsString(e);
-            logger.error("The given string violates RFC 2396: '" + uri + "' "
-                    + stack);
-            throw new CustomWrapperException(
-                    "The given string violates RFC 2396: '" + uri + "' "
-                            + stack, e);
+            logger.error("The given string violates RFC 2396: '" + uri + "' " + stack);
+            throw new CustomWrapperException("The given string violates RFC 2396: '" + uri + "' " + stack, e);
         } catch (Exception e) {
             String stack = ExceptionUtil.getStacktraceAsString(e);
-            logger.error("Error occurred while running custom wrapper: "
-                    + stack);
-            throw new CustomWrapperException(
-                    "Error occurred while running custom wrapper:  " + stack, e);
+            logger.error("Error occurred while running custom wrapper: " + stack);
+            throw new CustomWrapperException("Error occurred while running custom wrapper:  " + stack, e);
         }
     }
 
@@ -364,8 +294,7 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
      *             if the operation is not supported
      */
     // TODO Support DELETE and CREATE
-    private static HttpRequestBase getHttpOperation(String operation)
-            throws UnsupportedOperationException {
+    private static HttpRequestBase getHttpOperation(String operation) throws UnsupportedOperationException {
         if (operation.equalsIgnoreCase(OPEN))
             return new HttpGet();
         // else if (operation.equalsIgnoreCase(DELETE))
@@ -373,7 +302,6 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
         // else if (operation.equalsIgnoreCase(CREATE))
         // return new HttpPost();
         else
-            throw new UnsupportedOperationException("Operation '" + operation
-                    + "' is not supported");
+            throw new UnsupportedOperationException("Operation '" + operation + "' is not supported");
     }
 }

@@ -54,27 +54,23 @@ public class HttpFsFileTest {
         String operation = "OPEN";
         int offset = 0;
         int len = 1024;
-        httpRequest.setURI(URI.create("http://" + host + ":" + port + prefix
-                + path + "?user.name=" + username + "&op=" + operation));
+        httpRequest.setURI(URI.create("http://" + host + ":" + port + prefix + path + "?user.name=" + username + "&op=" + operation));
 
         // Execute
         try {
-            org.apache.http.HttpResponse response = httpClient
-                    .execute(httpRequest);
+            org.apache.http.HttpResponse response = httpClient.execute(httpRequest);
             HttpEntity responseEntity = response.getEntity();
             InputStream is = responseEntity.getContent();
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
             String line;
             while ((line = br.readLine()) != null) {
-                String[] line_array = line.split("\t");
-                // column_delimiter matches the key/value delimiter
-                if (line_array.length == 2) {
-                    printArray(line_array);
+                String[] lineArray = line.split("\t");
+                // columnDelimiter matches the key/value delimiter
+                if (lineArray.length == 2) {
+                    printArray(lineArray);
                 } else {
-                    System.out
-                            .println("Column delimiter does not match the key/value delimiter");
-                    throw new CustomWrapperException(
-                            "Column delimiter does not match the key/value delimiter");
+                    System.out.println("Column delimiter does not match the key/value delimiter");
+                    throw new CustomWrapperException("Column delimiter does not match the key/value delimiter");
                 }
             }
 
