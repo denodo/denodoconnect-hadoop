@@ -1,9 +1,0 @@
-{"type":"record",
-"name":"WeatherRecord",
-"doc": "A weather reading.",
-"fields":[
-{"name":"station","type":"string"},
-{"name":"temp","type":"int"},
-{"name": "time", "type": "long"}
-]
-}

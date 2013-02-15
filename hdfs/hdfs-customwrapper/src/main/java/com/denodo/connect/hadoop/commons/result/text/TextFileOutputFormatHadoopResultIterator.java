@@ -78,14 +78,12 @@ public class TextFileOutputFormatHadoopResultIterator implements IHadoopResultIt
         try {
             this.configuration = HadoopConfigurationUtils.getConfiguration(dataNodeIp, dataNodePort, this.hadoopKeyClass,
                     this.hadoopValueClass);
-            // this.configuration.set("input.keyvaluelinerecordreader.key.value.separator",
-            // separator);
+
             this.fileSystem = FileSystem.get(this.configuration);
             if (logger.isDebugEnabled()) {
                 logger.debug("FileSystem is: " + this.fileSystem.getUri()); //$NON-NLS-1$
                 logger.debug("Path is: " + outputPath); //$NON-NLS-1$
                 logger.debug("Separator is: " + separator); //$NON-NLS-1$
-
             }
             this.fss = this.fileSystem.listStatus(outputPath);
             if (this.fss == null)

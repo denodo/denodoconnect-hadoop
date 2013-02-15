@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper;
+package com.denodo.connect.hadoop.hdfs;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -38,7 +38,6 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
-import com.denodo.connect.hadoop.hdfs.wrapper.util.ExceptionUtil;
 import com.denodo.util.exceptions.UnsupportedOperationException;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
@@ -64,6 +63,7 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * 
  * @see AbstractCustomWrapper
  */
+// FIXME THIS IS A PROTOTYPE!!!!!
 public class HttpFsFileWrapper extends AbstractCustomWrapper {
     private static final String URL_PREFIX = "/webhdfs/v1";
     /**
@@ -264,23 +264,20 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
                         }
                     }
                 } catch (Exception e) {
-                    String stack = ExceptionUtil.getStacktraceAsString(e);
-                    logger.error("Exception when trying to delete file: '" + path + "' " + stack);
-                    throw new CustomWrapperException("Exception when trying to delete file: '" + path + "' " + stack, e);
+
+                    logger.error("Exception when trying to delete file: '" + path);
+                    throw new CustomWrapperException("Exception when trying to delete file: '" + path + "' ", e);
                 }
             } catch (Exception e) {
-                String stack = ExceptionUtil.getStacktraceAsString(e);
-                logger.error("Error occurred while running custom wrapper:  " + stack);
-                throw new CustomWrapperException("Error occurred while running custom wrapper: " + stack, e);
+                logger.error("Error occurred while running custom wrapper:  ");
+                throw new CustomWrapperException("Error occurred while running custom wrapper: ", e);
             }
         } catch (IllegalArgumentException e) {
-            String stack = ExceptionUtil.getStacktraceAsString(e);
-            logger.error("The given string violates RFC 2396: '" + uri + "' " + stack);
-            throw new CustomWrapperException("The given string violates RFC 2396: '" + uri + "' " + stack, e);
+            logger.error("The given string violates RFC 2396: '" + uri + "' ");
+            throw new CustomWrapperException("The given string violates RFC 2396: '" + uri + "' ", e);
         } catch (Exception e) {
-            String stack = ExceptionUtil.getStacktraceAsString(e);
-            logger.error("Error occurred while running custom wrapper: " + stack);
-            throw new CustomWrapperException("Error occurred while running custom wrapper:  " + stack, e);
+            logger.error("Error occurred while running custom wrapper: ");
+            throw new CustomWrapperException("Error occurred while running custom wrapper: ", e);
         }
     }
 
