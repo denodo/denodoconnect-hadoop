@@ -1,0 +1,58 @@
+This project contains classes copied from /local/inncvs/DT-hadoop/mapreduce/mapreduce-customwrapper project.
+
+CLASSES COPIED AND NOT MODIFIED:
+--------------------------------
+com.denodo.connect.hadoop.commons.exception.DeleteFileException
+com.denodo.connect.hadoop.commons.exception.InternalErrorException
+com.denodo.connect.hadoop.commons.result.IHadoopResultIterator
+com.denodo.connect.hadoop.util.type.TypeUtils
+
+CLASSES COPIED AND MODIFIED:
+-----------------------------
+- com.denodo.connect.hadoop.commons.naming.ParameterNaming
+ Added three constants:
+    public static String DELETE_AFTER_READING = "Delete after reading";//$NON-NLS-1$
+    public static final String SEPARATOR = "separator";//$NON-NLS-1$
+    public static String INPUT_FILE_PATH = "inputFilePath";//$NON-NLS-1$ 
+
+
+- com.denodo.connect.hadoop.util.configuration.HadoopConfigurationUtils
+Commented the following lines, since MRJobConfig does not exist in Hadoop 1.1.1
+//import org.apache.hadoop.mapreduce.MRJobConfig;
+//        conf.set(MRJobConfig.OUTPUT_KEY_CLASS, hadoopKeyClass);
+//        conf.set(MRJobConfig.OUTPUT_VALUE_CLASS, hadoopValueClass);
+
+
+- com.denodo.connect.hadoop.commons.result.map.MapFileOutputFormatHadoopResultIterator
+Added in constructor
+            if (this.fss == null)
+                throw new PathNotFoundException(outputPath);
+
+Changed text in some debug sentences and throw exception sentences:
+OLD: There has been an error reading results from output folder 
+NEW: There has been an error reading files from path 
+This is because when reading alone (not executing mapreduce job), output folder does not make much sense
+
+Changed the constructor of MapFile.Reader to make it Hadoop 1.1.1 compatible.
+OLD: this.currentReader = new MapFile.Reader(this.fss[this.currentFileStatusIndex].getPath(), this.configuration);
+NEW: this.currentReader = new MapFile.Reader(this.fileSystem, this.fss[this.currentFileStatusIndex].getPath().getName(),this.configuration);
+
+
+- com.denodo.connect.hadoop.commons.result.sequence.SequenceFileOutputFormatHadoopResultIterator
+Added in constructor
+            if (this.fss == null)
+                throw new PathNotFoundException(outputPath);
+
+Changed text in some debug sentences and throw exception sentences:
+OLD: There has been an error reading results from output folder 
+NEW: There has been an error reading files from path 
+This is because when reading alone (not executing mapreduce job), output folder does not make much sense
+
+Changed the constructor of SequenceFile.Reader to make it Hadoop 1.1.1 compatible.
+OLD: this.currentReader = new SequenceFile.Reader(this.configuration, SequenceFile.Reader.file(this.fss[this.currentFileStatusIndex].getPath()));
+NEW: this.currentReader = new SequenceFile.Reader(this.fileSystem, this.fss[this.currentFileStatusIndex].getPath(), this.configuration);
+
+
+NEW CLASSES ADDED
+com.denodo.connect.hadoop.commons.exception.PathNotFoundException
+com.denodo.connect.hadoop.commons.result.text.TextFileOutputFormatHadoopResultIterator: Class to iterate over a Delimited Text File
