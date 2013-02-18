@@ -19,7 +19,7 @@
  * 
  * =============================================================================
  */
-package com.denodo.connect.hdfs.wrapper.test;
+package com.denodo.connect.hadoop.hdfs.test;
 
 import java.io.BufferedReader;
 import java.io.IOException;
