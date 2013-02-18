@@ -115,8 +115,7 @@ public class MapFileOutputFormatHadoopResultIterator implements IHadoopResultIte
             // If first time
             if (this.currentReader == null) {
                 this.currentFileStatusIndex++;
-                this.currentReader = new MapFile.Reader(this.fileSystem, this.fss[this.currentFileStatusIndex].getPath().getName(),
-                        this.configuration);
+                this.currentReader = new MapFile.Reader(this.fileSystem, this.outputPath.getName(), this.configuration);
             }
 
             if (this.currentReader.next(keyAsWC, value)) {
@@ -135,8 +134,7 @@ public class MapFileOutputFormatHadoopResultIterator implements IHadoopResultIte
                 if (logger.isDebugEnabled()) {
                     logger.debug("Reading path: " + this.fss[this.currentFileStatusIndex].getPath().getName()); //$NON-NLS-1$
                 }
-                this.currentReader = new MapFile.Reader(this.fileSystem, this.fss[this.currentFileStatusIndex].getPath().getName(),
-                        this.configuration);
+                this.currentReader = new MapFile.Reader(this.fileSystem, this.outputPath.getName(), this.configuration);
                 if (this.currentReader.next(keyAsWC, value)) {
                     // Has next -> Values are in key and value -> do anything
                     // else
