@@ -46,11 +46,11 @@ public class HttpFsFileTest {
         // Set request uri
         // URL has the form http://<HOST>:<HTTP_PORT>/webhdfs/v1/<PATH>?op=..
 
-        String host = "192.168.73.132";
-        int port = 14000;
+        String host = "192.168.25.128";
+        int port = 50075;
         String prefix = "/webhdfs/v1";
-        String path = "/wordcount/output/part-r-00000";
-        String username = "cloudera";
+        String path = "/user/sandbox/text";
+        String username = "sandbox";
         String operation = "OPEN";
         int offset = 0;
         int len = 1024;
