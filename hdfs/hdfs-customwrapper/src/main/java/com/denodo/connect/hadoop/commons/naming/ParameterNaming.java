@@ -37,14 +37,14 @@ public class ParameterNaming {
     public static String MAPREDUCE_PARAMETERS = "MapReduce parameters (it will be added to the call to the MapReduce job)"; //$NON-NLS-1$
 
     public static String HADOOP_KEY = "KEY"; //$NON-NLS-1$
-    public static String HADOOP_KEY_CLASS = "KEY_CLASS"; // Hadoop class //$NON-NLS-1$
+    public static String HADOOP_KEY_CLASS = "Key class"; // Hadoop class //$NON-NLS-1$
     public static String HADOOP_VALUE = "VALUE"; //$NON-NLS-1$
-    public static String HADOOP_VALUE_CLASS = "VALUE_CLASS"; // Hadoop class //$NON-NLS-1$
+    public static String HADOOP_VALUE_CLASS = "Value class"; // Hadoop class //$NON-NLS-1$
 
     public static String CLASS_IMPLEMENTING_IHADOOPTASKHANDLER = "CLASS_IMPLEMENTING_IHADOOPTASKHANDLER"; //$NON-NLS-1$
 
     public static String DELETE_AFTER_READING = "Delete after reading";//$NON-NLS-1$
-    public static final String SEPARATOR = "separator";//$NON-NLS-1$
-    public static String INPUT_FILE_PATH = "inputFilePath";//$NON-NLS-1$
+    public static final String SEPARATOR = "Separator";//$NON-NLS-1$
+    public static String INPUT_FILE_PATH = "Path";//$NON-NLS-1$
 
 }
