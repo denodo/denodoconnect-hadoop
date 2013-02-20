@@ -1,0 +1,26 @@
+{"type":"record",
+"name":"WeatherRecord",
+"doc": "A weather reading.",
+"fields":[
+    {"name":"station","type":"string"},
+    {"name":"addresses", "type":{"type":"array", "items": { 
+                                                "name": "address", 
+                                                "type": "record", 
+                                                "fields" : [ 
+                                                    {"name":"city","type":"string"},
+                                                    {"name": "location", "type": {"type": "map", "values": { "type":"record",
+                                                                                                            "name":"hi",
+                                                                                                            "fields":[
+                                                                                                            {"name":"a","type":"string"},
+                                                                                                            {"name":"b","type":{"type":"record",
+                                                                                                                "name":"bhi",
+                                                                                                                "fields":[
+                                                                                                                {"name":"ba","type":"string"},
+                                                                                                                {"name":"bb","type":"string"}
+                                                                                                                ]}}
+                                                                                                            ]}}}
+                                                 ]}
+                               }
+     }
+]
+}

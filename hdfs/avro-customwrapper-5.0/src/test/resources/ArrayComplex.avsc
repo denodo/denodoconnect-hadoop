@@ -1,0 +1,8 @@
+{"type":"array", "items": { 
+                    "name": "address", 
+                    "type": "record", 
+                    "fields" : [ 
+                        {"name":"business","type":"string"},
+                        {"name": "addresses", "type": {"type":"array", "items": {"type": "map", "values": "string"}}}
+                     ]}
+}
