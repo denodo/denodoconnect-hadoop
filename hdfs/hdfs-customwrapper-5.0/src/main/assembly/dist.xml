@@ -16,10 +16,10 @@
             <directory>${basedir}/target/</directory>
             <outputDirectory>/dist</outputDirectory>
             <includes>
-                <include>denodo-hdfs-customwrapper-${project.version}.jar</include>
-                <include>denodo-hdfs-customwrapper-${project.version}-javadoc.jar</include>
-                <include>denodo-hdfs-customwrapper-${project.version}-sources.jar</include>
-                <include>denodo-hdfs-customwrapper-${project.version}-jar-with-dependencies.jar</include>
+                <include>denodo-hdfs-customwrapper-5.0-${project.version}.jar</include>
+                <include>denodo-hdfs-customwrapper-5.0-${project.version}-javadoc.jar</include>
+                <include>denodo-hdfs-customwrapper-5.0-${project.version}-sources.jar</include>
+                <include>denodo-hdfs-customwrapper-5.0-${project.version}-jar-with-dependencies.jar</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -46,9 +46,6 @@
             <outputDirectory>/lib</outputDirectory>
             <unpack>false</unpack>
             <scope>runtime</scope>
-            <excludes>
-                <exclude>com.denodo.connect.hadoop:denodo-hdfs-customwrapper</exclude>
-            </excludes>
         </dependencySet>
     </dependencySets>
 
