@@ -3,7 +3,7 @@
  *
  *   This software is part of the DenodoConnect component collection.
  *
- *   Copyright (c) 2012, denodo technologies (http://www.denodo.com)
+ *   Copyright (c) 2013, denodo technologies (http://www.denodo.com)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper.util;
+package com.denodo.connect.hadoop.hdfs.wrapper.util.avro;
 
 import java.sql.Types;
 import java.util.List;

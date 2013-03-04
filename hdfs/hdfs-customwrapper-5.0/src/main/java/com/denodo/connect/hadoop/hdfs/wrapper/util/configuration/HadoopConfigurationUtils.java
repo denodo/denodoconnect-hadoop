@@ -40,12 +40,10 @@ public final class HadoopConfigurationUtils {
         Configuration conf = new Configuration();
         conf.set("fs.default.name", "hdfs://" + dataNodeIP + ":" + dataNodePort);
         conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
-        conf.set("mapreduce.fileoutputcommitter.marksuccessfuljobs","false");
 
         logger.debug("Returning configuration: " + conf
             + " - value of 'fs.default.name' -> " + conf.get("fs.default.name")
-            + " - value of 'fs.hdfs.impl' -> " + conf.get("fs.hdfs.impl")
-            + " - value of 'mapreduce.fileoutputcommitter.marksuccessfuljobs' -> " + conf.get("mapreduce.fileoutputcommitter.marksuccessfuljobs"));
+            + " - value of 'fs.hdfs.impl' -> " + conf.get("fs.hdfs.impl"));
         return conf;
     }
 

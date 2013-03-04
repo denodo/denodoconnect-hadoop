@@ -3,7 +3,7 @@
  *
  *   This software is part of the DenodoConnect component collection.
  *
- *   Copyright (c) 2012, denodo technologies (http://www.denodo.com)
+ *   Copyright (c) 2013, denodo technologies (http://www.denodo.com)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -27,10 +27,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.avro.Schema;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.generic.GenericDatumReader;
-import org.apache.avro.io.DatumReader;
-import org.apache.avro.mapred.FsInput;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -39,8 +35,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.log4j.Logger;
 
-import com.denodo.connect.hadoop.hdfs.wrapper.util.AvroReaderUtil;
-import com.denodo.connect.hadoop.hdfs.wrapper.util.AvroSchemaUtil;
+import com.denodo.connect.hadoop.hdfs.wrapper.commons.exception.InternalErrorException;
+import com.denodo.connect.hadoop.hdfs.wrapper.commons.naming.ParameterNaming;
+import com.denodo.connect.hadoop.hdfs.wrapper.reader.HDFSAvroFileReader;
+import com.denodo.connect.hadoop.hdfs.wrapper.util.avro.AvroSchemaUtil;
+import com.denodo.connect.hadoop.hdfs.wrapper.util.configuration.HadoopConfigurationUtils;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
@@ -65,78 +64,58 @@ import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParamet
  * returned by the wrapper
  * </p>
  *
- * @see AbstractCustomWrapper
  */
-public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
+public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
 
-    private static final Logger logger = Logger.getLogger(HdfsAvroFileWrapper.class);
+    private static final Logger logger = Logger.getLogger(HDFSAvroFileWrapper.class);
 
-    /**
-     * The name of the 'Namenode host' input parameter for this wrapper.
-     */
-    private static final String INPUT_PARAMETER_NAMENODE_HOST = "Host";
-
-    /**
-     * The name of the 'Namenode port' input parameter for this wrapper.
-     */
-    private static final String INPUT_PARAMETER_NAMENODE_PORT = "Port";
 
     /**
      * The path to the .avsc file containing the Avro schema.
      * The two input parameters AVSC_FILE_PATH and AVSC_JSON are mutually exclusive.
      */
-    private static final String INPUT_PARAMETER_AVSC_FILE_PATH = "Avro schema file path";
+    private static final String INPUT_PARAMETER_AVSC_PATH = "Avro schema path";
 
     /**
      * The Avro Schema as JSON text.
      * The two input parameters AVSC_FILE_PATH and AVSC_JSON are mutually exclusive.
      */
-    private static final String INPUT_PARAMETER_AVSC_JSON = "Avro schema as JSON";
+    private static final String INPUT_PARAMETER_AVSC_JSON = "Avro schema JSON";
 
     private static final String SCHEMA_PARAMETER_AVRO_FILE_PATH = "avroFilepath";
 
-    /*
-     * Stores the wrapper's schema
-     */
-    private CustomWrapperSchemaParameter[] vdpSchema = null;
-    private Schema avroSchema = null;
 
-    public HdfsAvroFileWrapper() {
+    private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(ParameterNaming.HOST_IP,
+                "Namenode IP, e.g., 192.168.1.3 ",
+                true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(ParameterNaming.HOST_PORT,
+                "Namenode port, e.g., 8020 ", true,
+                CustomWrapperInputParameterTypeFactory.integerType()),
+            new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_PATH,
+                "Path to the Avro schema file. One of these parameters: '"
+                    + INPUT_PARAMETER_AVSC_PATH + "' or '"
+                    + INPUT_PARAMETER_AVSC_JSON
+                    + "' must be specified", false,
+                    CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_JSON,
+                "JSON of the Avro schema. One of these parameters: '"
+                    + INPUT_PARAMETER_AVSC_PATH + "' or '" + INPUT_PARAMETER_AVSC_JSON
+                    + "' must be specified", false,
+                CustomWrapperInputParameterTypeFactory.stringType()) };
+
+
+    public HDFSAvroFileWrapper() {
         super();
-        // Due to getContextClassLoader returning the platform classloader, we
-        // need to modify it in order to allow
-        // Hadoop and Avro fetch certain classes -it uses getContextClassLoader
-        Thread.currentThread().setContextClassLoader(Configuration.class.getClassLoader());
     }
 
     /**
      * Defines the input parameters of the Custom Wrapper
-     * <p>
-     * CustomWrapperInputParameter(String name, String description,
-     * boolean isMandatory, CustomWrapperInputParameterType type)
-     * </p>
      */
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
-
-        return new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(INPUT_PARAMETER_NAMENODE_HOST,
-                "Namenode hostname or IP, e.g., localhost or 192.168.1.3 ",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(INPUT_PARAMETER_NAMENODE_PORT,
-                "Namenode port, e.g., 8020 ", true,
-                CustomWrapperInputParameterTypeFactory.integerType()),
-            new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_FILE_PATH,
-                "Path to the Avro schema file. One of these parameters: '"
-                    + INPUT_PARAMETER_AVSC_FILE_PATH + "' or '"
-                    + INPUT_PARAMETER_AVSC_JSON
-                    + "' must be specified", false,
-                CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_JSON,
-                "JSON of the Avro schema. One of these parameters: '"
-                    + INPUT_PARAMETER_AVSC_FILE_PATH + "' or '" + INPUT_PARAMETER_AVSC_JSON
-                    + "' must be specified", false,
-                CustomWrapperInputParameterTypeFactory.stringType()) };
+        return INPUT_PARAMETERS;
     }
 
     /**
@@ -147,9 +126,6 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
 
         CustomWrapperConfiguration configuration = new CustomWrapperConfiguration();
         configuration.setDelegateProjections(false);
-        configuration.setDelegateNotConditions(false);
-        configuration.setDelegateOrConditions(false);
-        configuration.setDelegateOrderBy(false);
         // Equals operator is delegated in searchable fields. Other operator
         // will be postprocessed
         configuration.setAllowedOperators(new String[] { CustomWrapperCondition.OPERATOR_EQ });
@@ -182,16 +158,10 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
      * http://avro.apache
      * .org/docs/1.5.4/api/java/org/apache/avro/Schema.html">here</a>)
      * </p>
-     *
-     * @see CustomWrapper#getSchemaParameters()
      */
     @Override
     public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues)
         throws CustomWrapperException {
-
-        if (this.vdpSchema != null) {
-            return this.vdpSchema;
-        }
 
         if (logger.isDebugEnabled()) {
             logger.debug("Generating schema for the custom wrapper: " + this.getClass());
@@ -201,28 +171,30 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
             }
         }
 
-        this.avroSchema = obtainAvroSchema();
-        if (this.avroSchema == null) {
+        String dataNodeIP = inputValues.get(ParameterNaming.HOST_IP);
+        String dataNodePort = inputValues.get(ParameterNaming.HOST_PORT);
+        Schema avroSchema = obtainAvroSchema(dataNodeIP, dataNodePort);
+        if (avroSchema == null) {
             logger.error("Error generating base view schema: the avro schema is null");
             throw new CustomWrapperException("Error generating base view schema: the avro schema is null");
         }
 
-        this.vdpSchema = obtainVDPSchema();
-        return this.vdpSchema;
+        return obtainVDPSchema(avroSchema);
 
     }
 
-    private Schema obtainAvroSchema() throws CustomWrapperException {
+    private Schema obtainAvroSchema(String dataNodeIP, String dataNodePort) throws CustomWrapperException {
 
         FSDataInputStream dataInputStream = null;
         try {
             Schema schema = null;
 
             // The two input parameters AVSC_FILE_PATH and AVSC_JSON are mutually exclusive.
-            CustomWrapperInputParameterValue avscFilePathParamValue = getInputParameterValue(INPUT_PARAMETER_AVSC_FILE_PATH);
+            CustomWrapperInputParameterValue avscFilePathParamValue = getInputParameterValue(INPUT_PARAMETER_AVSC_PATH);
             if (avscFilePathParamValue != null && StringUtils.isNotBlank((String) avscFilePathParamValue.getValue())) {
                 String avscFilePath = (String) avscFilePathParamValue.getValue();
-                Configuration conf = getHadoopConfiguration();
+                Configuration conf = HadoopConfigurationUtils.getConfiguration(dataNodeIP,
+                    dataNodePort);
                 Path avscPath = new Path(avscFilePath);
                 FileSystem fileSystem = FileSystem.get(conf);
                 dataInputStream = fileSystem.open(avscPath);
@@ -235,7 +207,7 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
                     schema = new Schema.Parser().parse(avscJSON);
                 } else {
                     throw new CustomWrapperException("One of these parameters: '"
-                        + INPUT_PARAMETER_AVSC_FILE_PATH + "' or '" + INPUT_PARAMETER_AVSC_JSON
+                        + INPUT_PARAMETER_AVSC_PATH + "' or '" + INPUT_PARAMETER_AVSC_JSON
                         + "' must be specified");
                 }
             }
@@ -250,7 +222,7 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
 
     }
 
-    private CustomWrapperSchemaParameter[] obtainVDPSchema() throws CustomWrapperException {
+    private static CustomWrapperSchemaParameter[] obtainVDPSchema(Schema avroSchema) throws CustomWrapperException {
 
         boolean isSearchable = true;
         boolean isUpdateable = true;
@@ -263,7 +235,7 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
             !isUpdateable, !isNullable, isMandatory);
 
         CustomWrapperSchemaParameter avroSchemaParameter = AvroSchemaUtil.createSchemaParameter(
-            this.avroSchema, this.avroSchema.getName());
+            avroSchema, avroSchema.getName());
 
         return new CustomWrapperSchemaParameter[] { avroFilePathParameter, avroSchemaParameter };
     }
@@ -272,42 +244,40 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
     public void run(CustomWrapperConditionHolder condition, List<CustomWrapperFieldExpression> projectedFields,
         CustomWrapperResult result, Map<String, String> inputValues) throws CustomWrapperException {
 
-        this.vdpSchema = getSchemaParameters(inputValues);
-
-        String avroFilePath = getAvroFilePath(condition);
+        ClassLoader originalCtxClassLoader = changeContextClassLoader();
+        HDFSAvroFileReader reader = null;
         try {
 
-            Configuration conf = getHadoopConfiguration();
+            String avroFilePath = getAvroFilePath(condition);
             Path path = new Path(avroFilePath);
-            FsInput inputFile = new FsInput(path, conf);
 
-            DatumReader<Object> reader = new GenericDatumReader<Object>(this.avroSchema);
-            DataFileReader<Object> dataFileReader = new DataFileReader<Object>(inputFile, reader);
+            String dataNodeIP = inputValues.get(ParameterNaming.HOST_IP);
+            String dataNodePort = inputValues.get(ParameterNaming.HOST_PORT);
+            Configuration conf = HadoopConfigurationUtils.getConfiguration(dataNodeIP,
+                dataNodePort);
 
-            for (Object datum : dataFileReader) {
-                Object avroData = AvroReaderUtil.read(this.avroSchema, datum);
+            Schema avroSchema = obtainAvroSchema(dataNodeIP, dataNodePort);
+            reader = new HDFSAvroFileReader(path, avroSchema, conf);
+            while (reader.hasNext()) {
+                Object avroData = reader.read();
                 Object[] vdpRow = buildVDPRow(avroFilePath, avroData);
                 result.addRow(vdpRow, projectedFields);
             }
 
         } catch (IOException ie) {
             logger.error("Error accessing Avro file", ie);
-            throw new CustomWrapperException("Error accessing Avro file: " + ie.getMessage(), ie);
+            throw new InternalErrorException("Error accessing Avro file: " + ie.getMessage(), ie);
 
+        } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                logger.error("Error closing the reader", e);
+            }
+            restoreContextClassLoader(originalCtxClassLoader);
         }
-    }
-
-    private Configuration getHadoopConfiguration() {
-
-        String host = (String) getInputParameterValue(INPUT_PARAMETER_NAMENODE_HOST).getValue();
-        int port = ((Integer) getInputParameterValue(INPUT_PARAMETER_NAMENODE_PORT).getValue()).intValue();
-
-        Configuration conf = new Configuration();
-        conf.set("fs.default.name", "hdfs://" + host + ":" + port);
-        // To avoid weird "No FileSystem for scheme: hdfs" exception
-        conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
-
-        return conf;
     }
 
     private static String getAvroFilePath(CustomWrapperConditionHolder condition) {
@@ -327,12 +297,24 @@ public class HdfsAvroFileWrapper extends AbstractCustomWrapper {
     }
 
 
-    private Object[] buildVDPRow(String avroFilePath, Object avroData) {
+    private static Object[] buildVDPRow(String avroFilePath, Object avroData) {
 
-        Object[] rowData = new Object[this.vdpSchema.length];
+        Object[] rowData = new Object[2];
         rowData[0] = avroFilePath;
         rowData[1] = avroData;
 
         return rowData;
+    }
+
+    private static ClassLoader changeContextClassLoader() {
+        // Due to getContextClassLoader returning the platform classloader,
+        // we need to modify it in order to allow Avro fetch certain classes
+        ClassLoader originalCtxClassLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(Configuration.class.getClassLoader());
+        return originalCtxClassLoader;
+    }
+
+    private static void restoreContextClassLoader(ClassLoader originalCtxClassLoader) {
+        Thread.currentThread().setContextClassLoader(originalCtxClassLoader);
     }
 }

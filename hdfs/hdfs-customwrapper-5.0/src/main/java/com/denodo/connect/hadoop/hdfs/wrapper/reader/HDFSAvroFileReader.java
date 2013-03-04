@@ -1,5 +1,27 @@
-package com.denodo.connect.hadoop.hdfs.wrapper.util;
+/*
+ * =============================================================================
+ *
+ *   This software is part of the DenodoConnect component collection.
+ *
+ *   Copyright (c) 2013, denodo technologies (http://www.denodo.com)
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ * =============================================================================
+ */
+package com.denodo.connect.hadoop.hdfs.wrapper.reader;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -7,19 +29,52 @@ import java.util.Map.Entry;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
+import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericData.Array;
 import org.apache.avro.generic.GenericData.Fixed;
 import org.apache.avro.generic.GenericData.Record;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.io.DatumReader;
+import org.apache.avro.mapred.FsInput;
 import org.apache.avro.util.Utf8;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+
+import com.denodo.connect.hadoop.hdfs.wrapper.util.avro.AvroSchemaUtil;
 
 
-public final class AvroReaderUtil {
+public class HDFSAvroFileReader {
 
-    private AvroReaderUtil() {
+    private Schema schema;
+    private DataFileReader<Object> dataFileReader;
+
+    public HDFSAvroFileReader(Path path, Schema schema, Configuration conf) throws IOException {
+
+        FsInput inputFile = new FsInput(path, conf);
+        DatumReader<Object> reader = new GenericDatumReader<Object>(schema);
+        this.dataFileReader = new DataFileReader<Object>(inputFile, reader);
+        this.schema = schema;
 
     }
 
-    public static Object read(Schema schema, Object datum) {
+    public boolean hasNext() {
+        return this.dataFileReader.hasNext();
+    }
+
+    public Object read() {
+
+        Object data = null;
+        data = this.dataFileReader.next();
+        return read(this.schema, data);
+    }
+
+    public void close() throws IOException {
+        if (this.dataFileReader != null) {
+            this.dataFileReader.close();
+        }
+    }
+
+    private static Object read(Schema schema, Object datum) {
 
         Object result = null;
 
@@ -112,6 +167,7 @@ public final class AvroReaderUtil {
 
     private static Object readArray(Schema schema, Object datum) {
 
+        @SuppressWarnings("unchecked")
         Array<Object> avroArray = (Array<Object>) datum;
         Object[][] vdpArray = new Object[avroArray.size()][1];
         int i = 0;
@@ -131,6 +187,7 @@ public final class AvroReaderUtil {
 
     private static Object readMap(Schema schema, Object datum) {
 
+        @SuppressWarnings("unchecked")
         Map<String, Object> avroMap = (Map<String, Object>) datum;
         Object[][] vdpMap = new Object[avroMap.size()][2]; // "key" and "value"
         int i = 0;

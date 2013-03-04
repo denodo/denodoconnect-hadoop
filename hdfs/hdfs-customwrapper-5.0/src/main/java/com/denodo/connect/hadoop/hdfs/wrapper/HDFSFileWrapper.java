@@ -39,7 +39,7 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
     private static final CustomWrapperInputParameter[] COMMON_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(ParameterNaming.HOST_IP,
-                "Namenode hostname or IP, e.g., localhost or 192.168.1.3 ", true,
+                "Namenode IP, e.g., 192.168.1.3 ", true,
                 CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(ParameterNaming.HOST_PORT,
                 "Namenode port, e.g., 8020 ", true,
@@ -87,36 +87,38 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
         throws CustomWrapperException {
 
         ClassLoader originalCtxClassLoader = changeContextClassLoader();
+        try {
 
-        String hadoopKeyClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_KEY_CLASS);
-        String hadoopValueClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_VALUE_CLASS);
+            String hadoopKeyClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_KEY_CLASS);
+            String hadoopValueClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_VALUE_CLASS);
 
-        // Process file
-        logger.debug("Processing file...");
-        HDFSFileReader fileIterator = getHDFSFileReader(inputValues);
-        Writable key = fileIterator.getInitKey();
-        Writable value = fileIterator.getInitValue();
-        while (fileIterator.readNext(key, value)) {
-            Object[] asArray = new Object[projectedFields.size()];
-            if (projectedFields.get(0).getName().equalsIgnoreCase(ParameterNaming.HADOOP_KEY)) {
-                asArray[0] = TypeUtils.getValue(hadoopKeyClass, key);
-            }
-            if (projectedFields.get(0).getName().equalsIgnoreCase(ParameterNaming.HADOOP_VALUE)) {
-                asArray[0] = TypeUtils.getValue(hadoopValueClass, value);
-            }
-            if (projectedFields.size() == 2) {
-                if (projectedFields.get(1).getName().equalsIgnoreCase(ParameterNaming.HADOOP_KEY)) {
-                    asArray[1] = TypeUtils.getValue(hadoopKeyClass, key);
+            // Process file
+            logger.debug("Processing file...");
+            HDFSFileReader reader = getHDFSFileReader(inputValues);
+            Writable key = reader.getInitKey();
+            Writable value = reader.getInitValue();
+            while (reader.readNext(key, value)) {
+                Object[] asArray = new Object[projectedFields.size()];
+                if (projectedFields.get(0).getName().equalsIgnoreCase(ParameterNaming.HADOOP_KEY)) {
+                    asArray[0] = TypeUtils.getValue(hadoopKeyClass, key);
                 }
-                if (projectedFields.get(1).getName().equalsIgnoreCase(ParameterNaming.HADOOP_VALUE)) {
-                    asArray[1] = TypeUtils.getValue(hadoopValueClass, value);
+                if (projectedFields.get(0).getName().equalsIgnoreCase(ParameterNaming.HADOOP_VALUE)) {
+                    asArray[0] = TypeUtils.getValue(hadoopValueClass, value);
                 }
+                if (projectedFields.size() == 2) {
+                    if (projectedFields.get(1).getName().equalsIgnoreCase(ParameterNaming.HADOOP_KEY)) {
+                        asArray[1] = TypeUtils.getValue(hadoopKeyClass, key);
+                    }
+                    if (projectedFields.get(1).getName().equalsIgnoreCase(ParameterNaming.HADOOP_VALUE)) {
+                        asArray[1] = TypeUtils.getValue(hadoopValueClass, value);
+                    }
+                }
+                result.addRow(asArray, projectedFields);
             }
-            result.addRow(asArray, projectedFields);
+            logger.debug("Run finished");
+        } finally {
+            restoreContextClassLoader(originalCtxClassLoader);
         }
-
-        restoreContextClassLoader(originalCtxClassLoader);
-        logger.debug("Run finished");
     }
 
     protected static String getHadoopClass(Map<String, String> inputValues, String key) {
