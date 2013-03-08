@@ -25,6 +25,7 @@ public final class ParameterNaming {
 
     public static final String HOST_IP = "Host IP";
     public static final String HOST_PORT = "Host port";
+    public static final String USER = "User";
 
     public static final String HADOOP_KEY = "KEY";
     public static final String HADOOP_KEY_CLASS = "Key class";
