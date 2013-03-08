@@ -1,5 +1,6 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -23,13 +24,8 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
 
 
 /**
- * An abstract base class for a generic HDFS File Connector Custom Wrapper.
- * For reading files stored in HDFS (Hadoop Distributed File System)
- * <p>
- *
- * If everything works fine, the key-value pairs contained in the file will be
- * returned by the wrapper
- * </p>
+ * An abstract base class for a generic HDFS file custom wrapper that
+ * reads files stored in HDFS (Hadoop Distributed File System).
  *
  */
 public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
@@ -39,10 +35,10 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
     private static final CustomWrapperInputParameter[] COMMON_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(ParameterNaming.HOST_IP,
-                "Namenode IP, e.g., 192.168.1.3 ", true,
+                "Namenode IP ", true,
                 CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(ParameterNaming.HOST_PORT,
-                "Namenode port, e.g., 8020 ", true,
+                "Namenode port, default is 8020 ", true,
                 CustomWrapperInputParameterTypeFactory.integerType()),
             new CustomWrapperInputParameter(ParameterNaming.INPUT_FILE_PATH,
                 "Input path for the file or the directory containing the files ", true,
@@ -87,6 +83,7 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
         throws CustomWrapperException {
 
         ClassLoader originalCtxClassLoader = changeContextClassLoader();
+        HDFSFileReader reader = null;
         try {
 
             String hadoopKeyClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_KEY_CLASS);
@@ -94,7 +91,7 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
 
             // Process file
             logger.debug("Processing file...");
-            HDFSFileReader reader = getHDFSFileReader(inputValues);
+            reader = getHDFSFileReader(inputValues);
             Writable key = reader.getInitKey();
             Writable value = reader.getInitValue();
             while (reader.readNext(key, value)) {
@@ -117,6 +114,13 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
             }
             logger.debug("Run finished");
         } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                logger.error("Error closing the reader", e);
+            }
             restoreContextClassLoader(originalCtxClassLoader);
         }
     }
