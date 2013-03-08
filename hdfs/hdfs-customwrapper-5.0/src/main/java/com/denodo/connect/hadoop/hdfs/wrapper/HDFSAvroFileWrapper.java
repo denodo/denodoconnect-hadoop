@@ -53,16 +53,12 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
 import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 /**
- * HDFS File Connector Custom Wrapper for reading Avro files stored in HDFS
- * (Hadoop Distributed File System)
+ * HDFS file custom wrapper for reading Avro files stored in HDFS (Hadoop
+ * Distributed File System).
  * <p>
  *
- * You will be asked for Namenode host, Namenode port, avro schema file path
- * or avro schema string.
- * <br/>
- * If everything works fine, the key-value pairs contained in the file will be
- * returned by the wrapper
- * </p>
+ * The following parameters are required: NameNode IP, NameNode port, Avro
+ * schema file path or Avro schema JSON. <br/>
  *
  */
 public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
@@ -88,10 +84,10 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(ParameterNaming.HOST_IP,
-                "Namenode IP, e.g., 192.168.1.3 ",
+                "NameNode IP ",
                 true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(ParameterNaming.HOST_PORT,
-                "Namenode port, e.g., 8020 ", true,
+                "NameNode port, default is 8020 ", true,
                 CustomWrapperInputParameterTypeFactory.integerType()),
             new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_PATH,
                 "Path to the Avro schema file. One of these parameters: '"

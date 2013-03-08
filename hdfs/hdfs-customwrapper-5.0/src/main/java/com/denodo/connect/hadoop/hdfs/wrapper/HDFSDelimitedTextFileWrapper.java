@@ -32,14 +32,14 @@ import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 
 /**
- * HDFS File Connector Custom Wrapper for reading key-value delimited text files
- * stored in HDFS (Hadoop Distributed File System)
+ * HDFS file custom wrapper for reading delimited text files stored in HDFS
+ * (Hadoop Distributed File System).
  * <p>
  *
- * You will be asked namenode host, namenode port, file path and file separator.
- * <br/>
- * If everything works fine, the key-value pairs contained in the file will be
- * returned by the wrapper
+ * The following parameters are required: NameNode IP, NameNode port, file path
+ * and file separator. <br/>
+ *
+ * Key/value pairs contained in the file will be returned by the wrapper.
  * </p>
  *
  */
