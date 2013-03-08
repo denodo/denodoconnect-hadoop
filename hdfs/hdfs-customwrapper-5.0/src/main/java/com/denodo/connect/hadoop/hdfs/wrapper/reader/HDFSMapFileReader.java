@@ -85,7 +85,9 @@ public class HDFSMapFileReader extends HDFSFileReader {
 
     @Override
     public void closeReader() throws IOException {
-        this.currentReader.close();
+        if (this.currentReader != null) {
+            this.currentReader.close();
+        }
     }
 
 }

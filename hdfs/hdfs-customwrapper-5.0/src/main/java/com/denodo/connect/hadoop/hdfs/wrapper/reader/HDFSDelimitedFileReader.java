@@ -88,8 +88,10 @@ public class HDFSDelimitedFileReader extends HDFSFileReader {
 
     @Override
     public void closeReader() throws IOException {
-        this.is.close();
-        this.currentReader.close();
+        if (this.is != null) {
+            this.is.close();
+            this.currentReader.close();
+        }
     }
 
 }

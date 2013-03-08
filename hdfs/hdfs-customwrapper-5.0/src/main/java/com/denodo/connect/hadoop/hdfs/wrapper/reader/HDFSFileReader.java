@@ -111,7 +111,7 @@ public abstract class HDFSFileReader {
                 return readNext(key, value);
             }
 
-            this.fileSystem.close();
+            close();
             return false;
         } catch (IOException e) {
             throw new InternalErrorException(e);
@@ -144,6 +144,13 @@ public abstract class HDFSFileReader {
      */
     public Writable getInitValue() {
         return TypeUtils.getInitValue(this.hadoopValueClass, this.configuration);
+    }
+
+    public void close() throws IOException {
+        closeReader();
+        if (this.fileSystem != null) {
+            this.fileSystem.close();
+        }
     }
 
 
