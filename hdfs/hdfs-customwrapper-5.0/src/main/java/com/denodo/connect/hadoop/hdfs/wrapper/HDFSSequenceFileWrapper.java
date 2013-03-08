@@ -32,14 +32,14 @@ import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 
 /**
- * HDFS File Connector Custom Wrapper for reading Sequence files stored in HDFS
- * (Hadoop Distributed File System)
+ * HDFS file custom Wrapper for reading sequence files stored in HDFS (Hadoop
+ * Distributed File System).
  * <p>
  *
- * You will be asked namenode host, namenode port, file path, Hadoop key class
- * and Hadoop value class. <br/>
- * If everything works fine, the key-value pairs contained in the file will be
- * returned by the wrapper
+ * The following parameters are required: NameNode IP, NameNode port, file path,
+ * Hadoop key class and Hadoop value class. <br/>
+ *
+ * Key/value pairs contained in the file will be returned by the wrapper.
  * </p>
  *
  */
