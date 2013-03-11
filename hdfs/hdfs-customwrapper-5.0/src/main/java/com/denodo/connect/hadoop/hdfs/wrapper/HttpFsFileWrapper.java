@@ -80,7 +80,7 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
                 "HttpFS IP ", true,
                 CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(ParameterNaming.HOST_PORT,
-                "HttpFS port, default is 50075 for WebHDFS/HttpFS or 14000 for HttpFs Gateway ", true,
+                "HttpFS port, default for HttpFS is 50075 for HttpFS ", true,
                 CustomWrapperInputParameterTypeFactory.integerType()),
             new CustomWrapperInputParameter(ParameterNaming.USER,
                 "User that will perform the operation, if is not set the default web user is used", false,
