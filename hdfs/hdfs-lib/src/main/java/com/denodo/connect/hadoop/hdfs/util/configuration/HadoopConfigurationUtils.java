@@ -19,7 +19,7 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper.util.configuration;
+package com.denodo.connect.hadoop.hdfs.util.configuration;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
@@ -33,17 +33,20 @@ public final class HadoopConfigurationUtils {
     }
 
     /**
-     * @return the basic hadoop configuration (only including datanode ip, port)
+     * @return the basic hadoop configuration
      */
     public static Configuration getConfiguration(String dataNodeIP, String dataNodePort) {
 
         Configuration conf = new Configuration();
         conf.set("fs.default.name", "hdfs://" + dataNodeIP + ":" + dataNodePort);
         conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
+        // Remove SUCESS file from output dir
+        conf.set("mapreduce.fileoutputcommitter.marksuccessfuljobs", "false");
 
         logger.debug("Returning configuration: " + conf
             + " - value of 'fs.default.name' -> " + conf.get("fs.default.name")
-            + " - value of 'fs.hdfs.impl' -> " + conf.get("fs.hdfs.impl"));
+            + " - value of 'fs.hdfs.impl' -> " + conf.get("fs.hdfs.impl")
+            + " - value of 'mapreduce.fileoutputcommitter.marksuccessfuljobs' -> " + conf.get("mapreduce.fileoutputcommitter.marksuccessfuljobs"));
         return conf;
     }
 

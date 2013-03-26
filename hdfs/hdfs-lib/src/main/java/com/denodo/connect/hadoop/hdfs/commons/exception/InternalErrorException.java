@@ -19,7 +19,7 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper.commons.exception;
+package com.denodo.connect.hadoop.hdfs.commons.exception;
 
 import org.apache.commons.lang.exception.NestableRuntimeException;
 

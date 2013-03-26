@@ -23,13 +23,6 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>${basedir}/doc/</directory>
-            <outputDirectory>/doc</outputDirectory>
-            <includes>
-                <include>**/*.pdf</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>${basedir}/</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
@@ -46,6 +39,9 @@
             <outputDirectory>/lib</outputDirectory>
             <unpack>false</unpack>
             <scope>runtime</scope>
+		    <excludes>
+        		<exclude>com.denodo.connect.hadoop:denodo-mapreduce-customwrapper</exclude>
+      		</excludes>
         </dependencySet>
     </dependencySets>
 

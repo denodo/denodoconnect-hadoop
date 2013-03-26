@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
@@ -36,10 +35,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.log4j.Logger;
-
-import com.denodo.connect.hadoop.hdfs.wrapper.commons.exception.InternalErrorException;
 
 public final class TypeUtils {
 
@@ -126,40 +122,6 @@ public final class TypeUtils {
 
         logger.warn("Class '" + hadoopClass + "' is not directly supported. Returning its writable.toString() value");
         return value.toString();
-    }
-
-
-    /**
-     * It returns a Writable initialized necessary to read mapreduce output.
-     * Key class can't be an array.
-     *
-     * @param hadoopKeyClass class of the Writable
-     * @return the Writable of class hadoopKeyClass initialized
-     */
-    public static Writable getInitKey(String hadoopKeyClass, Configuration configuration) {
-        try {
-            return (Writable) ReflectionUtils.newInstance(Class.forName(hadoopKeyClass), configuration);
-        } catch (ClassNotFoundException e) {
-            throw new InternalErrorException(e);
-        }
-    }
-
-
-    /**
-     * It returns a Writable initialized necessary to read mapreduce output.
-     * If hadoopValuClass ends with [] it will return an ArrayWritable of the
-     * class in hadoopValueClass.
-     */
-    @SuppressWarnings("unchecked")
-    public static Writable getInitValue(String hadoopValueClass, Configuration configuration) {
-        try {
-            if (StringUtils.endsWith(hadoopValueClass, "[]")) {
-                return new ArrayWritable((Class<? extends Writable>) Class.forName(StringUtils.substringBeforeLast(hadoopValueClass, "[]")));
-            }
-            return (Writable) ReflectionUtils.newInstance(Class.forName(hadoopValueClass), configuration);
-        } catch (ClassNotFoundException e) {
-            throw new InternalErrorException(e);
-        }
     }
 
 

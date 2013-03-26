@@ -8,13 +8,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-5.0</artifactId>
-    <version>20130304</version>
+    <version>20130322</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
     <properties>
         <avro.version>1.7.2</avro.version>
-        <hadoop.version>1.1.1</hadoop.version>
+        <hadoop.version>1.1.2</hadoop.version>
     </properties>
 
     <!-- *************************** -->
@@ -285,12 +285,18 @@
             <artifactId>httpclient</artifactId>
             <version>4.2.1</version>
         </dependency>
-        
-        <dependency> 
+
+        <dependency>
             <groupId>com.hadoop.gplcompression</groupId>
             <artifactId>hadoop-lzo</artifactId>
             <version>0.4.16</version>
         </dependency>
-        
+
+        <dependency>
+            <groupId>com.denodo.connect</groupId>
+            <artifactId>denodo-hdfs-lib</artifactId>
+            <version>20130322</version>
+        </dependency>
+
     </dependencies>
 </project>

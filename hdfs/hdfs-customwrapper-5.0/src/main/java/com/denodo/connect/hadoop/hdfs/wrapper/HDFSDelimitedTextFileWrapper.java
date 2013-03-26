@@ -21,13 +21,14 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.apache.hadoop.fs.Path;
 
+import com.denodo.connect.hadoop.hdfs.reader.HDFSDelimitedFileReader;
+import com.denodo.connect.hadoop.hdfs.reader.HDFSKeyValueReader;
 import com.denodo.connect.hadoop.hdfs.wrapper.commons.naming.ParameterNaming;
-import com.denodo.connect.hadoop.hdfs.wrapper.reader.HDFSDelimitedFileReader;
-import com.denodo.connect.hadoop.hdfs.wrapper.reader.HDFSFileReader;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 
@@ -43,7 +44,7 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * </p>
  *
  */
-public class HDFSDelimitedTextFileWrapper extends HDFSFileWrapper {
+public class HDFSDelimitedTextFileWrapper extends AbstractHDFSFileWrapper {
 
 
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
@@ -63,7 +64,7 @@ public class HDFSDelimitedTextFileWrapper extends HDFSFileWrapper {
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) {
+    public HDFSKeyValueReader getHDFSFileReader(Map<String, String> inputValues) throws IOException {
 
         String dataNodeIP = inputValues.get(ParameterNaming.HOST_IP);
         String dataNodePort = inputValues.get(ParameterNaming.HOST_PORT);

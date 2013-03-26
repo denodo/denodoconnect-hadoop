@@ -19,7 +19,7 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper.reader;
+package com.denodo.connect.hadoop.hdfs.reader;
 
 import java.io.IOException;
 
@@ -38,13 +38,13 @@ import org.apache.hadoop.io.WritableComparable;
  * {@link WritableComparable} as {@link Writable} is not enough
  *
  */
-public class HDFSMapFileReader extends HDFSFileReader {
+public class HDFSMapFileReader extends AbstractHDFSKeyValueReader {
 
 
     private MapFile.Reader currentReader;
 
     public HDFSMapFileReader(String dataNodeIP, String dataNodePort,
-        String hadoopKeyClass, String hadoopValueClass, Path outputPath) {
+        String hadoopKeyClass, String hadoopValueClass, Path outputPath) throws IOException {
 
         super(dataNodeIP, dataNodePort, hadoopKeyClass, hadoopValueClass, outputPath);
     }

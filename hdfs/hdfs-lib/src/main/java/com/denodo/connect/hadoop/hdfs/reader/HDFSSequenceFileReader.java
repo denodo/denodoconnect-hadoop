@@ -19,7 +19,7 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper.reader;
+package com.denodo.connect.hadoop.hdfs.reader;
 
 import java.io.IOException;
 
@@ -34,13 +34,13 @@ import org.apache.hadoop.io.Writable;
  * Class to iterate over a {@link SequenceFile}
  *
  */
-public class HDFSSequenceFileReader extends HDFSFileReader {
+public class HDFSSequenceFileReader extends AbstractHDFSKeyValueReader {
 
 
     private SequenceFile.Reader currentReader;
 
     public HDFSSequenceFileReader(String dataNodeIP, String dataNodePort,
-        String hadoopKeyClass, String hadoopValueClass, Path outputPath) {
+        String hadoopKeyClass, String hadoopValueClass, Path outputPath) throws IOException {
 
         super(dataNodeIP, dataNodePort, hadoopKeyClass, hadoopValueClass, outputPath);
     }

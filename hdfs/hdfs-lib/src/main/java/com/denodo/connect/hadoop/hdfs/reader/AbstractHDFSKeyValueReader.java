@@ -19,7 +19,7 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper.reader;
+package com.denodo.connect.hadoop.hdfs.reader;
 
 import java.io.IOException;
 
@@ -30,13 +30,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 import org.apache.log4j.Logger;
 
-import com.denodo.connect.hadoop.hdfs.wrapper.commons.exception.InternalErrorException;
-import com.denodo.connect.hadoop.hdfs.wrapper.util.configuration.HadoopConfigurationUtils;
-import com.denodo.connect.hadoop.hdfs.wrapper.util.type.TypeUtils;
+import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
+import com.denodo.connect.hadoop.hdfs.util.configuration.InitUtils;
 
-public abstract class HDFSFileReader {
+public abstract class AbstractHDFSKeyValueReader implements HDFSKeyValueReader {
 
-    private static final Logger logger = Logger.getLogger(HDFSFileReader.class);
+    private static final Logger logger = Logger.getLogger(AbstractHDFSKeyValueReader.class);
 
     private String hadoopKeyClass;
     private String hadoopValueClass;
@@ -47,29 +46,26 @@ public abstract class HDFSFileReader {
     private int currentFileIndex;
 
 
-    public HDFSFileReader(String dataNodeIP, String dataNodePort,
-        String hadoopKeyClass, String hadoopValueClass, Path outputPath) {
+    public AbstractHDFSKeyValueReader(String dataNodeIP, String dataNodePort,
+        String hadoopKeyClass, String hadoopValueClass, Path outputPath)
+        throws IOException {
 
         this.hadoopKeyClass = hadoopKeyClass;
         this.hadoopValueClass = hadoopValueClass;
         this.currentFileIndex = -1;
 
-        try {
-            this.configuration = HadoopConfigurationUtils.getConfiguration(dataNodeIP,
-                dataNodePort);
-            this.fileSystem = FileSystem.get(this.configuration);
+        this.configuration = HadoopConfigurationUtils.getConfiguration(dataNodeIP,
+            dataNodePort);
+        this.fileSystem = FileSystem.get(this.configuration);
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("FileSystem is: " + this.fileSystem.getUri());
-                logger.debug("Path is: " + outputPath);
-            }
+        if (logger.isDebugEnabled()) {
+            logger.debug("FileSystem is: " + this.fileSystem.getUri());
+            logger.debug("Path is: " + outputPath);
+        }
 
-            this.fss = this.fileSystem.listStatus(outputPath);
-            if (this.fss == null) {
-                throw new IOException("'" + outputPath + "' does not exist");
-            }
-        } catch (IOException e) {
-            throw new InternalErrorException(e);
+        this.fss = this.fileSystem.listStatus(outputPath);
+        if (this.fss == null) {
+            throw new IOException("'" + outputPath + "' does not exist");
         }
     }
 
@@ -78,44 +74,42 @@ public abstract class HDFSFileReader {
      * This method is in charge of reading every output file and closing them in a
      * transparent way.
      */
-    public <K extends Writable, V extends Writable> boolean readNext(K key, V value) {
+    @Override
+    public boolean readNext(Writable key, Writable value) throws IOException {
 
-        try {
-            if (this.fss == null || this.fss.length == 0) {
-                return false;
-            }
+        if (this.fss == null || this.fss.length == 0) {
+            return false;
+        }
 
-            if (isFirstReading()) {
-                nextFileIndex();
-                openReader(this.fileSystem, this.fss[this.currentFileIndex].getPath(),
-                    this.configuration);
-            }
+        if (isFirstReading()) {
+            nextFileIndex();
+            openReader(this.fileSystem, this.fss[this.currentFileIndex].getPath(),
+                this.configuration);
+        }
 
+        if (doReadNext(key, value)) {
+            // 'key' and 'value' are filled with their values
+            return true;
+        }
+
+        // This reader does not have anything read -> take next one
+        closeReader();
+
+        // Take next file status reader
+        nextFileIndex();
+        if (this.fss.length > this.currentFileIndex) {
+            openReader(this.fileSystem, this.fss[this.currentFileIndex].getPath(),
+                this.configuration);
             if (doReadNext(key, value)) {
-                // 'key' and 'value' are filled with their values
+                // Has next -> 'key' and 'value' are filled with their values
                 return true;
             }
-
-            // This reader does not have anything read -> take next one
-            closeReader();
-
-            // Take next file status reader
-            nextFileIndex();
-            if (this.fss.length > this.currentFileIndex) {
-                openReader(this.fileSystem, this.fss[this.currentFileIndex].getPath(),
-                    this.configuration);
-                if (doReadNext(key, value)) {
-                    // Has next -> 'key' and 'value' are filled with their values
-                    return true;
-                }
-                return readNext(key, value);
-            }
-
-            close();
-            return false;
-        } catch (IOException e) {
-            throw new InternalErrorException(e);
+            return readNext(key, value);
         }
+
+        close();
+        return false;
+
     }
 
     private boolean isFirstReading() {
@@ -134,25 +128,27 @@ public abstract class HDFSFileReader {
      * @return an instance of the key class initialized (necessary
      * to read output).
      */
+    @Override
     public Writable getInitKey() {
-        return TypeUtils.getInitKey(this.hadoopKeyClass, this.configuration);
+        return InitUtils.getInitKey(this.hadoopKeyClass, this.configuration);
     }
 
     /**
      * @return an instance of the value class initialized (necessary
      * to read output).
      */
+    @Override
     public Writable getInitValue() {
-        return TypeUtils.getInitValue(this.hadoopValueClass, this.configuration);
+        return InitUtils.getInitValue(this.hadoopValueClass, this.configuration);
     }
 
+    @Override
     public void close() throws IOException {
         closeReader();
         if (this.fileSystem != null) {
             this.fileSystem.close();
         }
     }
-
 
     public abstract void openReader(FileSystem fs, Path path,
         Configuration conf) throws IOException;

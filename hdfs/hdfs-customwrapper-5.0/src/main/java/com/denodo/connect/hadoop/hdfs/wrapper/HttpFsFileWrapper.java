@@ -39,7 +39,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
-import com.denodo.connect.hadoop.hdfs.wrapper.commons.exception.InternalErrorException;
+import com.denodo.connect.hadoop.hdfs.util.classloader.ClassLoaderUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.commons.naming.ParameterNaming;
 import com.denodo.util.net.URLUtil;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
@@ -80,7 +80,7 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
                 "HttpFS IP ", true,
                 CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(ParameterNaming.HOST_PORT,
-                "HttpFS port, default for HttpFS is 50075 for HttpFS ", true,
+                "HttpFS port, default is 50075 ", true,
                 CustomWrapperInputParameterTypeFactory.integerType()),
             new CustomWrapperInputParameter(ParameterNaming.USER,
                 "User that will perform the operation, if is not set the default web user is used", false,
@@ -138,6 +138,8 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
         CustomWrapperResult result, Map<String, String> inputValues)
         throws CustomWrapperException {
 
+        ClassLoader originalCtxClassLoader = ClassLoaderUtils.changeContextClassLoader();
+
         String host = (String) getInputParameterValue(ParameterNaming.HOST_IP).getValue();
         int port = ((Integer) getInputParameterValue(ParameterNaming.HOST_PORT).getValue()).intValue();
         CustomWrapperInputParameterValue userParamValue =  getInputParameterValue(ParameterNaming.USER);
@@ -169,23 +171,24 @@ public class HttpFsFileWrapper extends AbstractCustomWrapper {
                 while ((line = br.readLine()) != null) {
                     asArray = line.split(separator);
                     if (asArray.length != 2) {
-                        throw new InternalErrorException(String.format(
+                        throw new IOException(String.format(
                             "Error reading line: line does not contain the specified separator '%s' ",
                             separator));
                     }
                     result.addRow(asArray, projectedFields);
                 }
             } else {
-                throw new InternalErrorException("Path '" + inputFilePath
+                throw new IOException("Path '" + inputFilePath
                     + "': HTTP error code " + statusCode + ". " + statusMessage);
             }
-        } catch (IOException e) {
-            throw new InternalErrorException(e);
+        } catch (Exception e) {
+            logger.error("Error accessing HttpFS", e);
+            throw new CustomWrapperException("Error accessing HttpFS: " + e.getMessage(), e);
         } finally {
-            if (br != null) {
-                IOUtils.closeQuietly(br);
-            }
+            IOUtils.closeQuietly(br);
             httpClient.getConnectionManager().shutdown();
+
+            ClassLoaderUtils.restoreContextClassLoader(originalCtxClassLoader);
         }
     }
 

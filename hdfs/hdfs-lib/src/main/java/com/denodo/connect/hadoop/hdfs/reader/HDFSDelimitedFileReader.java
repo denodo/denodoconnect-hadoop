@@ -19,7 +19,7 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper.reader;
+package com.denodo.connect.hadoop.hdfs.reader;
 
 import java.io.IOException;
 
@@ -32,13 +32,11 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.LineReader;
 
-import com.denodo.connect.hadoop.hdfs.wrapper.commons.exception.InternalErrorException;
-
 /**
  * Class to iterate over a Delimited Text File.
  *
  */
-public class HDFSDelimitedFileReader extends HDFSFileReader {
+public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueReader {
 
 
     private String separator;
@@ -48,9 +46,10 @@ public class HDFSDelimitedFileReader extends HDFSFileReader {
 
 
     public HDFSDelimitedFileReader(String dataNodeIP, String dataNodePort,
-        String separator, Path outputPath) {
+        String separator, Path outputPath) throws IOException {
 
-        super(dataNodeIP, dataNodePort, Text.class.getName(), Text.class.getName(), outputPath);
+        super(dataNodeIP, dataNodePort, Text.class.getName(), Text.class.getName(),
+            outputPath);
 
         this.separator = separator;
         this.currentLine = new Text();
@@ -78,7 +77,7 @@ public class HDFSDelimitedFileReader extends HDFSFileReader {
                 // Has next -> Values are in key and value -> do anything else
                 return true;
             }
-            throw new InternalErrorException(String.format(
+            throw new IOException(String.format(
                 "Error reading line: line does not contain the specified separator '%s' ",
                 this.separator));
         }

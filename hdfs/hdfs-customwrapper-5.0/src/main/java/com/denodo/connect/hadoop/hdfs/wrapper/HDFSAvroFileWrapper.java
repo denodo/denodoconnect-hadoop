@@ -27,19 +27,19 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.avro.Schema;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.log4j.Logger;
 
-import com.denodo.connect.hadoop.hdfs.wrapper.commons.exception.InternalErrorException;
+import com.denodo.connect.hadoop.hdfs.util.classloader.ClassLoaderUtils;
+import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.commons.naming.ParameterNaming;
 import com.denodo.connect.hadoop.hdfs.wrapper.reader.HDFSAvroFileReader;
 import com.denodo.connect.hadoop.hdfs.wrapper.util.avro.AvroSchemaUtil;
-import com.denodo.connect.hadoop.hdfs.wrapper.util.configuration.HadoopConfigurationUtils;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
@@ -213,7 +213,7 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
             logger.error("Error getting Avro Schema", e);
             throw new CustomWrapperException("Error getting Avro Schema: " + e.getMessage(), e);
         } finally {
-            IOUtils.closeStream(dataInputStream);
+            IOUtils.closeQuietly(dataInputStream);
         }
 
     }
@@ -240,7 +240,7 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
     public void run(CustomWrapperConditionHolder condition, List<CustomWrapperFieldExpression> projectedFields,
         CustomWrapperResult result, Map<String, String> inputValues) throws CustomWrapperException {
 
-        ClassLoader originalCtxClassLoader = changeContextClassLoader();
+        ClassLoader originalCtxClassLoader = ClassLoaderUtils.changeContextClassLoader();
         HDFSAvroFileReader reader = null;
         try {
 
@@ -260,9 +260,9 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
                 result.addRow(vdpRow, projectedFields);
             }
 
-        } catch (IOException ie) {
-            logger.error("Error accessing Avro file", ie);
-            throw new InternalErrorException("Error accessing Avro file: " + ie.getMessage(), ie);
+        } catch (Exception e) {
+            logger.error("Error accessing Avro file", e);
+            throw new CustomWrapperException("Error accessing Avro file: " + e.getMessage(), e);
 
         } finally {
             try {
@@ -272,7 +272,7 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
             } catch (IOException e) {
                 logger.error("Error closing the reader", e);
             }
-            restoreContextClassLoader(originalCtxClassLoader);
+            ClassLoaderUtils.restoreContextClassLoader(originalCtxClassLoader);
         }
     }
 
@@ -300,17 +300,5 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
         rowData[1] = avroData;
 
         return rowData;
-    }
-
-    private static ClassLoader changeContextClassLoader() {
-        // Due to getContextClassLoader returning the platform classloader,
-        // we need to modify it in order to allow Avro fetch certain classes
-        ClassLoader originalCtxClassLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(Configuration.class.getClassLoader());
-        return originalCtxClassLoader;
-    }
-
-    private static void restoreContextClassLoader(ClassLoader originalCtxClassLoader) {
-        Thread.currentThread().setContextClassLoader(originalCtxClassLoader);
     }
 }

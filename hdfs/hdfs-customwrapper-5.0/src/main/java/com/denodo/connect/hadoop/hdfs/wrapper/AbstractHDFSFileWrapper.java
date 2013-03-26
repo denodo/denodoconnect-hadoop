@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.log4j.Logger;
 
+import com.denodo.connect.hadoop.hdfs.reader.HDFSKeyValueReader;
+import com.denodo.connect.hadoop.hdfs.util.classloader.ClassLoaderUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.commons.naming.ParameterNaming;
-import com.denodo.connect.hadoop.hdfs.wrapper.reader.HDFSFileReader;
 import com.denodo.connect.hadoop.hdfs.wrapper.util.type.TypeUtils;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
@@ -28,9 +28,9 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * reads files stored in HDFS (Hadoop Distributed File System).
  *
  */
-public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
+public abstract class AbstractHDFSFileWrapper extends AbstractCustomWrapper {
 
-    private static final Logger logger = Logger.getLogger(HDFSFileWrapper.class);
+    private static final Logger logger = Logger.getLogger(AbstractHDFSFileWrapper.class);
 
     private static final CustomWrapperInputParameter[] COMMON_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
@@ -82,8 +82,8 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
         CustomWrapperResult result, Map<String, String> inputValues)
         throws CustomWrapperException {
 
-        ClassLoader originalCtxClassLoader = changeContextClassLoader();
-        HDFSFileReader reader = null;
+        ClassLoader originalCtxClassLoader = ClassLoaderUtils.changeContextClassLoader();
+        HDFSKeyValueReader reader = null;
         try {
 
             String hadoopKeyClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_KEY_CLASS);
@@ -113,6 +113,9 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
                 result.addRow(asArray, projectedFields);
             }
             logger.debug("Run finished");
+        } catch (Exception e) {
+            logger.error("Error accessing HDFS file", e);
+            throw new CustomWrapperException("Error accessing HDFS file: " + e.getMessage(), e);
         } finally {
             try {
                 if (reader != null) {
@@ -121,7 +124,7 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
             } catch (IOException e) {
                 logger.error("Error closing the reader", e);
             }
-            restoreContextClassLoader(originalCtxClassLoader);
+            ClassLoaderUtils.restoreContextClassLoader(originalCtxClassLoader);
         }
     }
 
@@ -131,19 +134,8 @@ public abstract class HDFSFileWrapper extends AbstractCustomWrapper {
         return (hadoopClass != null) ? hadoopClass : Text.class.getName();
     }
 
-    private static ClassLoader changeContextClassLoader() {
-        // Due to getContextClassLoader returning the platform classloader,
-        // we need to modify it in order to allow Hadoop fetch certain classes
-        ClassLoader originalCtxClassLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(Configuration.class.getClassLoader());
-        return originalCtxClassLoader;
-    }
-
-    private static void restoreContextClassLoader(ClassLoader originalCtxClassLoader) {
-        Thread.currentThread().setContextClassLoader(originalCtxClassLoader);
-    }
-
-    public abstract HDFSFileReader getHDFSFileReader(Map<String, String> inputValues);
+    public abstract HDFSKeyValueReader getHDFSFileReader(Map<String, String> inputValues)
+        throws IOException;
 
     public abstract CustomWrapperInputParameter[] getSpecificInputParameters();
 
