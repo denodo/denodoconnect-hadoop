@@ -21,15 +21,10 @@
  */
 package com.denodo.connect.hadoop.mapreduce.wrapper.util;
 
-import java.io.IOException;
 import java.util.Map;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
-import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.mapreduce.wrapper.commons.handler.IMapReduceTaskHandler;
 import com.denodo.connect.hadoop.mapreduce.wrapper.commons.naming.ParameterNaming;
 
@@ -42,17 +37,8 @@ public final class MapReduceUtils {
 
     }
 
-    /**
-     * It deletes the given file or folder
-     *
-     */
-    public static void deleteFile(String dataNodeIp, String dataNodePort,
-        Path outputPath) throws IOException {
-
-        logger.debug("Deleting... '" + outputPath + "'");
-        Configuration configuration = HadoopConfigurationUtils.getConfiguration(
-            dataNodeIp, dataNodePort);
-        FileSystem.get(configuration).delete(outputPath, true);
+    public static String buildFileSystemURI(String dataNodeIP, String dataNodePort) {
+        return "hdfs://" + dataNodeIP + ":" + dataNodePort;
     }
 
     /**

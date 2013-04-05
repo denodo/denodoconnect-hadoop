@@ -23,11 +23,14 @@ package com.denodo.connect.hadoop.mapreduce.wrapper.commons.output.sequence;
 
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 
 import com.denodo.connect.hadoop.hdfs.reader.HDFSKeyValueReader;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSSequenceFileReader;
+import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.mapreduce.wrapper.commons.output.IMapReduceTaskOutputReader;
 import com.denodo.connect.hadoop.mapreduce.wrapper.util.MapReduceUtils;
 
@@ -38,8 +41,7 @@ import com.denodo.connect.hadoop.mapreduce.wrapper.util.MapReduceUtils;
 public class SequenceFileReader implements IMapReduceTaskOutputReader {
 
     private HDFSKeyValueReader reader;
-    private String dataNodeIP;
-    private String dataNodePort;
+    private Configuration configuration;
     private Path outputPath;
     private boolean deleteOutputOnFinish;
 
@@ -47,10 +49,10 @@ public class SequenceFileReader implements IMapReduceTaskOutputReader {
         String hadoopKeyClass, String hadoopValueClass, Path outputPath,
         boolean deleteOutputOnFinish) throws IOException {
 
-        this.reader = new HDFSSequenceFileReader(dataNodeIP, dataNodePort, hadoopKeyClass,
+        String fileSystemURI = MapReduceUtils.buildFileSystemURI(dataNodeIP, dataNodePort);
+        this.configuration = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
+        this.reader = new HDFSSequenceFileReader(this.configuration, hadoopKeyClass,
             hadoopValueClass, outputPath);
-        this.dataNodeIP = dataNodeIP;
-        this.dataNodePort = dataNodePort;
         this.outputPath = outputPath;
         this.deleteOutputOnFinish = deleteOutputOnFinish;
 
@@ -78,7 +80,7 @@ public class SequenceFileReader implements IMapReduceTaskOutputReader {
             this.reader.close();
         }
         if (this.deleteOutputOnFinish) {
-            MapReduceUtils.deleteFile(this.dataNodeIP, this.dataNodePort, this.outputPath);
+            FileSystem.get(this.configuration).delete(this.outputPath, true);
         }
     }
 
