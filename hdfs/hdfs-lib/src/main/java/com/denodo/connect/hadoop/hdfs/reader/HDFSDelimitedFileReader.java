@@ -45,11 +45,10 @@ public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueReader {
     private Text currentLine;
 
 
-    public HDFSDelimitedFileReader(String dataNodeIP, String dataNodePort,
-        String separator, Path outputPath) throws IOException {
+    public HDFSDelimitedFileReader(Configuration configuration, String separator,
+        Path outputPath) throws IOException {
 
-        super(dataNodeIP, dataNodePort, Text.class.getName(), Text.class.getName(),
-            outputPath);
+        super(configuration, Text.class.getName(), Text.class.getName(), outputPath);
 
         this.separator = separator;
         this.currentLine = new Text();

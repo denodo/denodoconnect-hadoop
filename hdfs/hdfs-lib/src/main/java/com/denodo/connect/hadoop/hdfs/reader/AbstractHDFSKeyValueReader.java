@@ -30,7 +30,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 import org.apache.log4j.Logger;
 
-import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.util.configuration.InitUtils;
 
 public abstract class AbstractHDFSKeyValueReader implements HDFSKeyValueReader {
@@ -46,16 +45,15 @@ public abstract class AbstractHDFSKeyValueReader implements HDFSKeyValueReader {
     private int currentFileIndex;
 
 
-    public AbstractHDFSKeyValueReader(String dataNodeIP, String dataNodePort,
+    public AbstractHDFSKeyValueReader(Configuration configuration,
         String hadoopKeyClass, String hadoopValueClass, Path outputPath)
         throws IOException {
 
+        this.configuration = configuration;
         this.hadoopKeyClass = hadoopKeyClass;
         this.hadoopValueClass = hadoopValueClass;
         this.currentFileIndex = -1;
 
-        this.configuration = HadoopConfigurationUtils.getConfiguration(dataNodeIP,
-            dataNodePort);
         this.fileSystem = FileSystem.get(this.configuration);
 
         if (logger.isDebugEnabled()) {

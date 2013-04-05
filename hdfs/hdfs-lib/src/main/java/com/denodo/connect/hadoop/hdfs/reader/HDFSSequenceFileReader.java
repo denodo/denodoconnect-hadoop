@@ -39,10 +39,10 @@ public class HDFSSequenceFileReader extends AbstractHDFSKeyValueReader {
 
     private SequenceFile.Reader currentReader;
 
-    public HDFSSequenceFileReader(String dataNodeIP, String dataNodePort,
-        String hadoopKeyClass, String hadoopValueClass, Path outputPath) throws IOException {
+    public HDFSSequenceFileReader(Configuration configuration, String hadoopKeyClass,
+        String hadoopValueClass, Path outputPath) throws IOException {
 
-        super(dataNodeIP, dataNodePort, hadoopKeyClass, hadoopValueClass, outputPath);
+        super(configuration, hadoopKeyClass, hadoopValueClass, outputPath);
     }
 
     @Override

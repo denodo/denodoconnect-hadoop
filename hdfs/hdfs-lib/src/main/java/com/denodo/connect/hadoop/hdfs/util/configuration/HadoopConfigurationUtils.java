@@ -33,13 +33,21 @@ public final class HadoopConfigurationUtils {
     }
 
     /**
+     * @param fileSystemURI A URI whose scheme and authority determine the
+     *        FileSystem implementation. The uri's scheme determines the config property
+     *        (fs.SCHEME.impl) naming the FileSystem implementation class.
+     *        The uri's authority is used to determine the host, port, etc. for a filesystem.
+     *        E.g. HDFS -> hdfs://ip:port
+     *             AMAZON S3 -> s3n://id:secret@bucket (Note that since the secret
+     *             access key can contain slashes, you must remember to escape them
+     *             by replacing each slash / with the string %2F.)
      * @return the basic hadoop configuration
      */
-    public static Configuration getConfiguration(String dataNodeIP, String dataNodePort) {
+    public static Configuration getConfiguration(final String fileSystemURI) {
 
         Configuration conf = new Configuration();
-        conf.set("fs.default.name", "hdfs://" + dataNodeIP + ":" + dataNodePort);
-        conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("fs.default.name", fileSystemURI);
+
         // Remove SUCESS file from output dir
         conf.set("mapreduce.fileoutputcommitter.marksuccessfuljobs", "false");
 
