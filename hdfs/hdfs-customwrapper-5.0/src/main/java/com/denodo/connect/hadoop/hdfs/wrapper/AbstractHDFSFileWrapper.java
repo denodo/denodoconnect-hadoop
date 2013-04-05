@@ -34,12 +34,9 @@ public abstract class AbstractHDFSFileWrapper extends AbstractCustomWrapper {
 
     private static final CustomWrapperInputParameter[] COMMON_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(ParameterNaming.HOST_IP,
-                "Namenode IP ", true,
+            new CustomWrapperInputParameter(ParameterNaming.FILESYSTEM_URI,
+                "e.g. hdfs://ip:port or s3n://id:secret\\@bucket ", true,
                 CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(ParameterNaming.HOST_PORT,
-                "Namenode port, default is 8020 ", true,
-                CustomWrapperInputParameterTypeFactory.integerType()),
             new CustomWrapperInputParameter(ParameterNaming.INPUT_FILE_PATH,
                 "Input path for the file or the directory containing the files ", true,
                 CustomWrapperInputParameterTypeFactory.stringType())};

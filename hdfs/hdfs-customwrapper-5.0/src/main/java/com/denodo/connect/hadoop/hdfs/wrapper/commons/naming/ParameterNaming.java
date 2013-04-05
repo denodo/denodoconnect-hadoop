@@ -23,6 +23,7 @@ package com.denodo.connect.hadoop.hdfs.wrapper.commons.naming;
 
 public final class ParameterNaming {
 
+    public static final String FILESYSTEM_URI = "File system URI";
     public static final String HOST_IP = "Host IP";
     public static final String HOST_PORT = "Host port";
     public static final String USER = "User";

@@ -25,10 +25,12 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import com.denodo.connect.hadoop.hdfs.reader.HDFSKeyValueReader;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSMapFileReader;
+import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.commons.naming.ParameterNaming;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
@@ -38,7 +40,7 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * Distributed File System).
  * <p>
  *
- * The following parameters are required: NameNode IP, NameNode port, file path,
+ * The following parameters are required: file system URI, file path,
  * Hadoop key class name and Hadoop value class name. <br/>
  *
  * Key/value pairs contained in the file will be returned by the wrapper.
@@ -70,15 +72,17 @@ public class HDFSMapFileWrapper extends AbstractHDFSFileWrapper {
     @Override
     public HDFSKeyValueReader getHDFSFileReader(Map<String, String> inputValues) throws IOException {
 
-        String dataNodeIP = inputValues.get(ParameterNaming.HOST_IP);
-        String dataNodePort = inputValues.get(ParameterNaming.HOST_PORT);
+        String fileSystemURI = inputValues.get(ParameterNaming.FILESYSTEM_URI);
+        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
+
         String hadoopKeyClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_KEY_CLASS);
         String hadoopValueClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_VALUE_CLASS);
+
         String inputFilePath = inputValues.get(ParameterNaming.INPUT_FILE_PATH);
         Path path = new Path(inputFilePath);
 
-        return new HDFSMapFileReader(dataNodeIP, dataNodePort, hadoopKeyClass,
-            hadoopValueClass, path);
+        return new HDFSMapFileReader(conf, hadoopKeyClass, hadoopValueClass,
+            path);
     }
 
 }

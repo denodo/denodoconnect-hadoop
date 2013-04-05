@@ -24,10 +24,12 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import com.denodo.connect.hadoop.hdfs.reader.HDFSDelimitedFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSKeyValueReader;
+import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.commons.naming.ParameterNaming;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
@@ -37,7 +39,7 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * (Hadoop Distributed File System).
  * <p>
  *
- * The following parameters are required: NameNode IP, NameNode port, file path
+ * The following parameters are required: file system URI, file path
  * and file separator. <br/>
  *
  * Key/value pairs contained in the file will be returned by the wrapper.
@@ -66,13 +68,14 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSFileWrapper {
     @Override
     public HDFSKeyValueReader getHDFSFileReader(Map<String, String> inputValues) throws IOException {
 
-        String dataNodeIP = inputValues.get(ParameterNaming.HOST_IP);
-        String dataNodePort = inputValues.get(ParameterNaming.HOST_PORT);
+        String fileSystemURI = inputValues.get(ParameterNaming.FILESYSTEM_URI);
+        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
+
         String separator = inputValues.get(ParameterNaming.SEPARATOR);
+
         String inputFilePath = inputValues.get(ParameterNaming.INPUT_FILE_PATH);
         Path path = new Path(inputFilePath);
 
-        return new HDFSDelimitedFileReader(dataNodeIP, dataNodePort,
-            separator, path);
+        return new HDFSDelimitedFileReader(conf, separator, path);
     }
 }

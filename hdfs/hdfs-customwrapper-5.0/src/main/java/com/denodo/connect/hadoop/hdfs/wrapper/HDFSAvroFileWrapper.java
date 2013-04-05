@@ -57,7 +57,7 @@ import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParamet
  * Distributed File System).
  * <p>
  *
- * The following parameters are required: NameNode IP, NameNode port, Avro
+ * The following parameters are required: file system URI, Avro
  * schema file path or Avro schema JSON. <br/>
  *
  */
@@ -83,12 +83,9 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
 
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(ParameterNaming.HOST_IP,
-                "NameNode IP ",
+            new CustomWrapperInputParameter(ParameterNaming.FILESYSTEM_URI,
+                "e.g. hdfs://ip:port or s3n://id:secret\\@bucket ",
                 true, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(ParameterNaming.HOST_PORT,
-                "NameNode port, default is 8020 ", true,
-                CustomWrapperInputParameterTypeFactory.integerType()),
             new CustomWrapperInputParameter(INPUT_PARAMETER_AVSC_PATH,
                 "Path to the Avro schema file. One of these parameters: '"
                     + INPUT_PARAMETER_AVSC_PATH + "' or '"
@@ -167,9 +164,9 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
             }
         }
 
-        String dataNodeIP = inputValues.get(ParameterNaming.HOST_IP);
-        String dataNodePort = inputValues.get(ParameterNaming.HOST_PORT);
-        Schema avroSchema = obtainAvroSchema(dataNodeIP, dataNodePort);
+        String fileSystemURI = inputValues.get(ParameterNaming.FILESYSTEM_URI);
+        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
+        Schema avroSchema = obtainAvroSchema(conf);
         if (avroSchema == null) {
             logger.error("Error generating base view schema: the avro schema is null");
             throw new CustomWrapperException("Error generating base view schema: the avro schema is null");
@@ -179,7 +176,7 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
 
     }
 
-    private Schema obtainAvroSchema(String dataNodeIP, String dataNodePort) throws CustomWrapperException {
+    private Schema obtainAvroSchema(Configuration configuration) throws CustomWrapperException {
 
         FSDataInputStream dataInputStream = null;
         try {
@@ -189,10 +186,8 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
             CustomWrapperInputParameterValue avscFilePathParamValue = getInputParameterValue(INPUT_PARAMETER_AVSC_PATH);
             if (avscFilePathParamValue != null && StringUtils.isNotBlank((String) avscFilePathParamValue.getValue())) {
                 String avscFilePath = (String) avscFilePathParamValue.getValue();
-                Configuration conf = HadoopConfigurationUtils.getConfiguration(dataNodeIP,
-                    dataNodePort);
                 Path avscPath = new Path(avscFilePath);
-                FileSystem fileSystem = FileSystem.get(conf);
+                FileSystem fileSystem = FileSystem.get(configuration);
                 dataInputStream = fileSystem.open(avscPath);
                 schema = new Schema.Parser().parse(dataInputStream);
 
@@ -247,12 +242,10 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
             String avroFilePath = getAvroFilePath(condition);
             Path path = new Path(avroFilePath);
 
-            String dataNodeIP = inputValues.get(ParameterNaming.HOST_IP);
-            String dataNodePort = inputValues.get(ParameterNaming.HOST_PORT);
-            Configuration conf = HadoopConfigurationUtils.getConfiguration(dataNodeIP,
-                dataNodePort);
+            String fileSystemURI = inputValues.get(ParameterNaming.FILESYSTEM_URI);
+            Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
 
-            Schema avroSchema = obtainAvroSchema(dataNodeIP, dataNodePort);
+            Schema avroSchema = obtainAvroSchema(conf);
             reader = new HDFSAvroFileReader(path, avroSchema, conf);
             while (reader.hasNext()) {
                 Object avroData = reader.read();
