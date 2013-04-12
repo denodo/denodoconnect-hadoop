@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-5.0</artifactId>
-    <version>20130405</version>
+    <version>20130412</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
@@ -43,16 +43,12 @@
             </testResource>
         </testResources>
         <plugins>
-            <!-- ========================================================== -->
-            <!-- Compiler plugin -->
-            <!-- * Set the Java version (source and bytecode) to J2SE 6 -->
-            <!-- * Other possible values if required: "1.4" | "1.5" -->
-            <!-- ========================================================== -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
                 <configuration>
+                    <!-- org.apache.hadoop.* requires 1.6 -->
                     <source>1.6</source>
                     <target>1.6</target>
                     <encoding>US-ASCII</encoding>
@@ -284,24 +280,28 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.2.1</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>com.hadoop.gplcompression</groupId>
             <artifactId>hadoop-lzo</artifactId>
             <version>0.4.16</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.denodo.connect</groupId>
+            <groupId>com.denodo.connect.hadoop</groupId>
             <artifactId>denodo-hdfs-lib</artifactId>
-            <version>20130405</version>
+            <version>20130412</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>net.java.dev.jets3t</groupId>
             <artifactId>jets3t</artifactId>
             <version>0.7.4</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>
