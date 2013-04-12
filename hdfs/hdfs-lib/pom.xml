@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-lib</artifactId>
-    <version>20130405</version>
+    <version>20130412</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-lib</name>
 
@@ -158,6 +158,7 @@
             <groupId>net.java.dev.jets3t</groupId>
             <artifactId>jets3t</artifactId>
             <version>0.7.4</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>
