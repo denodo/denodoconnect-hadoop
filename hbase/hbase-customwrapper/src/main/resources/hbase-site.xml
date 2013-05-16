@@ -1,8 +1,29 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-	<property>
-		<name>hbase.zookeeper.quorum</name> 
-		<value>cloudera-vm</value> 
-	</property>
+    <property>
+        <name>hbase.zookeeper.quorum</name>
+        <value>192.168.142.128</value>
+    </property>
+    <property>
+        <name>hbase.cluster.distributed</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>hbase.zookeeper.property.authProvider.1</name>
+        <value>org.apache.zookeeper.server.auth.SASLAuthenticationProvider</value>
+    </property>
+    <property>
+        <name>hbase.zookeeper.property.kerberos.removeHostFromPrincipal</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>hbase.zookeeper.property.kerberos.removeRealmFromPrincipal</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>hbase.master.info.port</name>
+        {!-- http://www.remoterg12.net:60010/ --}
+        <value>60010</value>
+    </property>
 </configuration>

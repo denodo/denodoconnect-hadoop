@@ -13,9 +13,9 @@
     <name>denodo-hbase-customwrapper</name>
 
     <properties>
-        <hadoop.version>0.20.2-cdh3u0</hadoop.version>
-        <hbase.version>0.90.1-cdh3u0</hbase.version>
-        <zookeeper.version>3.3.3-cdh3u0</zookeeper.version>
+        <hadoop.version>1.1.2</hadoop.version>
+        <hbase.version>0.94.2</hbase.version>
+        <zookeeper.version>3.4.5</zookeeper.version>
     </properties>
     <repositories>
         <repository>
@@ -172,25 +172,25 @@
         <dependency>
             <groupId>com.denodo.commons</groupId>
             <artifactId>denodo-util</artifactId>
-            <version>2.74</version>
+            <version>2.78</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.denodo.commons</groupId>
             <artifactId>denodo-store</artifactId>
-            <version>1.4</version>
+            <version>1.17</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server-base</artifactId>
-            <version>4.7.1_14</version>
+            <version>5.0.0_2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server-ext</artifactId>
-            <version>4.7.1_14</version>
+            <version>5.0.0_3</version>
             <scope>provided</scope>
         </dependency>
         <!-- *** -->
