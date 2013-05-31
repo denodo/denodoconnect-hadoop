@@ -172,25 +172,25 @@
         <dependency>
             <groupId>com.denodo.commons</groupId>
             <artifactId>denodo-util</artifactId>
-            <version>2.78</version>
+            <version>2.79</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.denodo.commons</groupId>
             <artifactId>denodo-store</artifactId>
-            <version>1.17</version>
+            <version>1.4</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server-base</artifactId>
-            <version>5.0.0_2</version>
+            <version>5.0.0_4</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server-ext</artifactId>
-            <version>5.0.0_3</version>
+            <version>5.0.0_4</version>
             <scope>provided</scope>
         </dependency>
         <!-- *** -->
