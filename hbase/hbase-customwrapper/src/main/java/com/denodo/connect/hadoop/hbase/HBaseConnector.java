@@ -29,6 +29,9 @@ import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.MasterNotRunningException;
+import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -146,12 +149,13 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final List<CustomWrapperFieldExpression> projectedFields,
             final CustomWrapperResult result, final Map<String, String> inputValues)
             throws CustomWrapperException {
-        logger.info("Start run hbase");
+        logger.info("Start run hbase-customwrapper");
         Map<String, List<HBaseColumnDetails>> mappingMap;
         try {
             final String mapping = inputValues.get(ParameterNaming.CONF_TABLE_MAPPING);
             mappingMap = HbaseUtil.parseMapping(mapping);
         } catch (final Exception e) {
+            logger.error("Error in mapping format: ", e);
             throw new CustomWrapperException("Error in mapping format: " + e);
         }
 
@@ -163,6 +167,15 @@ public class HBaseConnector extends AbstractCustomWrapper {
         final String port = inputValues.get(ParameterNaming.CONF_HBASE_PORT);
         if (port != null) {
             config.set(ParameterNaming.CONF_ZOOKEEPER_CLIENTPORT, port);
+        }
+        try {
+            HBaseAdmin.checkHBaseAvailable(config);
+        } catch (final MasterNotRunningException e) {
+            logger.error("Error Master Hbase not Running: ", e);
+            throw new CustomWrapperException("Error Master Hbase not Running: " + e.getMessage(), e);
+        } catch (final ZooKeeperConnectionException e) {
+            logger.error("Error ZooKeeper Connection: ", e);
+            throw new CustomWrapperException("Error ZooKeeper Connection: " + e.getMessage(), e);
         }
         HTable table;
         try {
@@ -211,7 +224,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 scanner.close();
             }
         } catch (final Exception e) {
-            throw new CustomWrapperException("Error accessing the HBase table: " + e);
+            logger.error("Error accessing HBase: ", e);
+            throw new CustomWrapperException("Error accessing the HBase table: " + e.getMessage(), e);
         }
 
     }
