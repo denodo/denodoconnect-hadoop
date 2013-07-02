@@ -19,24 +19,53 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper.commons.naming;
+package com.denodo.connect.hadoop.hdfs.commons.naming;
 
-public final class ParameterNaming {
+public final class Parameter {
+
+    public static final String PASSWORD = "Password";
+    public static final String TIMEOUT = "Host timeout";
+
+    public static final String PATH_TO_JAR_IN_HOST = "Path to jar in host";
+    public static final String MAIN_CLASS_IN_JAR = "Main class in jar";
+
+    public static final String MAPREDUCE_PARAMETERS = "MapReduce job parameters ";
+
+    public static final String MAPREDUCEJOBHANDLER_IMPLEMENTATION =
+        "MapReduceJobHandler implementation ";
 
     public static final String FILESYSTEM_URI = "File system URI";
     public static final String HOST_IP = "Host IP";
     public static final String HOST_PORT = "Host port";
     public static final String USER = "User";
 
-    public static final String HADOOP_KEY = "KEY";
     public static final String HADOOP_KEY_CLASS = "Key class";
-    public static final String HADOOP_VALUE = "VALUE";
     public static final String HADOOP_VALUE_CLASS = "Value class";
 
     public static final String SEPARATOR = "Separator";
-    public static final String INPUT_FILE_PATH = "Path";
+    public static final String FILE_PATH = "Path";
 
-    private ParameterNaming() {
+    public static final String DELETE_AFTER_READING = "Delete after reading";
+
+    /**
+     * The path to the .avsc file containing the Avro schema.
+     * The two input parameters AVSC_FILE_PATH and AVSC_JSON are mutually exclusive.
+     */
+    public static final String AVRO_SCHEMA_PATH = "Avro schema path";
+
+    /**
+     * The Avro Schema as JSON text.
+     * The two input parameters AVSC_FILE_PATH and AVSC_JSON are mutually exclusive.
+     */
+    public static final String AVRO_SCHEMA_JSON = "Avro schema JSON";
+
+    public static final String KEY = "KEY";
+    public static final String VALUE = "VALUE";
+
+    public static final String AVRO_FILE_PATH = "avroFilepath";
+
+
+    private Parameter() {
 
     }
 

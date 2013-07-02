@@ -19,7 +19,7 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.reader;
+package com.denodo.connect.hadoop.hdfs.reader.keyvalue;
 
 import java.io.IOException;
 
@@ -36,11 +36,9 @@ import org.apache.hadoop.util.LineReader;
  * Class to iterate over a Delimited Text File.
  *
  */
-public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueReader {
-
+public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueFileReader {
 
     private String separator;
-    private FSDataInputStream is;
     private LineReader currentReader;
     private Text currentLine;
 
@@ -49,7 +47,6 @@ public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueReader {
         Path outputPath) throws IOException {
 
         super(configuration, Text.class.getName(), Text.class.getName(), outputPath);
-
         this.separator = separator;
         this.currentLine = new Text();
     }
@@ -59,26 +56,25 @@ public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueReader {
         Configuration configuration) throws IOException {
 
         if (isFile(path)) {
-            this.is = fileSystem.open(path);
-            this.currentReader = new LineReader(this.is);
+            FSDataInputStream is = fileSystem.open(path);
+            this.currentReader = new LineReader(is);
         } else {
             throw new IllegalArgumentException("'" + path + "' is not a file");
         }
     }
 
     @Override
-    public <K extends Writable, V extends Writable> boolean doReadNext(K key, V value) throws IOException {
+    public <K extends Writable, V extends Writable> boolean doRead(K key, V value) throws IOException {
 
         if (this.currentReader.readLine(this.currentLine) > 0) {
-            if (this.currentLine.toString().contains(this.separator)) {
-                ((Text) key).set(new Text(StringUtils.substringBefore(this.currentLine.toString(), this.separator)));
-                ((Text) value).set(new Text(StringUtils.substringAfter(this.currentLine.toString(), this.separator)));
-                // Has next -> Values are in key and value -> do anything else
+            String lineString = this.currentLine.toString();
+            if (lineString.contains(this.separator)) {
+                ((Text) key).set(StringUtils.substringBefore(lineString, this.separator));
+                ((Text) value).set(StringUtils.substringAfter(lineString, this.separator));
                 return true;
             }
-            throw new IOException(String.format(
-                "Error reading line: line does not contain the specified separator '%s' ",
-                this.separator));
+            throw new IOException("Error reading line: line does not contain the specified separator '"
+                + this.separator + "'");
         }
 
         return false;
@@ -86,8 +82,7 @@ public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueReader {
 
     @Override
     public void closeReader() throws IOException {
-        if (this.is != null) {
-            this.is.close();
+        if (this.currentReader != null) {
             this.currentReader.close();
         }
     }

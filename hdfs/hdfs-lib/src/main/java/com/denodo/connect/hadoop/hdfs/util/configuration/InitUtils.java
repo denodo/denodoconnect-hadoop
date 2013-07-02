@@ -45,8 +45,8 @@ public final class InitUtils {
         try {
             return (Writable) ReflectionUtils.newInstance(Class.forName(hadoopKeyClass), configuration);
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Class name " + hadoopKeyClass
-                + " not found", e);
+            throw new IllegalArgumentException("Key class name '" + hadoopKeyClass
+                + "' not found", e);
         }
     }
 
@@ -64,8 +64,8 @@ public final class InitUtils {
             }
             return (Writable) ReflectionUtils.newInstance(Class.forName(hadoopValueClass), configuration);
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Class name " + hadoopValueClass
-                + " not found", e);
+            throw new IllegalArgumentException("Value class name '" + hadoopValueClass
+                + "' not found", e);
         }
     }
 

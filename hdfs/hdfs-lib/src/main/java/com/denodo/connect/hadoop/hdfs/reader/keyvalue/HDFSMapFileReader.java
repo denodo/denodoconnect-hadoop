@@ -19,7 +19,7 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.reader;
+package com.denodo.connect.hadoop.hdfs.reader.keyvalue;
 
 import java.io.IOException;
 
@@ -38,7 +38,7 @@ import org.apache.hadoop.io.WritableComparable;
  * {@link WritableComparable} as {@link Writable} is not enough
  *
  */
-public class HDFSMapFileReader extends AbstractHDFSKeyValueReader {
+public class HDFSMapFileReader extends AbstractHDFSKeyValueFileReader {
 
 
     private MapFile.Reader currentReader;
@@ -58,7 +58,7 @@ public class HDFSMapFileReader extends AbstractHDFSKeyValueReader {
             if (isMapFile(path)) {
                 dirPath = path.getParent();
                 // A MapFile is a directory with two files 'data' and 'index':
-                // if path refer to one of these files we have to skip next file.
+                // if "path" refers to one of these files we have to skip next file.
                 nextFileIndex();
             } else {
                 throw new IllegalArgumentException("'" + path + "' is not a data file or an index file");
@@ -73,7 +73,7 @@ public class HDFSMapFileReader extends AbstractHDFSKeyValueReader {
     }
 
     @Override
-    public <K extends Writable, V extends Writable> boolean doReadNext(K key, V value) throws IOException {
+    public <K extends Writable, V extends Writable> boolean doRead(K key, V value) throws IOException {
 
         if (!(key instanceof WritableComparable)) {
             throw new UnsupportedOperationException("Key must be instance of WritableComparable to read from MapFile");

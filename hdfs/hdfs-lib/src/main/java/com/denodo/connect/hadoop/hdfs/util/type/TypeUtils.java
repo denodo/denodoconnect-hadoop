@@ -19,15 +19,18 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper.util.type;
+package com.denodo.connect.hadoop.hdfs.util.type;
 
+import java.nio.ByteBuffer;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -45,53 +48,91 @@ public final class TypeUtils {
 
     }
 
-    /**
-     * @param hadoopClass Hadoop class (package + class name). In case it is an
-     * {@link ArrayWritable}({@link LongWritable}) it would be {@link LongWritable}[]
-     *
-     * @return the {@link Types} value for the given hadoopClass
-     */
-    public static int getSqlType(String hadoopClass) {
+    public static Class<?> toJava(String hadoopClass) {
 
+        if (NullWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return Void.class;
+        }
         if (Text.class.getName().equalsIgnoreCase(hadoopClass)) {
-            return Types.VARCHAR;
+            return String.class;
         }
         if (IntWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
-            return Types.INTEGER;
+            return Integer.class;
         }
         if (LongWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
-            return Types.BIGINT;
+            return Long.class;
         }
         if (BooleanWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
-            return Types.BOOLEAN;
+            return Boolean.class;
         }
         if (DoubleWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
-            return Types.DOUBLE;
+            return Double.class;
         }
         if (FloatWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return Float.class;
+        }
+        if (ByteWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return ByteBuffer.class;
+        }
+        if (StringUtils.endsWith(hadoopClass, "[]")) {
+            return List.class;
+        }
+
+        logger.warn("Class '" + hadoopClass + "' is not directly supported. Returning String.class");
+        return String.class;
+    }
+
+    public static int toSQL(Class<?> javaClass) {
+
+        if (Void.class.equals(javaClass)) {
+            return Types.NULL;
+        }
+        if (String.class.equals(javaClass)) {
+            return Types.VARCHAR;
+        }
+        if (Integer.class.equals(javaClass)) {
+            return Types.INTEGER;
+        }
+        if (Long.class.equals(javaClass)) {
+            return Types.BIGINT;
+        }
+        if (Boolean.class.equals(javaClass)) {
+            return Types.BOOLEAN;
+        }
+        if (Double.class.equals(javaClass)) {
+            return Types.DOUBLE;
+        }
+        if (Float.class.equals(javaClass)) {
             return Types.FLOAT;
         }
-
-        if (StringUtils.endsWith(hadoopClass, "[]")) {
+        if (ByteBuffer.class.equals(javaClass)) {
+            return Types.VARBINARY;
+        }
+        if (List.class.equals(javaClass)) {
             return Types.ARRAY;
         }
+        if (Map.class.equals(javaClass)) {
+            return Types.ARRAY;
+        }
+        if (Object.class.equals(javaClass)) {
+            return Types.STRUCT;
+        }
 
-        logger.warn("Class '" + hadoopClass + "' is not directly supported. Returning Types.VARCHAR");
+        logger.warn("Class '" + javaClass + "' is not directly supported. Returning Types.VARCHAR");
         return Types.VARCHAR;
     }
 
     /**
-     * It converts the given {@link Writable} value to a Java object valid for VDP
+     * Converts the given {@link Writable} value to a Java object valid
      * (String, Long, Int, Array). In case it is an ArrayWritable, it will
      * return an Object[] with the values converted (based on the value of
-     * hadoopClass)
+     * hadoopClass).
      */
     public static Object getValue(String hadoopClass, Writable value) {
 
         if (value instanceof NullWritable) {
             return null;
         }
-
         if (Text.class.getName().equalsIgnoreCase(hadoopClass)) {
             return ((Text) value).toString();
         }
@@ -122,6 +163,14 @@ public final class TypeUtils {
 
         logger.warn("Class '" + hadoopClass + "' is not directly supported. Returning its writable.toString() value");
         return value.toString();
+    }
+
+    /**
+     *
+     * Default Hadoop class is org.apache.hadoop.io.Text
+     */
+    public static String getHadoopClass(String hadoopClass) {
+        return (hadoopClass != null) ? hadoopClass : Text.class.getName();
     }
 
 

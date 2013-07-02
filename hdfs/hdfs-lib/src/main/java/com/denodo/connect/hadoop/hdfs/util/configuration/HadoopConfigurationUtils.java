@@ -53,7 +53,6 @@ public final class HadoopConfigurationUtils {
 
         logger.debug("Returning configuration: " + conf
             + " - value of 'fs.default.name' -> " + conf.get("fs.default.name")
-            + " - value of 'fs.hdfs.impl' -> " + conf.get("fs.hdfs.impl")
             + " - value of 'mapreduce.fileoutputcommitter.marksuccessfuljobs' -> " + conf.get("mapreduce.fileoutputcommitter.marksuccessfuljobs"));
         return conf;
     }

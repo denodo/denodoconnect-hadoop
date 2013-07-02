@@ -23,35 +23,32 @@ package com.denodo.connect.hadoop.hdfs.reader;
 
 import java.io.IOException;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.Writable;
 import org.apache.log4j.Logger;
 
-import com.denodo.connect.hadoop.hdfs.util.configuration.InitUtils;
+import com.denodo.connect.hadoop.hdfs.reader.keyvalue.AbstractHDFSKeyValueFileReader;
 
-public abstract class AbstractHDFSKeyValueReader implements HDFSKeyValueReader {
+public abstract class AbstractHDFSFileReader implements HDFSFileReader {
 
-    private static final Logger logger = Logger.getLogger(AbstractHDFSKeyValueReader.class);
+    private static final Logger logger = Logger.getLogger(AbstractHDFSKeyValueFileReader.class);
 
-    private String hadoopKeyClass;
-    private String hadoopValueClass;
     private Configuration configuration;
+    private Path outputPath;
 
     private FileSystem fileSystem;
     private FileStatus[] fss;
     private int currentFileIndex;
 
 
-    public AbstractHDFSKeyValueReader(Configuration configuration,
-        String hadoopKeyClass, String hadoopValueClass, Path outputPath)
+    public AbstractHDFSFileReader(Configuration configuration, Path outputPath)
         throws IOException {
 
         this.configuration = configuration;
-        this.hadoopKeyClass = hadoopKeyClass;
-        this.hadoopValueClass = hadoopValueClass;
+        this.outputPath = outputPath;
         this.currentFileIndex = -1;
 
         this.fileSystem = FileSystem.get(this.configuration);
@@ -62,22 +59,14 @@ public abstract class AbstractHDFSKeyValueReader implements HDFSKeyValueReader {
         }
 
         this.fss = this.fileSystem.listStatus(outputPath);
-        if (this.fss == null) {
-            throw new IOException("'" + outputPath + "' does not exist");
+        if (ArrayUtils.isEmpty(this.fss)) {
+            throw new IOException("'" + outputPath + "' does not exist or it denotes an empty directory");
         }
+
     }
 
-    /**
-     * Reads the next key-value pair and stores it in the key and value parameters.
-     * This method is in charge of reading every output file and closing them in a
-     * transparent way.
-     */
     @Override
-    public boolean readNext(Writable key, Writable value) throws IOException {
-
-        if (this.fss == null || this.fss.length == 0) {
-            return false;
-        }
+    public Object read() throws IOException {
 
         if (isFirstReading()) {
             nextFileIndex();
@@ -85,9 +74,9 @@ public abstract class AbstractHDFSKeyValueReader implements HDFSKeyValueReader {
                 this.configuration);
         }
 
-        if (doReadNext(key, value)) {
-            // 'key' and 'value' are filled with their values
-            return true;
+        Object data = doRead();
+        if (data != null) {
+            return data;
         }
 
         // This reader does not have anything read -> take next one
@@ -98,15 +87,15 @@ public abstract class AbstractHDFSKeyValueReader implements HDFSKeyValueReader {
         if (this.fss.length > this.currentFileIndex) {
             openReader(this.fileSystem, this.fss[this.currentFileIndex].getPath(),
                 this.configuration);
-            if (doReadNext(key, value)) {
-                // Has next -> 'key' and 'value' are filled with their values
-                return true;
+            data = doRead();
+            if (data != null) {
+                return data;
             }
-            return readNext(key, value);
+            return read();
         }
 
         close();
-        return false;
+        return null;
 
     }
 
@@ -122,37 +111,29 @@ public abstract class AbstractHDFSKeyValueReader implements HDFSKeyValueReader {
         return this.fileSystem.isFile(path);
     }
 
-    /**
-     * @return an instance of the key class initialized (necessary
-     * to read output).
-     */
-    @Override
-    public Writable getInitKey() {
-        return InitUtils.getInitKey(this.hadoopKeyClass, this.configuration);
-    }
-
-    /**
-     * @return an instance of the value class initialized (necessary
-     * to read output).
-     */
-    @Override
-    public Writable getInitValue() {
-        return InitUtils.getInitValue(this.hadoopValueClass, this.configuration);
-    }
-
     @Override
     public void close() throws IOException {
         closeReader();
         if (this.fileSystem != null) {
             this.fileSystem.close();
+            this.fileSystem = null;
         }
     }
 
-    public abstract void openReader(FileSystem fs, Path path,
-        Configuration conf) throws IOException;
+    @Override
+    public void delete() throws IOException {
 
-    public abstract <K extends Writable, V extends Writable> boolean doReadNext(
-        K key, V value) throws IOException;
+        if (this.fileSystem == null) {
+            this.fileSystem = FileSystem.get(this.configuration);
+        }
+        this.fileSystem.delete(this.outputPath, true);
+        this.fileSystem.close();
+        this.fileSystem = null;
+    }
+
+    public abstract void openReader(FileSystem fs, Path path, Configuration conf) throws IOException;
+
+    public abstract Object doRead() throws IOException;
 
     public abstract void closeReader() throws IOException;
 

@@ -28,10 +28,11 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
-import com.denodo.connect.hadoop.hdfs.reader.HDFSKeyValueReader;
-import com.denodo.connect.hadoop.hdfs.reader.HDFSMapFileReader;
+import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
+import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
+import com.denodo.connect.hadoop.hdfs.reader.keyvalue.HDFSMapFileReader;
 import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
-import com.denodo.connect.hadoop.hdfs.wrapper.commons.naming.ParameterNaming;
+import com.denodo.connect.hadoop.hdfs.util.type.TypeUtils;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 
@@ -49,40 +50,35 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  */
 public class HDFSMapFileWrapper extends AbstractHDFSFileWrapper {
 
-
-    private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
-        new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(ParameterNaming.HADOOP_KEY_CLASS,
-                "Hadoop Key class", true,
-                CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(ParameterNaming.HADOOP_VALUE_CLASS,
-                "Hadoop Value class", true,
-                CustomWrapperInputParameterTypeFactory.stringType())};
-
-
     public HDFSMapFileWrapper() {
         super();
     }
 
     @Override
     public CustomWrapperInputParameter[] getSpecificInputParameters() {
-        return INPUT_PARAMETERS;
+        return new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(Parameter.HADOOP_KEY_CLASS,
+                "Hadoop key class", true,
+                CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.HADOOP_VALUE_CLASS,
+                "Hadoop value class", true,
+                CustomWrapperInputParameterTypeFactory.stringType())
+        };
     }
 
     @Override
-    public HDFSKeyValueReader getHDFSFileReader(Map<String, String> inputValues) throws IOException {
+    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException {
 
-        String fileSystemURI = inputValues.get(ParameterNaming.FILESYSTEM_URI);
+        String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
         Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
 
-        String hadoopKeyClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_KEY_CLASS);
-        String hadoopValueClass = getHadoopClass(inputValues, ParameterNaming.HADOOP_VALUE_CLASS);
+        String hadoopKeyClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
+        String hadoopValueClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
 
-        String inputFilePath = inputValues.get(ParameterNaming.INPUT_FILE_PATH);
+        String inputFilePath = inputValues.get(Parameter.FILE_PATH);
         Path path = new Path(inputFilePath);
 
-        return new HDFSMapFileReader(conf, hadoopKeyClass, hadoopValueClass,
-            path);
+        return new HDFSMapFileReader(conf, hadoopKeyClass, hadoopValueClass, path);
     }
 
 }
