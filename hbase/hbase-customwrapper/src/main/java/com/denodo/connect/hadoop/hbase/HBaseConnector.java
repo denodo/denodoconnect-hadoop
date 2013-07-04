@@ -162,7 +162,6 @@ public class HBaseConnector extends AbstractCustomWrapper {
         // Connects to HBase server
         final String tableName = inputValues.get(ParameterNaming.CONF_TABLE_NAME);
         final Configuration config = HBaseConfiguration.create();
-        config.clear();
         config.set(ParameterNaming.CONF_ZOOKEEPER_QUORUM, inputValues.get(ParameterNaming.CONF_HBASE_IP));
         final String port = inputValues.get(ParameterNaming.CONF_HBASE_PORT);
         if (port != null) {

@@ -22,13 +22,13 @@
                 <include>denodo-hbase-customwrapper-${project.version}-jar-with-dependencies.jar</include>
             </includes>
         </fileSet>
-<!--         <fileSet> -->
-<!-- 	      <directory>src/main/resources/</directory> -->
-<!-- 	      <outputDirectory>/conf</outputDirectory> -->
-<!-- 	      <includes> -->
-<!-- 	        <include>hbase-site.xml</include> -->
-<!-- 	      </includes> -->
-<!-- 	    </fileSet> -->
+        <fileSet>
+	      <directory>src/main/resources/</directory>
+	      <outputDirectory>/conf</outputDirectory>
+	      <includes>
+	        <include>hbase-site.xml</include>
+	      </includes>
+	    </fileSet>
         <fileSet>
             <directory>${basedir}/doc/</directory>
             <outputDirectory>/doc</outputDirectory>

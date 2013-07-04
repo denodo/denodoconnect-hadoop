@@ -8,13 +8,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hbase-customwrapper</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>denodo-hbase-customwrapper</name>
 
     <properties>
         <hadoop.version>1.1.2</hadoop.version>
-        <hbase.version>0.94.2</hbase.version>
+        <hbase.version>0.94.7</hbase.version>
         <zookeeper.version>3.4.5</zookeeper.version>
     </properties>
     <repositories>
