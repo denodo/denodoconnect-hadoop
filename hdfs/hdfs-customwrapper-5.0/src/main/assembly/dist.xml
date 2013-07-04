@@ -47,7 +47,7 @@
             <unpack>false</unpack>
             <scope>runtime</scope>
 		    <excludes>
-        		<exclude>com.denodo.connect.hadoop:denodo-mapreduce-customwrapper</exclude>
+        		<exclude>com.denodo.connect.hadoop:denodo-hdfs-customwrapper-5.0</exclude>
       		</excludes>
         </dependencySet>
     </dependencySets>
