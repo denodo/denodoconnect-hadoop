@@ -140,7 +140,7 @@
                                 <descriptor>${basedir}/src/assembly/jar-with-dependencies.xml</descriptor>
                             </descriptors>
                             <appendAssemblyId>true</appendAssemblyId>
-                            <finalName>denodo-hbase-customwrapper-${project.version}</finalName>
+                            <finalName>denodo-hbase-customwrapper-5.0-${project.version}</finalName>
                         </configuration>
                     </execution>
                     <execution>
@@ -154,7 +154,7 @@
                                 <descriptor>${basedir}/src/assembly/dist.xml</descriptor>
                             </descriptors>
                             <appendAssemblyId>true</appendAssemblyId>
-                            <finalName>denodo-hbase-customwrapper-${project.version}</finalName>
+                            <finalName>denodo-hbase-customwrapper-5.0-${project.version}</finalName>
                         </configuration>
                     </execution>
                 </executions>
