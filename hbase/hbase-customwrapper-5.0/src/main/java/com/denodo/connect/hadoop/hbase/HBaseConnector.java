@@ -138,8 +138,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
             return rows.toArray(new CustomWrapperSchemaParameter[] {});
 
         } catch (final Exception e) {
-            e.printStackTrace();
-            throw new CustomWrapperException("Error in mapping format: " + e.getMessage());
+            logger.error("Error in mapping format: ", e);
+            throw new CustomWrapperException("Error in mapping format: ", e);
         }
 
     }
@@ -156,7 +156,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
             mappingMap = HbaseUtil.parseMapping(mapping);
         } catch (final Exception e) {
             logger.error("Error in mapping format: ", e);
-            throw new CustomWrapperException("Error in mapping format: " + e);
+            throw new CustomWrapperException("Error in mapping format: ", e);
         }
 
         // Connects to HBase server
@@ -479,9 +479,6 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
     private static Object[] processRow(final Result resultSet, final Map<String, List<HBaseColumnDetails>> mappingMap,
             final Set<byte[]> families) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("HBASE row: " + resultSet.toString());
-        }
 
         // Iterates through the families if they are mapped
         final Object[] rowArray = new Object[mappingMap.keySet().size() + 1];
