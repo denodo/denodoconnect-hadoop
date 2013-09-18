@@ -19,35 +19,32 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.mapreduce.wrapper.commons.output;
+package com.denodo.connect.hadoop.mapreduce.wrapper.handler;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 
-import org.apache.hadoop.io.Writable;
+import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
+import com.denodo.connect.hadoop.mapreduce.wrapper.output.MapReduceJobOutputReader;
 
-public interface IMapReduceTaskOutputReader {
+public interface MapReduceJobHandler {
 
-    /**
-     * Reads the next key-value pair and stores it in the key and value
-     * parameter.
-     */
-    public boolean readNext(Writable key, Writable value) throws IOException;
 
     /**
-     * @return an instance of the key class initialized (necessary to read
-     *         output)
+     * Get the specific parameters to be passed to the Main Class.
      */
-    public Writable getInitKey();
+    public Collection<String> getJobParameters(Map<String, String> inputParameters);
 
     /**
-     * @return an instance of the value class initialized (necessary to read
-     *         output)
+     * Defines the schema of the data that produces the job at its output.
      */
-    public Writable getInitValue();
+    public Collection<SchemaElement> getSchema(Map<String, String> inputParameters);
 
     /**
-     * Closes the reader and releases any resources associated with it.
+     * Returns a reader to be able to iterate over the results. Such a
+     * reader is in charge of reading all the output files and closing them.
      */
-    public void close() throws IOException;
+    public MapReduceJobOutputReader getOutputReader(Map<String, String> inputParameters) throws IOException;
 
 }

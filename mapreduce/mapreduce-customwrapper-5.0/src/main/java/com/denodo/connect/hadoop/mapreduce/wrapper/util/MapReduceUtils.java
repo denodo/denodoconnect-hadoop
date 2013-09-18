@@ -21,16 +21,13 @@
  */
 package com.denodo.connect.hadoop.mapreduce.wrapper.util;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 
-import org.apache.log4j.Logger;
-
-import com.denodo.connect.hadoop.mapreduce.wrapper.commons.handler.IMapReduceTaskHandler;
-import com.denodo.connect.hadoop.mapreduce.wrapper.commons.naming.ParameterNaming;
+import org.apache.commons.lang.StringUtils;
 
 public final class MapReduceUtils {
-
-    private static final Logger logger = Logger.getLogger(MapReduceUtils.class);
 
 
     private MapReduceUtils() {
@@ -42,59 +39,35 @@ public final class MapReduceUtils {
     }
 
     /**
-     * It returns the command to be executed. Something like: hadoop jar
-     * PATH_TO_JAR_IN_HOST MAIN_CLASS_IN_JAR DATANODE_IP DATANODE_PORT
-     * JOBTRACKER_IP JOBTRACKER_PORT INPUT_FILE_PATH OUTPUT_FILE_PATH (i.e.
-     * hadoop jar
-     * /home/cloudera/ssanchez/jars/hadooptestwordcount-1.0-SNAPSHOT.jar
+     * It returns the command to be executed:
+     * hadoop jar PATH_TO_JAR_IN_HOST MAIN_CLASS_IN_JAR DATANODE_IP DATANODE_PORT
+     * JOBTRACKER_IP JOBTRACKER_PORT INPUT_FILE_PATH OUTPUT_FILE_PATH
+     *
+     * (i.e. hadoop jar /home/cloudera/jars/hadooptestwordcount-1.0-SNAPSHOT.jar
      * test.MapReduceDriver1 172.16.0.58 8020 172.16.0.58 8021
      * /user/cloudera/input /user/cloudera/output
      *
-     * The parameters to be added to
-     * "hadoop jar PATH_TO_JAR_IN_HOST MAIN_CLASS_IN_JAR" come from
-     * {@link IMapReduceTaskHandler#getMapReduceParameters(String, String, String, String, String, String, String, String, String, String)}
-     * @param inputValues
-     * @return
+     * The specific parameters to be added to
+     * "hadoop jar PATH_TO_JAR_IN_HOST MAIN_CLASS_IN_JAR MAPREDUCE_PARAMETERS" come from
+     * {@link MapReduceJobHandler#getJobParameters()}
      */
-    public static String getCommandToExecuteMapReduceTask(
-        Map<String, String> inputValues, IMapReduceTaskHandler mapReduceTaskHandler) {
+    public static String getCommand(String jar, String mainClass, String jobParams,
+        Collection<String> jobSpecificParams) {
 
-        StringBuilder output = new StringBuilder("hadoop jar ");
-        output.append(inputValues.get(ParameterNaming.PATH_TO_JAR_IN_HOST));
-        output.append(" ");
-        output.append(inputValues.get(ParameterNaming.MAIN_CLASS_IN_JAR));
+        Collection<String> command = new ArrayList<String>();
+        command.add("hadoop");
+        command.add("jar");
+        command.add(jar);
+        command.add(mainClass);
 
-        String hostIp = inputValues.get(ParameterNaming.HOST_IP);
-        String hostPort = inputValues.get(ParameterNaming.HOST_PORT);
-        String hostUser = inputValues.get(ParameterNaming.HOST_USER);
-        String hostPassword = inputValues.get(ParameterNaming.HOST_PASSWORD);
-        String hostTimeout = inputValues.get(ParameterNaming.HOST_TIMEOUT);
-        String pathToJarInHost =
-            inputValues.get(ParameterNaming.PATH_TO_JAR_IN_HOST);
-        String mainClassInJar =
-            inputValues.get(ParameterNaming.MAIN_CLASS_IN_JAR);
-        String hadoopKeyClass =
-            inputValues.get(ParameterNaming.HADOOP_KEY_CLASS);
-        String hadoopValueClass =
-            inputValues.get(ParameterNaming.HADOOP_VALUE_CLASS);
-        String mapReduceParameters =
-            inputValues.get(ParameterNaming.MAPREDUCE_PARAMETERS);
-        String[] parameters =
-            mapReduceTaskHandler.getMapReduceParameters(hostIp, hostPort,
-                hostUser, hostPassword, hostTimeout, pathToJarInHost,
-                mainClassInJar, hadoopKeyClass, hadoopValueClass,
-                mapReduceParameters);
-
-        for (String param : parameters) {
-            output.append(" ");
-            output.append(param);
+        if (jobParams != null) {
+            String[] out = jobParams.split(",");
+            command.addAll(Arrays.asList(out));
         }
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Returning command: " + output.toString());
-        }
+        command.addAll(jobSpecificParams);
 
-        return output.toString();
+        return StringUtils.join(command.toArray(), " ");
     }
 
 }

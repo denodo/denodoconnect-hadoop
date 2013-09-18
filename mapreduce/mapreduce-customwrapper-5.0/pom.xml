@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-mapreduce-customwrapper-5.0</artifactId>
-    <version>20130405</version>
+    <version>20130902</version>
     <packaging>jar</packaging>
     <name>denodo-mapreduce-customwrapper</name>
 
@@ -221,13 +221,14 @@
 	  	<dependency>
 			<groupId>com.jcraft</groupId>
 			<artifactId>jsch</artifactId>
-			<version>0.1.48</version>
+			<version>0.1.50</version>
 		</dependency>
 
         <dependency>
-            <groupId>com.denodo.connect</groupId>
+            <groupId>com.denodo.connect.hadoop</groupId>
             <artifactId>denodo-hdfs-lib</artifactId>
-            <version>20130405</version>
+            <version>20130902</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
