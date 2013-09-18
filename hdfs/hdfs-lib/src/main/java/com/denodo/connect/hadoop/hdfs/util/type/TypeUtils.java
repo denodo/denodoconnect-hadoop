@@ -78,7 +78,7 @@ public final class TypeUtils {
             return List.class;
         }
 
-        logger.warn("Class '" + hadoopClass + "' is not directly supported. Returning String.class");
+        logger.warn("Class '" + hadoopClass + "' is not supported. Returning String.class");
         return String.class;
     }
 
@@ -118,7 +118,7 @@ public final class TypeUtils {
             return Types.STRUCT;
         }
 
-        logger.warn("Class '" + javaClass + "' is not directly supported. Returning Types.VARCHAR");
+        logger.warn("Class '" + javaClass + "' is not supported. Returning Types.VARCHAR");
         return Types.VARCHAR;
     }
 
@@ -161,7 +161,7 @@ public final class TypeUtils {
             return data.toArray(new Object[data.size()]);
         }
 
-        logger.warn("Class '" + hadoopClass + "' is not directly supported. Returning its writable.toString() value");
+        logger.warn("Class '" + hadoopClass + "' is not supported. Returning its writable.toString() value");
         return value.toString();
     }
 
