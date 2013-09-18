@@ -25,6 +25,8 @@ public final class Parameter {
 
     public static final String PASSWORD = "Password";
     public static final String TIMEOUT = "Host timeout";
+    public static final String PASSPHRASE = "Passphrase";
+    public static final String KEY_FILE = "Key file";
 
     public static final String PATH_TO_JAR_IN_HOST = "Path to jar in host";
     public static final String MAIN_CLASS_IN_JAR = "Main class in jar";
