@@ -30,6 +30,13 @@
         <include>NOTICE.txt</include>
       </includes>
     </fileSet>
+	<fileSet>
+	  <directory>${basedir}/doc/</directory>
+	  <outputDirectory>/doc</outputDirectory>
+	  <includes>
+		<include>**/*.pdf</include>
+	  </includes>
+	</fileSet>
   </fileSets>
 
 

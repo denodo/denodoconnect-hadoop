@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-mapreduce-customwrapper-5.0</artifactId>
-    <version>20130902</version>
+    <version>20131001</version>
     <packaging>jar</packaging>
     <name>denodo-mapreduce-customwrapper</name>
 
