@@ -31,6 +31,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Result;
@@ -43,6 +44,7 @@ import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.NullComparator;
 import org.apache.hadoop.hbase.filter.QualifierFilter;
 import org.apache.hadoop.hbase.filter.RegexStringComparator;
+import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.log4j.Logger;
@@ -64,6 +66,7 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperOrCondition;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleCondition;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 
 public class HBaseConnector extends AbstractCustomWrapper {
 
@@ -184,43 +187,67 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
             final CustomWrapperCondition conditionComplex = condition.getComplexCondition();
             final Scan scan = new Scan();
-            if ((conditionComplex != null)) {
-                /*
-                 * COMPLEX FILTER DELEGATION, CACHING, AND OTHER COMPLEX HBASE SCANNING FEATURES COULD BE ADDED HERE
-                 */
-                for (final String family : mappingMap.keySet()) {
-                    for (final HBaseColumnDetails subrowData : mappingMap.get(family)) {
-                        scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
-                    }
+            CustomWrapperSimpleCondition simpleCondition = null;
+            if (conditionComplex != null) {
+                if (condition.getComplexCondition().isSimpleCondition()) {
+                    simpleCondition = (CustomWrapperSimpleCondition) conditionComplex;
                 }
-                final Filter filter = buildFilterFromCustomWrapperConditionn(conditionComplex, false);
-                scan.setFilter(filter);
+            }
+            if ((simpleCondition != null)
+                    && simpleCondition.getField().toString().equals(ParameterNaming.COL_ROWKEY)
+                    && (simpleCondition.getOperator().equals(Operator.EQUALS_TO))) {
+                // The simple queries by row query are implemented in a different way using Get instead of Scan.
+                // Get operates directly on a particular row identified by the rowkey passed as a parameter to the the
+                // Get instance.
+                // While Scan operates on all the rows, if you haven't used range query by providing start and end
+                // rowkeys to your Scan instance.
+                final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) simpleCondition
+                        .getRightExpression()[0];
+                final String value = simpleExpression.getValue().toString();
+                final Get get = new Get(value.getBytes());
+                final Result resultRow = table.get(get);
+                final Object[] rowArray = processRow(resultRow, mappingMap, families);
+                result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
 
             } else {
-                // For performance reasons, just add to the scanner the families and qualifiers
-                // specified in the mapping
-                for (final String family : mappingMap.keySet()) {
-                    for (final HBaseColumnDetails subrowData : mappingMap.get(family)) {
-                        scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
+                if ((conditionComplex != null)) {
+                    /*
+                     * COMPLEX FILTER DELEGATION, CACHING, AND OTHER COMPLEX HBASE SCANNING FEATURES COULD BE ADDED HERE
+                     */
+                    for (final String family : mappingMap.keySet()) {
+                        for (final HBaseColumnDetails subrowData : mappingMap.get(family)) {
+                            scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
+                        }
                     }
+                    final Filter filter = buildFilterFromCustomWrapperConditionn(conditionComplex, false);
+                    scan.setFilter(filter);
+
+                } else {
+                    // For performance reasons, just add to the scanner the families and qualifiers
+                    // specified in the mapping
+                    for (final String family : mappingMap.keySet()) {
+                        for (final HBaseColumnDetails subrowData : mappingMap.get(family)) {
+                            scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
+                        }
+                    }
+
                 }
 
-            }
-
-            final ResultScanner scanner = table.getScanner(scan);
-            try {
-                for (final Result resultRow : scanner) {
-                    // Stop the scan if requested from outside
-                    if (this.stopRequested) {
-                        break;
+                final ResultScanner scanner = table.getScanner(scan);
+                try {
+                    for (final Result resultRow : scanner) {
+                        // Stop the scan if requested from outside
+                        if (this.stopRequested) {
+                            break;
+                        }
+                        // add the row to the output
+                        final Object[] rowArray = processRow(resultRow, mappingMap, families);
+                        result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
                     }
-                    // add the row to the output
-                    final Object[] rowArray = processRow(resultRow, mappingMap, families);
-                    result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
-                }
 
-            } finally {
-                scanner.close();
+                } finally {
+                    scanner.close();
+                }
             }
         } catch (final Exception e) {
             logger.error("Error accessing HBase: ", e);
@@ -292,15 +319,24 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 } else {
                     operator = CompareOp.NOT_EQUAL;
                 }
-                final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(Bytes.toBytes(familyColumn),
-                        Bytes.toBytes(column),
-                        operator, new BinaryComparator(Bytes.toBytes(value)));
-                if (!not) {
-                    // If you want that rows, that has a column with value null,be filtered, it is necessary to enable
-                    // FilterIFMissing
-                    filterColumn.setFilterIfMissing(true);
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
+                            Bytes.toBytes(value)));
+                    filter = rowfilter;
+                } else {
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new BinaryComparator(Bytes.toBytes(value)));
+                    if (!not) {
+                        // If you want that rows, that has a column with value null,be filtered, it is necessary to
+                        // enable
+                        // FilterIFMissing
+                        filterColumn.setFilterIfMissing(true);
+
+                    }
+                    filter = filterColumn;
                 }
-                filter = filterColumn;
 
             } else if (simpleCondition.getOperator().equals(Operator.NOT_EQUALS_TO)) {
                 CompareOp operator;
@@ -309,13 +345,20 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 } else {
                     operator = CompareOp.EQUAL;
                 }
-                final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(Bytes.toBytes(familyColumn),
-                        Bytes.toBytes(column),
-                        operator, new BinaryComparator(Bytes.toBytes(value)));
-                if (not) {
-                    filterColumn.setFilterIfMissing(true);
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
+                            Bytes.toBytes(value)));
+                    filter = rowfilter;
+                } else {
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new BinaryComparator(Bytes.toBytes(value)));
+                    if (not) {
+                        filterColumn.setFilterIfMissing(true);
+                    }
+                    filter = filterColumn;
                 }
-                filter = filterColumn;
             } else if (simpleCondition.getOperator().equals(Operator.REGEXP_LIKE)) {
                 CompareOp operator;
                 if (!not) {
@@ -323,13 +366,19 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 } else {
                     operator = CompareOp.NOT_EQUAL;
                 }
-                final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(Bytes.toBytes(familyColumn),
-                        Bytes.toBytes(column),
-                        operator, new RegexStringComparator(value));
-                if (!not) {
-                    filterColumn.setFilterIfMissing(true);
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new RegexStringComparator(value));
+                    filter = rowfilter;
+                } else {
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new RegexStringComparator(value));
+                    if (!not) {
+                        filterColumn.setFilterIfMissing(true);
+                    }
+                    filter = filterColumn;
                 }
-                filter = filterColumn;
             } else if (simpleCondition.getOperator().equals(Operator.LIKE)) {
                 CompareOp operator;
                 if (!not) {
@@ -337,13 +386,20 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 } else {
                     operator = CompareOp.NOT_EQUAL;
                 }
-                final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(Bytes.toBytes(familyColumn),
-                        Bytes.toBytes(column),
-                        operator, new RegexStringComparator(HbaseUtil.getRegExpformLike(value)));
-                if (!not) {
-                    filterColumn.setFilterIfMissing(true);
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new RegexStringComparator(
+                            HbaseUtil.getRegExpformLike(value)));
+                    filter = rowfilter;
+                } else {
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new RegexStringComparator(HbaseUtil.getRegExpformLike(value)));
+                    if (!not) {
+                        filterColumn.setFilterIfMissing(true);
+                    }
+                    filter = filterColumn;
                 }
-                filter = filterColumn;
 
             } else if (simpleCondition.getOperator().equals(Operator.IS_NULL)) {
                 if (!not) {
@@ -376,18 +432,29 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     operator = FilterList.Operator.MUST_PASS_ALL;
                     compareOp = CompareOp.NOT_EQUAL;
                 }
+                boolean isRowFilter = false;
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    isRowFilter = true;
+                }
                 final FilterList filterList = new FilterList(operator);
                 if (rightExpresion != null) {
                     for (final CustomWrapperExpression factor : rightExpresion) {
-                        final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
-                                Bytes.toBytes(familyColumn),
-                                Bytes.toBytes(column),
-                                compareOp, new BinaryComparator(Bytes.toBytes(factor.toString())));
-                        filterColumn.setFilterIfMissing(true);
-                        if (!not) {
+                        if (isRowFilter) {
+                            final RowFilter rowfilter = new RowFilter(compareOp, new BinaryComparator(
+                                    Bytes.toBytes(factor.toString())));
+                            filter = rowfilter;
+                            filterList.addFilter(rowfilter);
+                        } else {
+                            final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                                    Bytes.toBytes(familyColumn),
+                                    Bytes.toBytes(column),
+                                    compareOp, new BinaryComparator(Bytes.toBytes(factor.toString())));
                             filterColumn.setFilterIfMissing(true);
+                            if (!not) {
+                                filterColumn.setFilterIfMissing(true);
+                            }
+                            filterList.addFilter(filterColumn);
                         }
-                        filterList.addFilter(filterColumn);
                     }
                 }
                 filter = filterList;
@@ -398,13 +465,19 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 } else {
                     operator = CompareOp.NOT_EQUAL;
                 }
-                final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(Bytes.toBytes(familyColumn),
-                        Bytes.toBytes(column),
-                        operator, new RegexStringComparator(value));
-                if (!not) {
-                    filterColumn.setFilterIfMissing(true);
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new RegexStringComparator(value));
+                    filter = rowfilter;
+                } else {
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new RegexStringComparator(value));
+                    if (!not) {
+                        filterColumn.setFilterIfMissing(true);
+                    }
+                    filter = filterColumn;
                 }
-                filter = filterColumn;
             } else if (simpleCondition.getOperator().equals(Operator.IS_CONTAINED)) {
                 CompareOp operator;
                 if (!not) {
@@ -412,13 +485,19 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 } else {
                     operator = CompareOp.NOT_EQUAL;
                 }
-                final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(Bytes.toBytes(familyColumn),
-                        Bytes.toBytes(column),
-                        operator, new RegexStringComparator(value));
-                if (!not) {
-                    filterColumn.setFilterIfMissing(true);
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new RegexStringComparator(value));
+                    filter = rowfilter;
+                } else {
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new RegexStringComparator(value));
+                    if (!not) {
+                        filterColumn.setFilterIfMissing(true);
+                    }
+                    filter = filterColumn;
                 }
-                filter = filterColumn;
             } else if (simpleCondition.getOperator().equals(Operator.CONTAINS_AND)) {
                 FilterList.Operator operator;
                 CompareOp compareOp;
@@ -429,17 +508,28 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     operator = FilterList.Operator.MUST_PASS_ONE;
                     compareOp = CompareOp.NOT_EQUAL;
                 }
+                boolean isRowFilter = false;
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    isRowFilter = true;
+                }
                 final FilterList filterList = new FilterList(operator);
                 if (rightExpresion != null) {
                     for (final CustomWrapperExpression factor : rightExpresion) {
-                        final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
-                                Bytes.toBytes(familyColumn),
-                                Bytes.toBytes(column),
-                                compareOp, new RegexStringComparator(factor.toString()));
-                        if (!not) {
-                            filterColumn.setFilterIfMissing(true);
+                        if (isRowFilter) {
+                            final RowFilter rowfilter = new RowFilter(compareOp, new RegexStringComparator(
+                                    factor.toString()));
+                            filter = rowfilter;
+                            filterList.addFilter(rowfilter);
+                        } else {
+                            final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                                    Bytes.toBytes(familyColumn),
+                                    Bytes.toBytes(column),
+                                    compareOp, new RegexStringComparator(factor.toString()));
+                            if (!not) {
+                                filterColumn.setFilterIfMissing(true);
+                            }
+                            filterList.addFilter(filterColumn);
                         }
-                        filterList.addFilter(filterColumn);
                     }
                 }
                 filter = filterList;
@@ -453,17 +543,28 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     operator = FilterList.Operator.MUST_PASS_ALL;
                     compareOp = CompareOp.NOT_EQUAL;
                 }
+                boolean isRowFilter = false;
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    isRowFilter = true;
+                }
                 final FilterList filterList = new FilterList(operator);
                 if (rightExpresion != null) {
                     for (final CustomWrapperExpression factor : rightExpresion) {
-                        final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
-                                Bytes.toBytes(familyColumn),
-                                Bytes.toBytes(column),
-                                compareOp, new RegexStringComparator(factor.toString()));
-                        if (!not) {
-                            filterColumn.setFilterIfMissing(true);
+                        if (isRowFilter) {
+                            final RowFilter rowfilter = new RowFilter(compareOp, new RegexStringComparator(
+                                    factor.toString()));
+                            filter = rowfilter;
+                            filterList.addFilter(rowfilter);
+                        } else {
+                            final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                                    Bytes.toBytes(familyColumn),
+                                    Bytes.toBytes(column),
+                                    compareOp, new RegexStringComparator(factor.toString()));
+                            if (!not) {
+                                filterColumn.setFilterIfMissing(true);
+                            }
+                            filterList.addFilter(filterColumn);
                         }
-                        filterList.addFilter(filterColumn);
                     }
                 }
                 filter = filterList;
