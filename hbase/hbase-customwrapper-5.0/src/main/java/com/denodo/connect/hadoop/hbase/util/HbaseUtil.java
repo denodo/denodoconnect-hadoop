@@ -87,7 +87,8 @@ public final class HbaseUtil {
 
     public static String getRegExpformLike(final String expr)
     {
-        String regex = expr;// quotemeta(expr);
+        String regex = quotemeta(expr);
+
         regex = regex.replace("_", ".").replace("%", ".*?");
         regex = "^" + regex + "$";
         return regex;
