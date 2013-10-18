@@ -1,3 +1,6 @@
 20131009
 ========
 - Fixed 'let' filter by row_key
+20131018
+========
+- Fixed "escaping" of special characters in the LIKE Query, to can build a equivalent REGEXP to the LIKE
