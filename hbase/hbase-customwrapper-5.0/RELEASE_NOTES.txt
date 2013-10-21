@@ -1,3 +1,7 @@
+20131021
+========
+- Fixed returning result when a query by rowkey is empty, and comments log added
+
 20131018
 ========
 - Fixed escaping of special characters in LIKE operations, in order to correctly 

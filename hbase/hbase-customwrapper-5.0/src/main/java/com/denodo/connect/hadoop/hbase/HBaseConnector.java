@@ -21,6 +21,7 @@
  */
 package com.denodo.connect.hadoop.hbase;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -111,7 +112,9 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
         final String mapping = inputValues.get(ParameterNaming.CONF_TABLE_MAPPING);
         try {
-            logger.info("Start getSchemaParameters hbase");
+            if (logger.isInfoEnabled()) {
+                log(LOG_INFO, "Start getSchemaParameters hbase");
+            }
             final Map<String, List<HBaseColumnDetails>> mappingMap = HbaseUtil.parseMapping(mapping);
 
             final ArrayList<CustomWrapperSchemaParameter> rows = new ArrayList<CustomWrapperSchemaParameter>();
@@ -152,7 +155,9 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final List<CustomWrapperFieldExpression> projectedFields,
             final CustomWrapperResult result, final Map<String, String> inputValues)
             throws CustomWrapperException {
-        logger.info("Start run hbase-customwrapper");
+        if (logger.isInfoEnabled()) {
+            log(LOG_INFO, "Start run hbase-customwrapper");
+        }
         Map<String, List<HBaseColumnDetails>> mappingMap;
         try {
             final String mapping = inputValues.get(ParameterNaming.CONF_TABLE_MAPPING);
@@ -180,9 +185,13 @@ public class HBaseConnector extends AbstractCustomWrapper {
             throw new CustomWrapperException("Error ZooKeeper Connection: " + e.getMessage(), e);
         }
         HTable table;
+
         try {
             // Get table metadata
             table = new HTable(config, tableName);
+            if (logger.isDebugEnabled()) {
+                log(LOG_TRACE, "the connection was successfully established with HBase");
+            }
             final Set<byte[]> families = table.getTableDescriptor().getFamiliesKeys();
 
             final CustomWrapperCondition conditionComplex = condition.getComplexCondition();
@@ -205,9 +214,14 @@ public class HBaseConnector extends AbstractCustomWrapper {
                         .getRightExpression()[0];
                 final String value = simpleExpression.getValue().toString();
                 final Get get = new Get(value.getBytes());
+                if (logger.isTraceEnabled()) {
+                    log(LOG_TRACE, "This filter is by rowkey:   get  " + tableName + "," + value);
+                }
                 final Result resultRow = table.get(get);
-                final Object[] rowArray = processRow(resultRow, mappingMap, families);
-                result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
+                if ((resultRow != null) && !resultRow.isEmpty()) {
+                    final Object[] rowArray = processRow(resultRow, mappingMap, families);
+                    result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
+                }
 
             } else {
                 if ((conditionComplex != null)) {
@@ -220,6 +234,9 @@ public class HBaseConnector extends AbstractCustomWrapper {
                         }
                     }
                     final Filter filter = buildFilterFromCustomWrapperConditionn(conditionComplex, false);
+                    if (logger.isTraceEnabled()) {
+                        log(LOG_TRACE, "The complex filter(It does not  show the regexp:    " + filter.toString());
+                    }
                     scan.setFilter(filter);
 
                 } else {
@@ -230,9 +247,10 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
                         }
                     }
-
+                    if (logger.isTraceEnabled()) {
+                        log(LOG_TRACE, "There is not filter in the query ");
+                    }
                 }
-
                 final ResultScanner scanner = table.getScanner(scan);
                 try {
                     for (final Result resultRow : scanner) {
@@ -248,15 +266,26 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 } finally {
                     scanner.close();
                 }
+                if (logger.isTraceEnabled()) {
+                    log(LOG_TRACE, "The table " + tableName + " has been scanned successfully.");
+                }
             }
+        } catch (final IOException ioe) {
+            logger.error("Error relate to IOExpection: ", ioe);
+            throw new CustomWrapperException("Error related to IOExpection: " + ioe.getMessage(), ioe);
+
         } catch (final Exception e) {
             logger.error("Error accessing HBase: ", e);
             throw new CustomWrapperException("Error accessing the HBase table: " + e.getMessage(), e);
         }
+        if (logger.isInfoEnabled()) {
+            log(LOG_INFO, "End- Run hbase-customwrapper");
+
+        }
 
     }
 
-    private static Filter buildFilterFromCustomWrapperConditionn(final CustomWrapperCondition conditionComplex,
+    private Filter buildFilterFromCustomWrapperConditionn(final CustomWrapperCondition conditionComplex,
             final boolean not) {
         if (conditionComplex.isAndCondition()) {
             FilterList.Operator operator;
@@ -323,6 +352,13 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
                             Bytes.toBytes(value)));
                     filter = rowfilter;
+                    if (logger.isTraceEnabled()) {
+                        log(LOG_TRACE,
+                                "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(RowFilter("
+                                        +
+                                        ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", '"
+                                        + value + "'))\"}");
+                    }
                 } else {
                     final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
                             Bytes.toBytes(familyColumn),
@@ -336,6 +372,16 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
                     }
                     filter = filterColumn;
+                    if (logger.isDebugEnabled()) {
+                        log(LOG_TRACE,
+                                "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(SingleColumnValueFilter('"
+                                        + familyColumn
+                                        + "','"
+                                        + column
+                                        + "',"
+                                        + ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", '" + value + "'))\"}");
+                    }
+
                 }
 
             } else if (simpleCondition.getOperator().equals(Operator.NOT_EQUALS_TO)) {
@@ -349,6 +395,13 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
                             Bytes.toBytes(value)));
                     filter = rowfilter;
+                    if (logger.isDebugEnabled()) {
+                        log(LOG_TRACE,
+                                "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(RowFilter("
+                                        +
+                                        ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", '"
+                                        + value + "'))\"}");
+                    }
                 } else {
                     final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
                             Bytes.toBytes(familyColumn),
@@ -358,6 +411,16 @@ public class HBaseConnector extends AbstractCustomWrapper {
                         filterColumn.setFilterIfMissing(true);
                     }
                     filter = filterColumn;
+                    if (logger.isDebugEnabled()) {
+                        log(LOG_TRACE,
+                                "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(SingleColumnValueFilter('"
+                                        + familyColumn
+                                        + "','"
+                                        + column
+                                        + "',"
+                                        + ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", '"
+                                        + value + "'))\"}");
+                    }
                 }
             } else if (simpleCondition.getOperator().equals(Operator.REGEXP_LIKE)) {
                 CompareOp operator;
@@ -369,6 +432,13 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
                     final RowFilter rowfilter = new RowFilter(operator, new RegexStringComparator(value));
                     filter = rowfilter;
+                    if (logger.isDebugEnabled()) {
+                        log(LOG_TRACE,
+                                "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(RowFilter("
+                                        +
+                                        ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", 'regexstring:"
+                                        + value + "'))\"}");
+                    }
                 } else {
                     final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
                             Bytes.toBytes(familyColumn),
@@ -378,6 +448,16 @@ public class HBaseConnector extends AbstractCustomWrapper {
                         filterColumn.setFilterIfMissing(true);
                     }
                     filter = filterColumn;
+                    if (logger.isDebugEnabled()) {
+                        log(LOG_TRACE,
+                                "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(SingleColumnValueFilter('"
+                                        + familyColumn
+                                        + "','"
+                                        + column
+                                        + "',"
+                                        + ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", 'regexstring:"
+                                        + value + "'))\"}");
+                    }
                 }
             } else if (simpleCondition.getOperator().equals(Operator.LIKE)) {
                 CompareOp operator;
@@ -390,11 +470,29 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     final RowFilter rowfilter = new RowFilter(operator, new RegexStringComparator(
                             HbaseUtil.getRegExpformLike(value)));
                     filter = rowfilter;
+                    if (logger.isDebugEnabled()) {
+                        log(LOG_TRACE,
+                                "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(RowFilter("
+                                        +
+                                        ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", 'regexstring:"
+                                        + HbaseUtil.getRegExpformLike(value) + "'))\"}");
+                    }
                 } else {
                     final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
                             Bytes.toBytes(familyColumn),
                             Bytes.toBytes(column),
                             operator, new RegexStringComparator(HbaseUtil.getRegExpformLike(value)));
+                    if (logger.isDebugEnabled()) {
+                        log(LOG_TRACE,
+                                "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(SingleColumnValueFilter('"
+                                        + familyColumn
+                                        + "','"
+                                        + column
+                                        + "',"
+                                        + ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", 'regexstring:"
+                                        + HbaseUtil.getRegExpformLike(value) + "'))\"}");
+                    }
+
                     if (!not) {
                         filterColumn.setFilterIfMissing(true);
                     }
