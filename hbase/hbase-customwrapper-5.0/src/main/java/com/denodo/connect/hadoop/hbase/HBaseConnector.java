@@ -23,6 +23,7 @@ package com.denodo.connect.hadoop.hbase;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -99,6 +100,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 CustomWrapperCondition.OPERATOR_IN, CustomWrapperCondition.OPERATOR_CONTAINS,
                 CustomWrapperCondition.OPERATOR_CONTAINSAND, CustomWrapperCondition.OPERATOR_CONTAINSOR,
                 CustomWrapperCondition.OPERATOR_LIKE, CustomWrapperCondition.OPERATOR_ISCONTAINED,
+                CustomWrapperCondition.OPERATOR_GT, CustomWrapperCondition.OPERATOR_LT,
+                CustomWrapperCondition.OPERATOR_GE, CustomWrapperCondition.OPERATOR_LE
         });
 
         return configuration;
@@ -138,6 +141,10 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 rows.add(row);
             }
 
+            rows.add(new CustomWrapperSchemaParameter(ParameterNaming.COL_STARTROW, java.sql.Types.VARCHAR, null,
+                    true, CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false));
+            rows.add(new CustomWrapperSchemaParameter(ParameterNaming.COL_STOPROW, java.sql.Types.VARCHAR, null,
+                    true, CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false));
             return rows.toArray(new CustomWrapperSchemaParameter[] {});
 
         } catch (final Exception e) {
@@ -190,6 +197,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final Set<byte[]> families = table.getTableDescriptor().getFamiliesKeys();
 
             final CustomWrapperCondition conditionComplex = condition.getComplexCondition();
+            // Bytes.toBytes("1000000006|1|XA|A"), Bytes.toBytes("1000000008|1|XA|A")
             final Scan scan = new Scan();
             CustomWrapperSimpleCondition simpleCondition = null;
             if (conditionComplex != null) {
@@ -213,7 +221,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
                 final Result resultRow = table.get(get);
                 if ((resultRow != null) && !resultRow.isEmpty()) {
-                    final Object[] rowArray = processRow(resultRow, mappingMap, families);
+                    final Object[] rowArray = processRow(resultRow, mappingMap, families, null, null);
                     result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
                 }
 
@@ -227,11 +235,11 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
                         }
                     }
-                    final Filter filter = buildFilterFromCustomWrapperConditionn(conditionComplex, false);
-
-                    log(LOG_TRACE, "The complex filter(It does not  show the regexp:    " + filter.toString());
-
-                    scan.setFilter(filter);
+                    final Filter filter = buildFilterFromCustomWrapperConditionn(conditionComplex, false, scan);
+                    if (filter != null) {
+                        log(LOG_TRACE, "The complex filter(It does not  show the regexp:    " + filter.toString());
+                        scan.setFilter(filter);
+                    }
 
                 } else {
                     // For performance reasons, just add to the scanner the families and qualifiers
@@ -245,15 +253,28 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     log(LOG_TRACE, "There is not filter in the query ");
 
                 }
+
+                final Date date = new Date();
+                log(LOG_TRACE, "Time before scan:" + (date.getTime()));
                 final ResultScanner scanner = table.getScanner(scan);
+                final Date date2 = new Date();
+                log(LOG_TRACE, "Time after scan  startStop" + (date2.getTime()));
+                log(LOG_TRACE, "difference" + (date2.getTime() - date.getTime()));
+                log(LOG_TRACE, "The resultscanner of the table " + tableName + " has been created successfully.");
                 try {
+                    final byte[] startRow = scan.getStartRow();
+                    final byte[] stopRow = scan.getStopRow();
                     for (final Result resultRow : scanner) {
                         // Stop the scan if requested from outside
                         if (this.stopRequested) {
                             break;
                         }
+                        log(LOG_TRACE,
+                                "Obtaining the tuple with the following key row :  "
+                                        + Bytes.toString(resultRow.getRow()));
                         // add the row to the output
-                        final Object[] rowArray = processRow(resultRow, mappingMap, families);
+                        final Object[] rowArray = processRow(resultRow, mappingMap, families, startRow,
+                                stopRow);
                         result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
                     }
 
@@ -277,7 +298,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
     }
 
     private Filter buildFilterFromCustomWrapperConditionn(final CustomWrapperCondition conditionComplex,
-            final boolean not) {
+            final boolean not, final Scan scan) throws CustomWrapperException {
         if (conditionComplex.isAndCondition()) {
             FilterList.Operator operator;
             if (not) {
@@ -288,8 +309,10 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final FilterList filterList = new FilterList(operator);
             final CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) conditionComplex;
             for (final CustomWrapperCondition condition : andCondition.getConditions()) {
-                filterList.addFilter(buildFilterFromCustomWrapperConditionn(condition, not));
-
+                final Filter simpleFilter = buildFilterFromCustomWrapperConditionn(condition, not, scan);
+                if (simpleFilter != null) {
+                    filterList.addFilter(simpleFilter);
+                }
             }
             return filterList;
         } else if (conditionComplex.isOrCondition()) {
@@ -302,14 +325,14 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final FilterList filterList = new FilterList(operator);
             final CustomWrapperOrCondition conditionOr = (CustomWrapperOrCondition) conditionComplex;
             for (final CustomWrapperCondition condition : conditionOr.getConditions()) {
-                filterList.addFilter(buildFilterFromCustomWrapperConditionn(condition, not));
+                filterList.addFilter(buildFilterFromCustomWrapperConditionn(condition, not, scan));
 
             }
             return filterList;
         } else if (conditionComplex.isNotCondition()) {
             final CustomWrapperNotCondition conditionNot = (CustomWrapperNotCondition) conditionComplex;
 
-            return buildFilterFromCustomWrapperConditionn(conditionNot.getCondition(), true);
+            return buildFilterFromCustomWrapperConditionn(conditionNot.getCondition(), true, scan);
         } else {
             final CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) conditionComplex;
 
@@ -349,6 +372,16 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                     +
                                     ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", '"
                                     + value + "'))\"}");
+
+                } else if (familyColumn.equals(ParameterNaming.COL_STARTROW)) {
+                    scan.setStartRow(Bytes.toBytes(value));
+                    log(LOG_TRACE,
+                            "The filter has the following StartRow:" + value);
+
+                } else if (familyColumn.equals(ParameterNaming.COL_STOPROW)) {
+                    scan.setStopRow(Bytes.toBytes(value));
+                    log(LOG_TRACE,
+                            "The filter has the following StopRow:" + value);
 
                 } else {
                     final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
@@ -392,7 +425,13 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                     ((operator.equals(CompareOp.EQUAL)) ? "=" : "!=") + ", '"
                                     + value + "'))\"}");
 
-                } else {
+                } else if (familyColumn.equals(ParameterNaming.COL_STARTROW)
+                        || (familyColumn.equals(ParameterNaming.COL_STOPROW))) {
+                    throw new CustomWrapperException(
+                            "The parameters StartRow and StopRow only supports the operator EQUAL");
+                }
+                else {
+
                     final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
                             Bytes.toBytes(familyColumn),
                             Bytes.toBytes(column),
@@ -655,6 +694,174 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     }
                 }
                 filter = filterList;
+            } else if (simpleCondition.getOperator().equals(Operator.GREATER_EQUALS_THAN)) {
+                CompareOp operator;
+                if (!not) {
+                    operator = CompareOp.GREATER_OR_EQUAL;
+                } else {
+                    operator = CompareOp.LESS;
+                }
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
+                            Bytes.toBytes(value)));
+                    filter = rowfilter;
+
+                    log(LOG_TRACE,
+                            "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(RowFilter("
+                                    +
+                                    ((operator.equals(CompareOp.GREATER_OR_EQUAL)) ? ">=" : "<") + ", '"
+                                    + value + "'))\"}");
+
+                } else {
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new BinaryComparator(Bytes.toBytes(value)));
+                    if (!not) {
+                        // If you want that rows, that has a column with value null,be filtered, it is necessary to
+                        // enable
+                        // FilterIFMissing
+                        filterColumn.setFilterIfMissing(true);
+
+                    }
+                    filter = filterColumn;
+
+                    log(LOG_TRACE,
+                            "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(SingleColumnValueFilter('"
+                                    + familyColumn
+                                    + "','"
+                                    + column
+                                    + "',"
+                                    + ((operator.equals(CompareOp.GREATER_OR_EQUAL)) ? ">=" : "<") + ", '" + value
+                                    + "'))\"}");
+
+                }
+            } else if (simpleCondition.getOperator().equals(Operator.LESS_THAN)) {
+                CompareOp operator;
+                if (!not) {
+                    operator = CompareOp.LESS;
+                } else {
+                    operator = CompareOp.GREATER_OR_EQUAL;
+                }
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
+                            Bytes.toBytes(value)));
+                    filter = rowfilter;
+
+                    log(LOG_TRACE,
+                            "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(RowFilter("
+                                    +
+                                    ((operator.equals(CompareOp.LESS)) ? "<" : ">=") + ", '"
+                                    + value + "'))\"}");
+
+                } else {
+
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new BinaryComparator(Bytes.toBytes(value)));
+                    if (!not) {
+                        // If you want that rows, that has a column with value null,be filtered, it is necessary to
+                        // enable
+                        // FilterIFMissing
+                        filterColumn.setFilterIfMissing(true);
+
+                    }
+                    filter = filterColumn;
+
+                    log(LOG_TRACE,
+                            "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(SingleColumnValueFilter('"
+                                    + familyColumn
+                                    + "','"
+                                    + column
+                                    + "',"
+                                    + (!(operator.equals(CompareOp.GREATER_OR_EQUAL)) ? ">=" : "<") + ", '" + value
+                                    + "'))\"}");
+
+                }
+
+            } else if (simpleCondition.getOperator().equals(Operator.GREATER_THAN)) {
+                CompareOp operator;
+                if (!not) {
+                    operator = CompareOp.GREATER;
+                } else {
+                    operator = CompareOp.LESS_OR_EQUAL;
+                }
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
+                            Bytes.toBytes(value)));
+                    filter = rowfilter;
+
+                    log(LOG_TRACE,
+                            "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(RowFilter("
+                                    +
+                                    ((operator.equals(CompareOp.GREATER)) ? ">" : "<=") + ", '"
+                                    + value + "'))\"}");
+
+                } else {
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new BinaryComparator(Bytes.toBytes(value)));
+                    if (!not) {
+                        // If you want that rows, that has a column with value null,be filtered, it is necessary to
+                        // enable
+                        // FilterIFMissing
+                        filterColumn.setFilterIfMissing(true);
+
+                    }
+                    filter = filterColumn;
+
+                    log(LOG_TRACE,
+                            "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(SingleColumnValueFilter('"
+                                    + familyColumn
+                                    + "','"
+                                    + column
+                                    + "',"
+                                    + ((operator.equals(CompareOp.GREATER)) ? ">" : "<=") + ", '" + value + "'))\"}");
+
+                }
+            } else if (simpleCondition.getOperator().equals(Operator.LESS_EQUALS_THAN)) {
+                CompareOp operator;
+                if (!not) {
+                    operator = CompareOp.LESS_OR_EQUAL;
+                } else {
+                    operator = CompareOp.GREATER;
+                }
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
+                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
+                            Bytes.toBytes(value)));
+                    filter = rowfilter;
+
+                    log(LOG_TRACE,
+                            "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(RowFilter("
+                                    +
+                                    (!(operator.equals(CompareOp.GREATER)) ? ">" : "<=") + ", '"
+                                    + value + "'))\"}");
+
+                } else {
+                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                            Bytes.toBytes(familyColumn),
+                            Bytes.toBytes(column),
+                            operator, new BinaryComparator(Bytes.toBytes(value)));
+                    if (!not) {
+                        // If you want that rows, that has a column with value null,be filtered, it is necessary to
+                        // enable
+                        // FilterIFMissing
+                        filterColumn.setFilterIfMissing(true);
+
+                    }
+                    filter = filterColumn;
+
+                    log(LOG_TRACE,
+                            "The hbase shell query equivalent should be : scan 'tablename',{FILTER => \"(SingleColumnValueFilter('"
+                                    + familyColumn
+                                    + "','"
+                                    + column
+                                    + "',"
+                                    + (!(operator.equals(CompareOp.GREATER)) ? ">" : "<=") + ", '" + value + "'))\"}");
+
+                }
             } else {
                 filter = new SingleColumnValueFilter(Bytes.toBytes(familyColumn),
                         Bytes.toBytes(column),
@@ -666,23 +873,23 @@ public class HBaseConnector extends AbstractCustomWrapper {
     }
 
     private static Object[] processRow(final Result resultSet, final Map<String, List<HBaseColumnDetails>> mappingMap,
-            final Set<byte[]> families) {
+            final Set<byte[]> families, final byte[] startRow, final byte[] stopRow) {
 
         // Iterates through the families if they are mapped
         final Object[] rowArray = new Object[mappingMap.keySet().size() + 1];
 
         int i = 0;
-        for (final String mappingFaimilyName : mappingMap.keySet()) {
+        for (final String mappingFamilyName : mappingMap.keySet()) {
 
             // the row contains the mapped family
-            if (families.contains(mappingFaimilyName.getBytes())) {
-                final NavigableMap<byte[], byte[]> familyMap = resultSet.getFamilyMap(mappingFaimilyName.getBytes());
+            if (families.contains(mappingFamilyName.getBytes())) {
+                final NavigableMap<byte[], byte[]> familyMap = resultSet.getFamilyMap(mappingFamilyName.getBytes());
 
                 final Set<byte[]> keys = familyMap.keySet();
-                final Object[] subrowArray = new Object[mappingMap.get(mappingFaimilyName).size()];
+                final Object[] subrowArray = new Object[mappingMap.get(mappingFamilyName).size()];
                 int j = 0;
                 // And fills the sub-rows
-                for (final HBaseColumnDetails subrowData : mappingMap.get(mappingFaimilyName)) {
+                for (final HBaseColumnDetails subrowData : mappingMap.get(mappingFamilyName)) {
                     if (keys.contains(subrowData.getName().getBytes())) {
                         if (subrowData.getType().equals(ParameterNaming.TYPE_TEXT)) {
                             subrowArray[j] = Bytes.toString(familyMap.get(subrowData.getName().getBytes()));
@@ -713,6 +920,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
         }
         // the row key for this row
         rowArray[i] = Bytes.toString(resultSet.getRow());
+        // rowArray[i++] = startRow;
+        // rowArray[i++] = stopRow;
         return rowArray;
     }
 
