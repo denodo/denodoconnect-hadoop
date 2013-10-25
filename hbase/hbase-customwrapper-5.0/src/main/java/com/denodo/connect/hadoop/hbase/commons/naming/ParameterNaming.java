@@ -39,6 +39,8 @@ public final class ParameterNaming {
     public static final String TYPE_BOOLEAN = "boolean";
 
     public static final String COL_ROWKEY = "row_key";
+    public static final String COL_STARTROW = "start_row";
+    public static final String COL_STOPROW = "stop_row";
 
     private ParameterNaming() {
 

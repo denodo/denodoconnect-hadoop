@@ -1,3 +1,8 @@
+20131025
+========
+-Added the StartRow and StopRow, let it the possibility this restriction in the queries.(trying to improve the preformance)
+-Delegating the operators GE, GT, LE, LT to the customwrapper.
+ 
 20131021
 ========
 - Fixed returning result when a query by rowkey is empty, and comments log added
