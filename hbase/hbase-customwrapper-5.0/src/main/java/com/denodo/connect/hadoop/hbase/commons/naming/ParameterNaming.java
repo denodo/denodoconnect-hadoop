@@ -42,6 +42,9 @@ public final class ParameterNaming {
     public static final String COL_STARTROW = "start_row";
     public static final String COL_STOPROW = "stop_row";
 
+    public static final String ROWKEY_FILTER = "RowFilter";
+    public static final String COLUMN_FILTER = "SingleColumnValueFilter";
+
     private ParameterNaming() {
 
     }

@@ -1,3 +1,8 @@
+20131104
+========
+-Fixed operators is_null and is_not_null
+-Added hbase shell query in the log and in the execution trace
+
 20131025
 ========
 -Added the StartRow and StopRow, let it the possibility this restriction in the queries.(trying to improve the preformance)
