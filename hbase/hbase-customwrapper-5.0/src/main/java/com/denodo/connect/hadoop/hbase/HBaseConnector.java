@@ -99,7 +99,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 CustomWrapperCondition.OPERATOR_ISNULL, CustomWrapperCondition.OPERATOR_ISNOTNULL,
                 CustomWrapperCondition.OPERATOR_IN, CustomWrapperCondition.OPERATOR_CONTAINS,
                 CustomWrapperCondition.OPERATOR_CONTAINSAND, CustomWrapperCondition.OPERATOR_CONTAINSOR,
-                CustomWrapperCondition.OPERATOR_LIKE, CustomWrapperCondition.OPERATOR_ISCONTAINED,
+                CustomWrapperCondition.OPERATOR_LIKE, CustomWrapperCondition.OPERATOR_ISCONTAINED
                 // CustomWrapperCondition.OPERATOR_GT, CustomWrapperCondition.OPERATOR_LT,
                 // CustomWrapperCondition.OPERATOR_GE, CustomWrapperCondition.OPERATOR_LE
         });
@@ -302,7 +302,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
         } catch (final Exception e) {
             log(LOG_ERROR, "Error accessing HBase: " + ExceptionUtils.getStackTrace(e));
-            throw new CustomWrapperException("Error accessing the HBase table: " + e.getMessage(), e);
+            throw new CustomWrapperException("Error accessing the HBase S: " + e.getMessage(), e);
         }
         log(LOG_INFO, "End- Run hbase-customwrapper");
 
@@ -512,7 +512,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             attributesMappingMap, familyColumn,
                             column, ParameterNaming.ROWKEY_FILTER,
                             operator.name(),
-                            valueRegex.replace("\\", "\\x5C"), null, null, false, false);
+                            valueRegex, null, null, true, false);
                     log(LOG_TRACE,
                             "The hbase shell query equivalent should be :" + equivalentQuery);
                     getCustomWrapperPlan().addPlanEntry(
@@ -532,7 +532,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             attributesMappingMap, familyColumn,
                             column, ParameterNaming.COLUMN_FILTER,
                             operator.name(),
-                            valueRegex.replace("\\", "\\x5C"), null, null, true, not ? false : true);
+                            valueRegex, null, null, true, not ? false : true);
                     log(LOG_TRACE,
                             "The hbase shell query equivalent should be :"
                                     + equivalentQuery);
@@ -558,8 +558,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             attributesMappingMap, familyColumn,
                             column, ParameterNaming.ROWKEY_FILTER,
                             operator.name(),
-                            valueRegex.replace("\\", "\\x5C"), null, null,
-                            false, false);
+                            valueRegex, null, null,
+                            true, false);
                     log(LOG_TRACE,
                             "The hbase shell query equivalent should be :"
                                     +
@@ -577,7 +577,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             attributesMappingMap, familyColumn,
                             column, ParameterNaming.COLUMN_FILTER,
                             operator.name(),
-                            valueRegex.replace("\\", "\\x5C"), null, null, true, not ? false : true);
+                            valueRegex, null, null, true, not ? false : true);
                     log(LOG_TRACE,
                             "The hbase shell query equivalent should be :"
                                     + equivalentQuery);
@@ -736,7 +736,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             attributesMappingMap, null,
                             null, ParameterNaming.COL_ROWKEY,
                             operator.name(),
-                            valueRegex.replace("\\", "\\x5C"), null, null, false, false);
+                            valueRegex, null, null, false, false);
 
                     final RowFilter rowfilter = new RowFilter(operator, new RegexStringComparator(valueRegex));
                     filter = rowfilter;
@@ -750,7 +750,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             attributesMappingMap, familyColumn,
                             column, ParameterNaming.COLUMN_FILTER,
                             operator.name(),
-                            valueRegex.replace("\\", "\\x5C"), null, null, true, not ? false : true);
+                            valueRegex, null, null, true, not ? false : true);
                     log(LOG_TRACE,
                             "The hbase shell query equivalent should be :"
                                     + equivalentQuery);
@@ -789,7 +789,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             attributesMappingMap, null,
                             null, ParameterNaming.COL_ROWKEY,
                             operator.name(),
-                            valueRegex.replace("\\", "\\x5C"), null, null, false, not ? false : true);
+                            valueRegex, null, null, false, not ? false : true);
                     log(LOG_TRACE,
                             "The hbase shell query equivalent should be " + equivalentQuery);
                     getCustomWrapperPlan().addPlanEntry(
@@ -808,7 +808,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             attributesMappingMap, familyColumn,
                             column, ParameterNaming.COLUMN_FILTER,
                             operator.name(),
-                            valueRegex.replace("\\", "\\x5C"), null, null, true, not ? false : true);
+                            valueRegex, null, null, true, not ? false : true);
                     log(LOG_TRACE,
                             "The hbase shell query equivalent should be "
                                     + equivalentQuery);
@@ -848,7 +848,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                     attributesMappingMap, null,
                                     null, ParameterNaming.ROWKEY_FILTER,
                                     operator.name(),
-                                    regexFactor.replace("\\", "\\x5C"), null, null, true, false);
+                                    regexFactor, null, null, true, false);
                             log(LOG_TRACE,
                                     "The hbase shell query equivalent should be "
                                             + equivalentQuery);
@@ -869,7 +869,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                     attributesMappingMap, familyColumn,
                                     column, ParameterNaming.COLUMN_FILTER,
                                     operator.name(),
-                                    regexFactor.replace("\\", "\\x5C"), null, null, true, not ? false : true);
+                                    regexFactor, null, null, true, not ? false : true);
                             log(LOG_TRACE,
                                     "The hbase shell query equivalent should be :"
                                             + equivalentQuery);
@@ -919,7 +919,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                     attributesMappingMap, null,
                                     null, ParameterNaming.ROWKEY_FILTER,
                                     operator.name(),
-                                    regexFactor.replace("\\", "\\x5C"), null, null, true, false);
+                                    regexFactor, null, null, true, false);
                             log(LOG_TRACE,
                                     "The hbase shell query equivalent should be :"
                                             + equivalentQuery);
@@ -940,7 +940,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                     attributesMappingMap, familyColumn,
                                     column, ParameterNaming.COLUMN_FILTER,
                                     operator.name(),
-                                    regexFactor.replace("\\", "\\x5C"), null, null, true, not ? false : true);
+                                    regexFactor, null, null, true, not ? false : true);
                             log(LOG_TRACE,
                                     "The hbase shell query equivalent should be :"
                                             + equivalentQuery);
@@ -982,10 +982,12 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                     equivalentQuery);
 
                 } else {
+
                     final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
                             Bytes.toBytes(familyColumn),
                             Bytes.toBytes(column),
                             operator, new BinaryComparator(Bytes.toBytes(value)));
+
                     if (!not) {
                         // If you want that rows, that has a column with value null,be filtered, it is necessary to
                         // enable
@@ -1008,167 +1010,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                             + "  (hbase shell query equivalent) ",
                                     equivalentQuery);
                 }
-            } else if (simpleCondition.getOperator().equals(Operator.LESS_THAN)) {
-                CompareOp operator;
-                if (!not) {
-                    operator = CompareOp.LESS;
-                } else {
-                    operator = CompareOp.GREATER_OR_EQUAL;
-                }
-                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
-                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
-                            Bytes.toBytes(value)));
-                    filter = rowfilter;
-                    final String equivalentQuery = buildEquivalentShellQuery(tableName,
-                            attributesMappingMap, familyColumn,
-                            column, ParameterNaming.ROWKEY_FILTER,
-                            operator.name(),
-                            value, null, null, false, null);
-                    log(LOG_TRACE,
-                            "The hbase shell query equivalent should be :"
-                                    + equivalentQuery);
-                    getCustomWrapperPlan()
-                            .addPlanEntry(
-                                    "Simple filter number " + (this.filterNumber++)
-                                            + "  (hbase shell query equivalent) ",
-                                    equivalentQuery);
 
-                } else {
-
-                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
-                            Bytes.toBytes(familyColumn),
-                            Bytes.toBytes(column),
-                            operator, new BinaryComparator(Bytes.toBytes(value)));
-                    if (!not) {
-                        // If you want that rows, that has a column with value null,be filtered, it is necessary to
-                        // enable
-                        // FilterIFMissing
-                        filterColumn.setFilterIfMissing(true);
-
-                    }
-                    filter = filterColumn;
-                    final String equivalentQuery = buildEquivalentShellQuery(tableName,
-                            attributesMappingMap, familyColumn,
-                            column, ParameterNaming.COLUMN_FILTER,
-                            operator.name(),
-                            value, null, null, false, not ? false : true);
-                    log(LOG_TRACE,
-                            "The hbase shell query equivalent should be :"
-                                    + equivalentQuery);
-                    getCustomWrapperPlan()
-                            .addPlanEntry(
-                                    "Simple filter number " + (this.filterNumber++)
-                                            + "  (hbase shell query equivalent) ",
-                                    equivalentQuery);
-
-                }
-
-            } else if (simpleCondition.getOperator().equals(Operator.GREATER_THAN)) {
-                CompareOp operator;
-                if (!not) {
-                    operator = CompareOp.GREATER;
-                } else {
-                    operator = CompareOp.LESS_OR_EQUAL;
-                }
-                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
-                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
-                            Bytes.toBytes(value)));
-                    filter = rowfilter;
-                    final String equivalentQuery = buildEquivalentShellQuery(tableName,
-                            attributesMappingMap, familyColumn,
-                            column, ParameterNaming.ROWKEY_FILTER,
-                            operator.name(),
-                            value, null, null, false, false);
-                    log(LOG_TRACE,
-                            "The hbase shell query equivalent should be :"
-                                    + equivalentQuery);
-                    getCustomWrapperPlan()
-                            .addPlanEntry(
-                                    "Simple filter number " + (this.filterNumber++)
-                                            + "  (hbase shell query equivalent) ",
-                                    equivalentQuery);
-
-                } else {
-                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
-                            Bytes.toBytes(familyColumn),
-                            Bytes.toBytes(column),
-                            operator, new BinaryComparator(Bytes.toBytes(value)));
-                    if (!not) {
-                        // If you want that rows, that has a column with value null,be filtered, it is necessary to
-                        // enable
-                        // FilterIFMissing
-                        filterColumn.setFilterIfMissing(true);
-
-                    }
-                    filter = filterColumn;
-                    final String equivalentQuery = buildEquivalentShellQuery(tableName,
-                            attributesMappingMap, familyColumn,
-                            column, ParameterNaming.COLUMN_FILTER,
-                            operator.name(),
-                            value, null, null, false, not ? false : true);
-                    log(LOG_TRACE,
-                            "The hbase shell query equivalent should be :"
-                                    + equivalentQuery);
-                    getCustomWrapperPlan()
-                            .addPlanEntry(
-                                    "Simple filter number " + (this.filterNumber++)
-                                            + "  (hbase shell query equivalent) ",
-                                    equivalentQuery);
-
-                }
-            } else if (simpleCondition.getOperator().equals(Operator.LESS_EQUALS_THAN)) {
-                CompareOp operator;
-                if (!not) {
-                    operator = CompareOp.LESS_OR_EQUAL;
-                } else {
-                    operator = CompareOp.GREATER;
-                }
-                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
-                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
-                            Bytes.toBytes(value)));
-                    filter = rowfilter;
-                    final String equivalentQuery = buildEquivalentShellQuery(tableName,
-                            attributesMappingMap, familyColumn,
-                            column, ParameterNaming.ROWKEY_FILTER,
-                            operator.name(),
-                            value, null, null, false, false);
-                    log(LOG_TRACE,
-                            "The hbase shell query equivalent should be :"
-                                    + equivalentQuery);
-                    getCustomWrapperPlan()
-                            .addPlanEntry(
-                                    "Simple filter number " + (this.filterNumber++)
-                                            + "  (hbase shell query equivalent) ",
-                                    equivalentQuery);
-
-                } else {
-                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
-                            Bytes.toBytes(familyColumn),
-                            Bytes.toBytes(column),
-                            operator, new BinaryComparator(Bytes.toBytes(value)));
-                    if (!not) {
-                        // If you want that rows, that has a column with value null,be filtered, it is necessary to
-                        // enable
-                        // FilterIFMissing
-                        filterColumn.setFilterIfMissing(true);
-
-                    }
-                    filter = filterColumn;
-                    final String equivalentQuery = buildEquivalentShellQuery(tableName,
-                            attributesMappingMap, familyColumn,
-                            column, ParameterNaming.COLUMN_FILTER,
-                            operator.name(),
-                            value, null, null, false, not ? false : true);
-                    log(LOG_TRACE,
-                            "The hbase shell query equivalent should be :"
-                                    + equivalentQuery);
-                    getCustomWrapperPlan()
-                            .addPlanEntry(
-                                    "Simple filter number " + (this.filterNumber++)
-                                            + "  (hbase shell query equivalent) ",
-                                    equivalentQuery);
-
-                }
             }
 
             return filter;
@@ -1198,14 +1040,27 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             subrowArray[j] = Bytes.toString(familyMap.get(subrowData.getName().getBytes()));
                         } else if (subrowData.getType().equals(ParameterNaming.TYPE_INTEGER)) {
                             subrowArray[j] = Integer
-                                    .valueOf(Bytes.toInt(familyMap.get(subrowData.getName().getBytes())));
+                                    .valueOf(Bytes.toString(familyMap.get(subrowData.getName().getBytes())));
+                            // Bytes.toInt could throw a exception, for this reason it uses Bytes.toString
+                            // subrowArray[j] = Integer
+                            // .valueOf(Bytes.toInt(familyMap.get(subrowData.getName().getBytes())));
                         } else if (subrowData.getType().equals(ParameterNaming.TYPE_LONG)) {
-                            subrowArray[j] = Long.valueOf(Bytes.toLong(familyMap.get(subrowData.getName().getBytes())));
+                            // Bytes.toLong could throw a exception, for this reason it uses Bytes.toString
+                            // subrowArray[j] =
+                            // Long.valueOf(Bytes.toLong(familyMap.get(subrowData.getName().getBytes())));
+                            subrowArray[j] = Long
+                                    .valueOf(Bytes.toString(familyMap.get(subrowData.getName().getBytes())));
                         } else if (subrowData.getType().equals(ParameterNaming.TYPE_FLOAT)) {
+                            // Bytes.toFloat could throw a exception, for this reason it uses Bytes.toString
+                            // subrowArray[j] = Float
+                            // .valueOf(Bytes.toFloat(familyMap.get(subrowData.getName().getBytes())));
                             subrowArray[j] = Float
-                                    .valueOf(Bytes.toFloat(familyMap.get(subrowData.getName().getBytes())));
+                                    .valueOf(Bytes.toString(familyMap.get(subrowData.getName().getBytes())));
                         } else if (subrowData.getType().equals(ParameterNaming.TYPE_DOUBLE)) {
-                            subrowArray[j] = Double.valueOf(Bytes.toDouble(familyMap.get(subrowData.getName()
+                            // Bytes.toDouble could throw a exception, for this reason it uses Bytes.toString
+                            // subrowArray[j] = Double.valueOf(Bytes.toDouble(familyMap.get(subrowData.getName()
+                            // .getBytes())));
+                            subrowArray[j] = Double.valueOf(Bytes.toString(familyMap.get(subrowData.getName()
                                     .getBytes())));
                         } else {
                             subrowArray[j] = familyMap.get(subrowData.getName().getBytes());
