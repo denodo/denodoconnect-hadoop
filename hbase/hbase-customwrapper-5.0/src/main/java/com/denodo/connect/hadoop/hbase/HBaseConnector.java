@@ -302,7 +302,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
         } catch (final Exception e) {
             log(LOG_ERROR, "Error accessing HBase: " + ExceptionUtils.getStackTrace(e));
-            throw new CustomWrapperException("Error accessing the HBase S: " + e.getMessage(), e);
+            throw new CustomWrapperException("Error accessing HBase: " + e.getMessage(), e);
         }
         log(LOG_INFO, "End- Run hbase-customwrapper");
 

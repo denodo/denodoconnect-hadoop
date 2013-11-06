@@ -1,8 +1,9 @@
 20131104
 ========
--Fixed operators is_null and is_not_null
--Added hbase shell query in the log and in the execution trace
--Undelegating the operators GE, GT, LE, LT because of there isn´t numeric comparator in HBase
+-Fixed operators is_null and is_not_null.
+-Added hbase shell query in the log and in the execution trace.
+-Removes delegation of GE, GT, LE, LT operators due to the lack of a suitable
+ comparator in HBase default installations.
 
 20131025
 ========
