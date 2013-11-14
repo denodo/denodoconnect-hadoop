@@ -68,16 +68,29 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleConditio
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
+import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 
 public class HBaseConnector extends AbstractCustomWrapper {
 
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
         return new CustomWrapperInputParameter[] {
-                new CustomWrapperInputParameter(ParameterNaming.CONF_HBASE_IP, true),
-                new CustomWrapperInputParameter(ParameterNaming.CONF_HBASE_PORT, false),
-                new CustomWrapperInputParameter(ParameterNaming.CONF_TABLE_NAME, true),
-                new CustomWrapperInputParameter(ParameterNaming.CONF_TABLE_MAPPING, true),
+                new CustomWrapperInputParameter(
+                        ParameterNaming.CONF_HBASE_IP,
+                        "IP through which we want to access the database system (this parameter can be a list of HBase IPs separated by commas)",
+                        true, CustomWrapperInputParameterTypeFactory.stringType()),
+                new CustomWrapperInputParameter(ParameterNaming.CONF_HBASE_PORT,
+                        "The ZooKeeper port, an optional field with a default value of 2181",
+                        false, CustomWrapperInputParameterTypeFactory.stringType()),
+                new CustomWrapperInputParameter(ParameterNaming.CONF_TABLE_NAME,
+                        "HBase table",
+                        true, CustomWrapperInputParameterTypeFactory.stringType()),
+                new CustomWrapperInputParameter(ParameterNaming.CONF_TABLE_MAPPING,
+                        "Fragment of JSON, giving information about the queried HBase data structure",
+                        true, CustomWrapperInputParameterTypeFactory.longStringType()),
+                new CustomWrapperInputParameter(ParameterNaming.CONF_CACHING_SIZE,
+                        "Number of rows for caching that will be passed to scanners",
+                        false, CustomWrapperInputParameterTypeFactory.integerType())
 
         };
     }
@@ -1039,29 +1052,40 @@ public class HBaseConnector extends AbstractCustomWrapper {
                         if (subrowData.getType().equals(ParameterNaming.TYPE_TEXT)) {
                             subrowArray[j] = Bytes.toString(familyMap.get(subrowData.getName().getBytes()));
                         } else if (subrowData.getType().equals(ParameterNaming.TYPE_INTEGER)) {
+                            byte[] content = familyMap.get(subrowData.getName().getBytes());
+                            final int max_int = Integer.SIZE / Byte.SIZE;
+                            if (content.length < max_int) {
+                                content = HbaseUtil.fillWithZeroBytes(content, max_int - content.length);
+                            }
+
                             subrowArray[j] = Integer
-                                    .valueOf(Bytes.toString(familyMap.get(subrowData.getName().getBytes())));
-                            // Bytes.toInt could throw a exception, for this reason it uses Bytes.toString
-                            // subrowArray[j] = Integer
-                            // .valueOf(Bytes.toInt(familyMap.get(subrowData.getName().getBytes())));
+                                    .valueOf(Bytes.toInt(content));
                         } else if (subrowData.getType().equals(ParameterNaming.TYPE_LONG)) {
-                            // Bytes.toLong could throw a exception, for this reason it uses Bytes.toString
-                            // subrowArray[j] =
-                            // Long.valueOf(Bytes.toLong(familyMap.get(subrowData.getName().getBytes())));
-                            subrowArray[j] = Long
-                                    .valueOf(Bytes.toString(familyMap.get(subrowData.getName().getBytes())));
+                            byte[] content = familyMap.get(subrowData.getName().getBytes());
+                            final int max_long = Long.SIZE / Byte.SIZE;
+                            if (content.length < max_long) {
+                                content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
+                            }
+                            subrowArray[j] =
+                                    Long.valueOf(Bytes.toLong(content));
+
                         } else if (subrowData.getType().equals(ParameterNaming.TYPE_FLOAT)) {
-                            // Bytes.toFloat could throw a exception, for this reason it uses Bytes.toString
-                            // subrowArray[j] = Float
-                            // .valueOf(Bytes.toFloat(familyMap.get(subrowData.getName().getBytes())));
+                            byte[] content = familyMap.get(subrowData.getName().getBytes());
+                            final int max_float = Float.SIZE / Byte.SIZE;
+                            if (content.length < max_float) {
+                                content = HbaseUtil.fillWithZeroBytes(content, max_float - content.length);
+                            }
                             subrowArray[j] = Float
-                                    .valueOf(Bytes.toString(familyMap.get(subrowData.getName().getBytes())));
+                                    .valueOf(Bytes.toFloat(content));
+
                         } else if (subrowData.getType().equals(ParameterNaming.TYPE_DOUBLE)) {
-                            // Bytes.toDouble could throw a exception, for this reason it uses Bytes.toString
-                            // subrowArray[j] = Double.valueOf(Bytes.toDouble(familyMap.get(subrowData.getName()
-                            // .getBytes())));
-                            subrowArray[j] = Double.valueOf(Bytes.toString(familyMap.get(subrowData.getName()
-                                    .getBytes())));
+                            byte[] content = familyMap.get(subrowData.getName().getBytes());
+                            final int max_long = Long.SIZE / Byte.SIZE;
+                            if (content.length < max_long) {
+                                content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
+                            }
+                            subrowArray[j] = Double.valueOf(Bytes.toDouble(content));
+
                         } else {
                             subrowArray[j] = familyMap.get(subrowData.getName().getBytes());
                         }

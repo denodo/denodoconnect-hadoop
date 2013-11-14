@@ -1,3 +1,10 @@
+20131114
+========
+-Added possibility to activate cache in the scan
+-Fixed problem to retrieve long data, in the method processRow
+-Modified getInputParameters to added information in the view about the parameters
+
+
 20131104
 ========
 -Fixed operators is_null and is_not_null.

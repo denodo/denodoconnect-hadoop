@@ -22,6 +22,7 @@
 package com.denodo.connect.hadoop.hbase.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,5 +119,23 @@ public final class HbaseUtil {
             sb.append(c);
         }
         return sb.toString();
+    }
+
+    /**
+     * Fill a byte[] with 0 in the start.
+     * 
+     * 
+     * @param item
+     * @param numberOfSpaces
+     * @return byte[]
+     * 
+     * 
+     */
+
+    public static byte[] fillWithZeroBytes(final byte[] item, final int numberOfSpaces) {
+        final byte[] result = new byte[item.length + numberOfSpaces];
+        Arrays.fill(result, 0, numberOfSpaces, (byte) ' ');
+        System.arraycopy(item, 0, result, numberOfSpaces, item.length);
+        return result;
     }
 }

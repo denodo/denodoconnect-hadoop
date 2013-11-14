@@ -30,6 +30,7 @@ public final class ParameterNaming {
 
     public static final String CONF_ZOOKEEPER_QUORUM = "hbase.zookeeper.quorum";
     public static final String CONF_ZOOKEEPER_CLIENTPORT = "hbase.zookeeper.property.clientPort";
+    public static final String CONF_CACHING_SIZE = "cachingSize";
 
     public static final String TYPE_TEXT = "text";
     public static final String TYPE_INTEGER = "int";
