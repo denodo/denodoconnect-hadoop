@@ -228,7 +228,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) simpleCondition
                         .getRightExpression()[0];
                 final String value = simpleExpression.getValue().toString();
-                final Get get = new Get(value.getBytes());
+                final Get get = new Get(getBytesFromExpresion(simpleExpression));
                 final String logString = buildStringGetQuery(tableName, mappingMap, value);
                 log(LOG_TRACE, "In the hbase shell would be:" + logString);
                 getCustomWrapperPlan().addPlanEntry("In the hbase shell would be ",
@@ -260,10 +260,10 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                                 +
                                                 "each one by separate in hbase shell, but not jointly.", "");
                     }
-                    final Filter filter = buildFilterFromCustomWrapperConditionn(conditionComplex, false, scan,
+                    final Filter filter = buildFilterFromCustomWrapperCondition(conditionComplex, false, scan,
                             tableName, mappingMap);
                     if (filter != null) {
-                        // log(LOG_TRACE, "The complex filter(It does not  show the regexp):    " + filter.toString());
+
                         scan.setFilter(filter);
                     }
 
@@ -294,10 +294,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                         if (this.stopRequested) {
                             break;
                         }
-                        // log(LOG_TRACE,
-                        // "Obtaining the tuple with the following key row :  "
-                        // + Bytes.toString(resultRow.getRow()));
-                        // add the row to the output
+
                         final Object[] rowArray = processRow(resultRow, mappingMap, families);
                         result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
                     }
@@ -321,7 +318,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
     }
 
-    private Filter buildFilterFromCustomWrapperConditionn(final CustomWrapperCondition conditionComplex,
+    private Filter buildFilterFromCustomWrapperCondition(final CustomWrapperCondition conditionComplex,
             final boolean not, final Scan scan, final String tableName,
             final Map<String, List<HBaseColumnDetails>> attributesMappingMap) throws CustomWrapperException,
             UnsupportedEncodingException {
@@ -336,7 +333,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final FilterList filterList = new FilterList(operator);
             final CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) conditionComplex;
             for (final CustomWrapperCondition condition : andCondition.getConditions()) {
-                final Filter simpleFilter = buildFilterFromCustomWrapperConditionn(condition, not, scan, tableName,
+                final Filter simpleFilter = buildFilterFromCustomWrapperCondition(condition, not, scan, tableName,
                         attributesMappingMap);
                 if (simpleFilter != null) {
                     filterList.addFilter(simpleFilter);
@@ -353,7 +350,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final FilterList filterList = new FilterList(operator);
             final CustomWrapperOrCondition conditionOr = (CustomWrapperOrCondition) conditionComplex;
             for (final CustomWrapperCondition condition : conditionOr.getConditions()) {
-                filterList.addFilter(buildFilterFromCustomWrapperConditionn(condition, not, scan, tableName,
+                filterList.addFilter(buildFilterFromCustomWrapperCondition(condition, not, scan, tableName,
                         attributesMappingMap));
 
             }
@@ -361,7 +358,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
         } else if (conditionComplex.isNotCondition()) {
             final CustomWrapperNotCondition conditionNot = (CustomWrapperNotCondition) conditionComplex;
 
-            return buildFilterFromCustomWrapperConditionn(conditionNot.getCondition(), true, scan, tableName,
+            return buildFilterFromCustomWrapperCondition(conditionNot.getCondition(), true, scan, tableName,
                     attributesMappingMap);
         } else {
             final CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) conditionComplex;
@@ -372,8 +369,12 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final CustomWrapperExpression[] rightExpresion = simpleCondition.getRightExpression();
 
             String value = "";
+            byte[] bytesValue = null;
             if ((rightExpresion != null) && (rightExpresion.length > 0)) {
                 value = rightExpresion[0].toString();
+                final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) rightExpresion[0];
+                bytesValue = getBytesFromExpresion(simpleExpression);
+
             }
 
             Filter filter = null;
@@ -395,7 +396,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
                 if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
                     final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
-                            Bytes.toBytes(value)));
+                            bytesValue));
                     filter = rowfilter;
                     final String equivalentQuery = buildEquivalentShellQuery(tableName,
                             attributesMappingMap, familyColumn,
@@ -411,7 +412,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
                             equivalentQuery);
                 } else if (familyColumn.equals(ParameterNaming.COL_STARTROW)) {
-                    scan.setStartRow(Bytes.toBytes(value));
+                    scan.setStartRow(bytesValue);
                     final String equivalentQuery = buildEquivalentShellQuery(tableName,
                             attributesMappingMap, null,
                             null, null,
@@ -423,7 +424,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             "Simple filter number " + (this.filterNumber++) + "  (hbase shell query equivalent) ",
                             equivalentQuery);
                 } else if (familyColumn.equals(ParameterNaming.COL_STOPROW)) {
-                    scan.setStopRow(Bytes.toBytes(value));
+                    scan.setStopRow(bytesValue);
                     final String equivalentQuery = buildEquivalentShellQuery(tableName,
                             attributesMappingMap, null,
                             null, null,
@@ -439,7 +440,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
                             Bytes.toBytes(familyColumn),
                             Bytes.toBytes(column),
-                            operator, new BinaryComparator(Bytes.toBytes(value)));
+                            operator, new BinaryComparator(bytesValue));
                     if (!not) {
                         // If you want that rows, that has a column with value null,be filtered, it is necessary to
                         // enable
@@ -469,7 +470,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 }
                 if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
                     final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
-                            Bytes.toBytes(value)));
+                            bytesValue));
                     filter = rowfilter;
                     final String equivalentQuery = buildEquivalentShellQuery(tableName,
                             attributesMappingMap, familyColumn,
@@ -492,7 +493,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
                             Bytes.toBytes(familyColumn),
                             Bytes.toBytes(column),
-                            operator, new BinaryComparator(Bytes.toBytes(value)));
+                            operator, new BinaryComparator(bytesValue));
                     if (not) {
                         filterColumn.setFilterIfMissing(true);
                     }
@@ -688,7 +689,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     for (final CustomWrapperExpression factor : rightExpresion) {
                         if (isRowFilter) {
                             final RowFilter rowfilter = new RowFilter(compareOp, new BinaryComparator(
-                                    Bytes.toBytes(factor.toString())));
+                                    getBytesFromExpresion((CustomWrapperSimpleExpression) factor)));
                             filter = rowfilter;
                             filterList.addFilter(rowfilter);
                             final String equivalentQuery = buildEquivalentShellQuery(tableName,
@@ -708,7 +709,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
                                     Bytes.toBytes(familyColumn),
                                     Bytes.toBytes(column),
-                                    compareOp, new BinaryComparator(Bytes.toBytes(factor.toString())));
+                                    compareOp, new BinaryComparator(
+                                            getBytesFromExpresion((CustomWrapperSimpleExpression) factor)));
                             filterColumn.setFilterIfMissing(true);
                             if (!not) {
                                 filterColumn.setFilterIfMissing(true);
@@ -969,61 +971,6 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 getCustomWrapperPlan().addPlanEntry("Filter CONTAINS_OR_(" + (this.filterNumber++) + ")_",
                         "end");
                 filter = filterList;
-            } else if (simpleCondition.getOperator().equals(Operator.GREATER_EQUALS_THAN)) {
-                CompareOp operator;
-                if (!not) {
-                    operator = CompareOp.GREATER_OR_EQUAL;
-                } else {
-                    operator = CompareOp.LESS;
-                }
-                if (familyColumn.equals(ParameterNaming.COL_ROWKEY)) {
-                    final RowFilter rowfilter = new RowFilter(operator, new BinaryComparator(
-                            Bytes.toBytes(value)));
-                    filter = rowfilter;
-                    final String equivalentQuery = buildEquivalentShellQuery(tableName,
-                            attributesMappingMap, familyColumn,
-                            column, ParameterNaming.ROWKEY_FILTER,
-                            operator.name(),
-                            value, null, null, false, false);
-                    log(LOG_TRACE,
-                            "The hbase shell query equivalent should be :"
-                                    + equivalentQuery);
-                    getCustomWrapperPlan()
-                            .addPlanEntry(
-                                    "Simple filter number " + (this.filterNumber++)
-                                            + "  (hbase shell query equivalent) ",
-                                    equivalentQuery);
-
-                } else {
-
-                    final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
-                            Bytes.toBytes(familyColumn),
-                            Bytes.toBytes(column),
-                            operator, new BinaryComparator(Bytes.toBytes(value)));
-
-                    if (!not) {
-                        // If you want that rows, that has a column with value null,be filtered, it is necessary to
-                        // enable
-                        // FilterIFMissing
-                        filterColumn.setFilterIfMissing(true);
-
-                    }
-                    filter = filterColumn;
-                    final String equivalentQuery = buildEquivalentShellQuery(tableName,
-                            attributesMappingMap, familyColumn,
-                            column, ParameterNaming.COLUMN_FILTER,
-                            operator.name(),
-                            value, null, null, false, not ? false : true);
-                    log(LOG_TRACE,
-                            "The hbase shell query equivalent should be :"
-                                    + equivalentQuery);
-                    getCustomWrapperPlan()
-                            .addPlanEntry(
-                                    "Simple filter number " + (this.filterNumber++)
-                                            + "  (hbase shell query equivalent) ",
-                                    equivalentQuery);
-                }
-
             }
 
             return filter;
@@ -1066,8 +1013,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             if (content.length < max_long) {
                                 content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
                             }
-                            subrowArray[j] =
-                                    Long.valueOf(Bytes.toLong(content));
+
+                            subrowArray[j] = Long.valueOf(Bytes.toLong(content));
 
                         } else if (subrowData.getType().equals(ParameterNaming.TYPE_FLOAT)) {
                             byte[] content = familyMap.get(subrowData.getName().getBytes());
@@ -1221,6 +1168,26 @@ public class HBaseConnector extends AbstractCustomWrapper {
     public boolean stop() {
         this.stopRequested = true;
         return this.stopRequested;
+    }
+
+    public static byte[] getBytesFromExpresion(final CustomWrapperSimpleExpression expression) {
+        byte[] value;
+
+        if (expression.getValue() instanceof Integer) {
+            value = Bytes.toBytes((Integer) expression.getValue());
+        } else if (expression.getValue() instanceof Long) {
+            value = Bytes.toBytes((Long) expression.getValue());
+        } else if (expression.getValue() instanceof Double) {
+            value = Bytes.toBytes((Double) expression.getValue());
+        } else if (expression.getValue() instanceof Float) {
+            value = Bytes.toBytes((Float) expression.getValue());
+        } else if (expression.getValue() instanceof String) {
+            value = Bytes.toBytes((String) expression.getValue());
+        } else {
+            value = Bytes.toBytes((String) expression.getValue());
+        }
+
+        return value;
     }
 
 }

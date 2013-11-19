@@ -134,7 +134,7 @@ public final class HbaseUtil {
 
     public static byte[] fillWithZeroBytes(final byte[] item, final int numberOfSpaces) {
         final byte[] result = new byte[item.length + numberOfSpaces];
-        Arrays.fill(result, 0, numberOfSpaces, (byte) ' ');
+        Arrays.fill(result, 0, numberOfSpaces, (byte) 0);
         System.arraycopy(item, 0, result, numberOfSpaces, item.length);
         return result;
     }
