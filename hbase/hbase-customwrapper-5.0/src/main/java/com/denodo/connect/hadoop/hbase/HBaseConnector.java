@@ -1043,7 +1043,10 @@ public class HBaseConnector extends AbstractCustomWrapper {
                                 content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
                             }
                             subrowArray[j] = Double.valueOf(Bytes.toDouble(content));
+                        } else if (subrowData.getType().equals(ParameterNaming.TYPE_BOOLEAN)) {
+                            final byte[] content = familyMap.get(subrowData.getName().getBytes());
 
+                            subrowArray[j] = Boolean.valueOf(Bytes.toBoolean(content));
                         } else {
                             subrowArray[j] = familyMap.get(subrowData.getName().getBytes());
                         }
@@ -1194,6 +1197,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
             value = Bytes.toBytes((Float) expression.getValue());
         } else if (expression.getValue() instanceof String) {
             value = Bytes.toBytes((String) expression.getValue());
+        } else if (expression.getValue() instanceof Boolean) {
+            value = Bytes.toBytes((Boolean) expression.getValue());
         } else {
             value = Bytes.toBytes((String) expression.getValue());
         }

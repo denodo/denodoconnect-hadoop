@@ -51,6 +51,8 @@ public final class HbaseUtil {
             return java.sql.Types.FLOAT;
         } else if (mappingType.equals(ParameterNaming.TYPE_DOUBLE)) {
             return java.sql.Types.DOUBLE;
+        } else if (mappingType.equals(ParameterNaming.TYPE_BOOLEAN)) {
+            return java.sql.Types.BOOLEAN;
         } else {
             // other types will output the raw bytes in a string field
             return java.sql.Types.VARCHAR;
