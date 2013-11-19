@@ -1,3 +1,7 @@
+20131119
+========
+-Fixed comparison the data types distinct to String
+
 20131114
 ========
 -Added possibility to activate cache in the scan
