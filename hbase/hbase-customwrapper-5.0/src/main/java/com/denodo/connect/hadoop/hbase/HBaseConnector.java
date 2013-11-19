@@ -183,6 +183,12 @@ public class HBaseConnector extends AbstractCustomWrapper {
             throw new CustomWrapperException("Error in mapping format: ", e);
         }
 
+        Integer cacheSize = null;
+        if (inputValues.containsKey(ParameterNaming.CONF_CACHING_SIZE)) {
+            cacheSize = ((Integer) getInputParameterValue(ParameterNaming.CONF_CACHING_SIZE).getValue()).intValue();
+            log(LOG_INFO, "Using cache size of " + cacheSize.toString());
+        }
+
         // Connects to HBase server
         final String tableName = inputValues.get(ParameterNaming.CONF_TABLE_NAME);
         final Configuration config = HBaseConfiguration.create();
@@ -211,6 +217,11 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
             final CustomWrapperCondition conditionComplex = condition.getComplexCondition();
             final Scan scan = new Scan();
+            // Set scan cache size if present
+            if (cacheSize != null) {
+                scan.setCaching(cacheSize.intValue());
+            }
+
             CustomWrapperSimpleCondition simpleCondition = null;
             if (conditionComplex != null) {
                 if (condition.getComplexCondition().isSimpleCondition()) {
