@@ -1,33 +1,34 @@
 20131120
 ========
--Added operator ISTRUE and ISFALSE
+- Added delegation of operators ISTRUE and ISFALSE to HBase.
+- Fixed problems in byte-level comparisons of data of type other than String. 
 
-20131119
-========
--Fixed comparison the data types distinct to String
 
 20131114
 ========
--Added possibility to activate cache in the scan
--Fixed problem to retrieve long data, in the method processRow
--Modified getInputParameters to added information in the view about the parameters
+- Added possibility to enable cache in HBase scan operations.
+- Fixed bad retrieval of data of (byte-array-simulated) type "long".
+- Added contextual information to parameters during base view creation.
 
 
 20131104
 ========
--Fixed operators is_null and is_not_null.
--Added hbase shell query in the log and in the execution trace.
--Removes delegation of GE, GT, LE, LT operators due to the lack of a suitable
- comparator in HBase default installations.
+- Fixed is_null and is_not_null operators not working OK.
+- Added HBase query specification output through the VDP log and query execution trace.
+- Removed delegation of operators GE, GT, LE, LT to HBase due to the lack of a suitable
+  comparator in HBase default installations.
+
 
 20131025
 ========
--Added the StartRow and StopRow, let it the possibility this restriction in the queries.(trying to improve the preformance)
--Delegating the operators GE, GT, LE, LT to the customwrapper.
+- Improved delegation of the StartRow and StopRow parameters for better performance. 
+- Added delegation of operators GE, GT, LE, LT to HBase.
+
  
 20131021
 ========
 - Fixed returning result when a query by rowkey is empty, and comments log added
+
 
 20131018
 ========
