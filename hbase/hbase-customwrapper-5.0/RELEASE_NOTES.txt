@@ -1,3 +1,7 @@
+20131120
+========
+-Added operator ISTRUE and ISFALSE
+
 20131119
 ========
 -Fixed comparison the data types distinct to String

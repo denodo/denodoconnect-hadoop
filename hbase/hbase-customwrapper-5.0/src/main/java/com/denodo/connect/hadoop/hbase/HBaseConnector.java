@@ -112,7 +112,8 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 CustomWrapperCondition.OPERATOR_ISNULL, CustomWrapperCondition.OPERATOR_ISNOTNULL,
                 CustomWrapperCondition.OPERATOR_IN, CustomWrapperCondition.OPERATOR_CONTAINS,
                 CustomWrapperCondition.OPERATOR_CONTAINSAND, CustomWrapperCondition.OPERATOR_CONTAINSOR,
-                CustomWrapperCondition.OPERATOR_LIKE, CustomWrapperCondition.OPERATOR_ISCONTAINED
+                CustomWrapperCondition.OPERATOR_LIKE, CustomWrapperCondition.OPERATOR_ISCONTAINED,
+                CustomWrapperCondition.OPERATOR_ISTRUE, CustomWrapperCondition.OPERATOR_ISFALSE
                 // CustomWrapperCondition.OPERATOR_GT, CustomWrapperCondition.OPERATOR_LT,
                 // CustomWrapperCondition.OPERATOR_GE, CustomWrapperCondition.OPERATOR_LE
         });
@@ -982,6 +983,72 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 getCustomWrapperPlan().addPlanEntry("Filter CONTAINS_OR_(" + (this.filterNumber++) + ")_",
                         "end");
                 filter = filterList;
+            } else if (simpleCondition.getOperator().equals(Operator.IS_TRUE)) {
+
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY) || familyColumn.equals(ParameterNaming.COL_STOPROW)
+                        || familyColumn.equals(ParameterNaming.COL_STARTROW)) {
+                    throw new CustomWrapperException(ParameterNaming.COL_ROWKEY + ", " + ParameterNaming.COL_STOPROW
+                            + ", " + ParameterNaming.COL_STARTROW + " cannot be a boolean field");
+                }
+                CompareOp operator;
+                if (!not) {
+                    operator = CompareOp.EQUAL;
+                } else {
+                    operator = CompareOp.NOT_EQUAL;
+                }
+
+                final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                        Bytes.toBytes(familyColumn),
+                        Bytes.toBytes(column),
+                        operator, new BinaryComparator(Bytes.toBytes(new Boolean(true))));
+                if (!not) {
+                    // If you want that rows, that has a column with value null,be filtered, it is necessary to
+                    // enable
+                    // FilterIFMissing
+                    filterColumn.setFilterIfMissing(true);
+
+                }
+                filter = filterColumn;
+                final String equivalentQuery = buildEquivalentShellQuery(tableName,
+                        attributesMappingMap, familyColumn,
+                        column, ParameterNaming.COLUMN_FILTER,
+                        operator.name(),
+                        Bytes.toBytes(new Boolean(true)).toString(), null, null, false, not ? false : true);
+                log(LOG_TRACE,
+                        "The hbase shell query equivalent should be :"
+                                + equivalentQuery);
+            } else if (simpleCondition.getOperator().equals(Operator.IS_FALSE)) {
+                if (familyColumn.equals(ParameterNaming.COL_ROWKEY) || familyColumn.equals(ParameterNaming.COL_STOPROW)
+                        || familyColumn.equals(ParameterNaming.COL_STARTROW)) {
+                    throw new CustomWrapperException(ParameterNaming.COL_ROWKEY + ", " + ParameterNaming.COL_STOPROW
+                            + ", " + ParameterNaming.COL_STARTROW + " cannot be a boolean field");
+                }
+                CompareOp operator;
+                if (!not) {
+                    operator = CompareOp.EQUAL;
+                } else {
+                    operator = CompareOp.NOT_EQUAL;
+                }
+                final SingleColumnValueFilter filterColumn = new SingleColumnValueFilter(
+                        Bytes.toBytes(familyColumn),
+                        Bytes.toBytes(column),
+                        operator, new BinaryComparator(Bytes.toBytes(new Boolean(false))));
+                if (!not) {
+                    // If you want that rows, that has a column with value null,be filtered, it is necessary to
+                    // enable
+                    // FilterIFMissing
+                    filterColumn.setFilterIfMissing(true);
+
+                }
+                filter = filterColumn;
+                final String equivalentQuery = buildEquivalentShellQuery(tableName,
+                        attributesMappingMap, familyColumn,
+                        column, ParameterNaming.COLUMN_FILTER,
+                        operator.name(),
+                        Bytes.toBytes(new Boolean(false)).toString(), null, null, false, not ? false : true);
+                log(LOG_TRACE,
+                        "The hbase shell query equivalent should be :"
+                                + equivalentQuery);
             }
 
             return filter;
