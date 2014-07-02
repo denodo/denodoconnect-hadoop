@@ -78,40 +78,76 @@
             </plugin>
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.2-beta-5</version>
-                <executions>
-                    <execution>
-                        <id>make-assembly-jar-with-dependencies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>attached</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>${basedir}/src/main/assembly/jar-with-dependencies.xml</descriptor>
-                            </descriptors>
-                            <appendAssemblyId>true</appendAssemblyId>
-                            <finalName>denodo-hdfs-customwrapper-5.0-${project.version}</finalName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>make-assembly-dist</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>attached</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>${basedir}/src/main/assembly/dist.xml</descriptor>
-                            </descriptors>
-                            <appendAssemblyId>true</appendAssemblyId>
-                            <finalName>denodo-hdfs-customwrapper-5.0-${project.version}</finalName>
-                        </configuration>
-                    </execution>
-                </executions>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-jar-plugin</artifactId>
+              <version>2.4</version>
+              <configuration>
+                <archive>
+                  <addMavenDescriptor>false</addMavenDescriptor>
+                  <manifestSections>
+                    <manifestSection>
+                      <name>com.denodo</name>
+                      <manifestEntries>
+                        <Extension-Name>${project.artifactId}</Extension-Name>
+                        <Extension-Description>${project.name}</Extension-Description>
+                        <Extension-Version>${project.version}</Extension-Version>
+                        <Extension-Target-Version>5.0</Extension-Target-Version>
+                        <Extension-Target-Update>20130103</Extension-Target-Update>
+                        <Extension-Website>http://support.denodo.com</Extension-Website>
+                      </manifestEntries>
+                    </manifestSection>
+                  </manifestSections>
+                </archive>
+              </configuration>
             </plugin>
+
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-shade-plugin</artifactId>
+              <version>2.3</version>
+              <executions>
+                <execution>
+                  <phase>package</phase>
+                  <goals>
+                    <goal>shade</goal>
+                  </goals>
+                  <configuration>
+                    <outputFile>target/${project.artifactId}-${project.version}-jar-with-dependencies.jar</outputFile>
+                    <filters>
+                      <filter>
+                        <artifact>*:*</artifact>
+                        <excludes>
+                          <exclude>META-INF/maven/**/*</exclude>
+                        </excludes>
+                      </filter>
+                    </filters>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-assembly-plugin</artifactId>
+              <version>2.2-beta-5</version>
+              <executions>
+                <execution>
+                  <id>make-assembly-dist</id>
+                  <phase>package</phase>
+                  <goals>
+                    <goal>attached</goal>
+                  </goals>
+                  <configuration>
+                    <descriptors>
+                      <descriptor>${basedir}/src/main/assembly/dist.xml</descriptor>
+                    </descriptors>
+                    <appendAssemblyId>true</appendAssemblyId>
+                    <finalName>${project.artifactId}-${project.version}</finalName>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+
         </plugins>
     </build>
 
