@@ -206,6 +206,9 @@ public class HBaseConnector extends AbstractCustomWrapper {
         } catch (final ZooKeeperConnectionException e) {
             log(LOG_ERROR, "Error ZooKeeper Connection: " + ExceptionUtils.getStackTrace(e));
             throw new CustomWrapperException("Error ZooKeeper Connection: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log(LOG_ERROR, "Error connecting HBase: " + ExceptionUtils.getStackTrace(e));
+            throw new CustomWrapperException("Error connecting HBase: " + e.getMessage(), e);
         }
         HTable table;
 

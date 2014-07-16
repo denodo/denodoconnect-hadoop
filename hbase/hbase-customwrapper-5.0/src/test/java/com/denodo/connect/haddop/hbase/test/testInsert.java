@@ -19,8 +19,8 @@ import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 public class testInsert {
 
     /**
-     * 
-     * 
+     *
+     *
      * @param args
      */
     public static void main(final String[] args) throws CustomWrapperException {
@@ -43,6 +43,8 @@ public class testInsert {
         } catch (final ZooKeeperConnectionException e) {
 
             throw new CustomWrapperException("Error ZooKeeper Connection: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new CustomWrapperException("Error connecting HBase: " + e.getMessage(), e);
         }
         HTable table;
 
