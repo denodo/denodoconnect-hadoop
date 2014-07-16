@@ -214,7 +214,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
             table = new HTable(config, tableName);
             log(LOG_TRACE, "the connection was successfully established with HBase");
 
-            final Set<byte[]> families = table.getTableDescriptor().getFamiliesKeys();
+       //     final Set<byte[]> families = table.getTableDescriptor().getFamiliesKeys();
 
             final CustomWrapperCondition conditionComplex = condition.getComplexCondition();
             final Scan scan = new Scan();
@@ -247,7 +247,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                         logString);
                 final Result resultRow = table.get(get);
                 if ((resultRow != null) && !resultRow.isEmpty()) {
-                    final Object[] rowArray = processRow(resultRow, mappingMap, families);
+                    final Object[] rowArray = processRow(resultRow, mappingMap);
                     result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
                 }
 
@@ -307,7 +307,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                             break;
                         }
 
-                        final Object[] rowArray = processRow(resultRow, mappingMap, families);
+                        final Object[] rowArray = processRow(resultRow, mappingMap);
                         result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
                     }
 
@@ -1055,8 +1055,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
         }
     }
 
-    private static Object[] processRow(final Result resultSet, final Map<String, List<HBaseColumnDetails>> mappingMap,
-            final Set<byte[]> families) {
+    private static Object[] processRow(final Result resultSet, final Map<String, List<HBaseColumnDetails>> mappingMap) {
 
         // Iterates through the families if they are mapped
         final Object[] rowArray = new Object[mappingMap.keySet().size() + 1];
@@ -1065,67 +1064,64 @@ public class HBaseConnector extends AbstractCustomWrapper {
         for (final String mappingFamilyName : mappingMap.keySet()) {
 
             // the row contains the mapped family
-            if (families.contains(mappingFamilyName.getBytes())) {
-                final NavigableMap<byte[], byte[]> familyMap = resultSet.getFamilyMap(mappingFamilyName.getBytes());
+            final NavigableMap<byte[], byte[]> familyMap = resultSet.getFamilyMap(mappingFamilyName.getBytes());
 
-                final Set<byte[]> keys = familyMap.keySet();
-                final Object[] subrowArray = new Object[mappingMap.get(mappingFamilyName).size()];
-                int j = 0;
-                // And fills the sub-rows
-                for (final HBaseColumnDetails subrowData : mappingMap.get(mappingFamilyName)) {
-                    if (keys.contains(subrowData.getName().getBytes())) {
-                        if (subrowData.getType().equals(ParameterNaming.TYPE_TEXT)) {
-                            subrowArray[j] = Bytes.toString(familyMap.get(subrowData.getName().getBytes()));
-                        } else if (subrowData.getType().equals(ParameterNaming.TYPE_INTEGER)) {
-                            byte[] content = familyMap.get(subrowData.getName().getBytes());
-                            final int max_int = Integer.SIZE / Byte.SIZE;
-                            if (content.length < max_int) {
-                                content = HbaseUtil.fillWithZeroBytes(content, max_int - content.length);
-                            }
-
-                            subrowArray[j] = Integer
-                                    .valueOf(Bytes.toInt(content));
-                        } else if (subrowData.getType().equals(ParameterNaming.TYPE_LONG)) {
-                            byte[] content = familyMap.get(subrowData.getName().getBytes());
-                            final int max_long = Long.SIZE / Byte.SIZE;
-                            if (content.length < max_long) {
-                                content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
-                            }
-
-                            subrowArray[j] = Long.valueOf(Bytes.toLong(content));
-
-                        } else if (subrowData.getType().equals(ParameterNaming.TYPE_FLOAT)) {
-                            byte[] content = familyMap.get(subrowData.getName().getBytes());
-                            final int max_float = Float.SIZE / Byte.SIZE;
-                            if (content.length < max_float) {
-                                content = HbaseUtil.fillWithZeroBytes(content, max_float - content.length);
-                            }
-                            subrowArray[j] = Float
-                                    .valueOf(Bytes.toFloat(content));
-
-                        } else if (subrowData.getType().equals(ParameterNaming.TYPE_DOUBLE)) {
-                            byte[] content = familyMap.get(subrowData.getName().getBytes());
-                            final int max_long = Long.SIZE / Byte.SIZE;
-                            if (content.length < max_long) {
-                                content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
-                            }
-                            subrowArray[j] = Double.valueOf(Bytes.toDouble(content));
-                        } else if (subrowData.getType().equals(ParameterNaming.TYPE_BOOLEAN)) {
-                            final byte[] content = familyMap.get(subrowData.getName().getBytes());
-
-                            subrowArray[j] = Boolean.valueOf(Bytes.toBoolean(content));
-                        } else {
-                            subrowArray[j] = familyMap.get(subrowData.getName().getBytes());
+            final Set<byte[]> keys = familyMap.keySet();
+            final Object[] subrowArray = new Object[mappingMap.get(mappingFamilyName).size()];
+            int j = 0;
+            // And fills the sub-rows
+            for (final HBaseColumnDetails subrowData : mappingMap.get(mappingFamilyName)) {
+                if (keys.contains(subrowData.getName().getBytes())) {
+                    if (subrowData.getType().equals(ParameterNaming.TYPE_TEXT)) {
+                        subrowArray[j] = Bytes.toString(familyMap.get(subrowData.getName().getBytes()));
+                    } else if (subrowData.getType().equals(ParameterNaming.TYPE_INTEGER)) {
+                        byte[] content = familyMap.get(subrowData.getName().getBytes());
+                        final int max_int = Integer.SIZE / Byte.SIZE;
+                        if (content.length < max_int) {
+                            content = HbaseUtil.fillWithZeroBytes(content, max_int - content.length);
                         }
+
+                        subrowArray[j] = Integer
+                            .valueOf(Bytes.toInt(content));
+                    } else if (subrowData.getType().equals(ParameterNaming.TYPE_LONG)) {
+                        byte[] content = familyMap.get(subrowData.getName().getBytes());
+                        final int max_long = Long.SIZE / Byte.SIZE;
+                        if (content.length < max_long) {
+                            content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
+                        }
+
+                        subrowArray[j] = Long.valueOf(Bytes.toLong(content));
+
+                    } else if (subrowData.getType().equals(ParameterNaming.TYPE_FLOAT)) {
+                        byte[] content = familyMap.get(subrowData.getName().getBytes());
+                        final int max_float = Float.SIZE / Byte.SIZE;
+                        if (content.length < max_float) {
+                            content = HbaseUtil.fillWithZeroBytes(content, max_float - content.length);
+                        }
+                        subrowArray[j] = Float
+                            .valueOf(Bytes.toFloat(content));
+
+                    } else if (subrowData.getType().equals(ParameterNaming.TYPE_DOUBLE)) {
+                        byte[] content = familyMap.get(subrowData.getName().getBytes());
+                        final int max_long = Long.SIZE / Byte.SIZE;
+                        if (content.length < max_long) {
+                            content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
+                        }
+                        subrowArray[j] = Double.valueOf(Bytes.toDouble(content));
+                    } else if (subrowData.getType().equals(ParameterNaming.TYPE_BOOLEAN)) {
+                        final byte[] content = familyMap.get(subrowData.getName().getBytes());
+
+                        subrowArray[j] = Boolean.valueOf(Bytes.toBoolean(content));
                     } else {
-                        subrowArray[j] = null;
+                        subrowArray[j] = familyMap.get(subrowData.getName().getBytes());
                     }
-                    j++;
+                } else {
+                    subrowArray[j] = null;
                 }
-                rowArray[i] = subrowArray;
-            } else {
-                rowArray[i] = null;
+                j++;
             }
+            rowArray[i] = subrowArray;
+
             i++;
         }
         // the row key for this row
