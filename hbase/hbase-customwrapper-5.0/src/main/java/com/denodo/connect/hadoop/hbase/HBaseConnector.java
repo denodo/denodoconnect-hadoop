@@ -217,8 +217,6 @@ public class HBaseConnector extends AbstractCustomWrapper {
             table = new HTable(config, tableName);
             log(LOG_TRACE, "the connection was successfully established with HBase");
 
-       //     final Set<byte[]> families = table.getTableDescriptor().getFamiliesKeys();
-
             final CustomWrapperCondition conditionComplex = condition.getComplexCondition();
             final Scan scan = new Scan();
             // Set scan cache size if present
@@ -354,7 +352,7 @@ public class HBaseConnector extends AbstractCustomWrapper {
                     filterList.addFilter(simpleFilter);
                 }
             }
-            return filterList;
+            return filterList.getFilters().isEmpty() ? null : filterList;
         } else if (conditionComplex.isOrCondition()) {
             FilterList.Operator operator;
             if (!not) {
@@ -365,11 +363,14 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final FilterList filterList = new FilterList(operator);
             final CustomWrapperOrCondition conditionOr = (CustomWrapperOrCondition) conditionComplex;
             for (final CustomWrapperCondition condition : conditionOr.getConditions()) {
-                filterList.addFilter(buildFilterFromCustomWrapperCondition(condition, not, scan, tableName,
-                        attributesMappingMap));
+                Filter simpleFilter = buildFilterFromCustomWrapperCondition(condition, not, scan, tableName,
+                        attributesMappingMap);
+                if (simpleFilter != null) {
+                    filterList.addFilter(simpleFilter);
+                }
 
             }
-            return filterList;
+            return filterList.getFilters().isEmpty() ? null : filterList;
         } else if (conditionComplex.isNotCondition()) {
             final CustomWrapperNotCondition conditionNot = (CustomWrapperNotCondition) conditionComplex;
 
