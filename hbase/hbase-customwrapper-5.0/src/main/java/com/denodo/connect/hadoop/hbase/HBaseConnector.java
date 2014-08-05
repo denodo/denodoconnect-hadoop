@@ -24,7 +24,6 @@ package com.denodo.connect.hadoop.hbase;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -45,6 +44,7 @@ import org.apache.hadoop.hbase.filter.BinaryComparator;
 import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter;
 import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
@@ -72,8 +72,12 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
 
 public class HBaseConnector extends AbstractCustomWrapper {
 
+    private boolean stopRequested = false;
+    private int filterNumber = 0;
+    
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
+        
         return new CustomWrapperInputParameter[] {
                 new CustomWrapperInputParameter(
                         ParameterNaming.CONF_HBASE_IP,
@@ -95,9 +99,6 @@ public class HBaseConnector extends AbstractCustomWrapper {
         };
     }
 
-    private boolean stopRequested = false;
-    private int filterNumber = 0;
-
     @Override
     public CustomWrapperConfiguration getConfiguration() {
 
@@ -114,65 +115,55 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 CustomWrapperCondition.OPERATOR_CONTAINSAND, CustomWrapperCondition.OPERATOR_CONTAINSOR,
                 CustomWrapperCondition.OPERATOR_LIKE, CustomWrapperCondition.OPERATOR_ISCONTAINED,
                 CustomWrapperCondition.OPERATOR_ISTRUE, CustomWrapperCondition.OPERATOR_ISFALSE
-                // CustomWrapperCondition.OPERATOR_GT, CustomWrapperCondition.OPERATOR_LT,
-                // CustomWrapperCondition.OPERATOR_GE, CustomWrapperCondition.OPERATOR_LE
         });
 
         return configuration;
     }
 
     @Override
-    public CustomWrapperSchemaParameter[] getSchemaParameters(
-            final Map<String, String> inputValues) throws CustomWrapperException {
+    public CustomWrapperSchemaParameter[] getSchemaParameters(final Map<String, String> inputValues) throws CustomWrapperException {
 
-        final String mapping = inputValues.get(ParameterNaming.CONF_TABLE_MAPPING);
         try {
 
             log(LOG_INFO, "Start getSchemaParameters hbase");
+
+            final String mapping = inputValues.get(ParameterNaming.CONF_TABLE_MAPPING);
             final Map<String, List<HBaseColumnDetails>> mappingMap = HbaseUtil.parseMapping(mapping);
 
             final ArrayList<CustomWrapperSchemaParameter> rows = new ArrayList<CustomWrapperSchemaParameter>();
 
-            // row ID
+            // row key
             rows.add(new CustomWrapperSchemaParameter(ParameterNaming.COL_ROWKEY, java.sql.Types.VARCHAR, null,
                     true, CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false));
-
+            
             // output schema based on the provided json
             for (final String col : mappingMap.keySet()) {
                 final ArrayList<CustomWrapperSchemaParameter> subrows = new ArrayList<CustomWrapperSchemaParameter>();
                 for (final HBaseColumnDetails subrowData : mappingMap.get(col)) {
-                    CustomWrapperSchemaParameter subrow = null;
-
-                    subrow = new CustomWrapperSchemaParameter(subrowData.getName(), HbaseUtil.getSQLType(subrowData
-                            .getType()),
-                            null,
-                            true, CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false);
-                    subrows.add(subrow);
+                    subrows.add(new CustomWrapperSchemaParameter(subrowData.getName(), HbaseUtil.getSQLType(subrowData.getType()),
+                            null, true, CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false));
 
                 }
-                final CustomWrapperSchemaParameter row = new CustomWrapperSchemaParameter(col, java.sql.Types.STRUCT,
-                        subrows.toArray(new CustomWrapperSchemaParameter[] {}));
-                rows.add(row);
+                rows.add(new CustomWrapperSchemaParameter(col, java.sql.Types.STRUCT, subrows.toArray(new CustomWrapperSchemaParameter[] {})));
             }
 
             rows.add(new CustomWrapperSchemaParameter(ParameterNaming.COL_STARTROW, java.sql.Types.VARCHAR, null,
                     true, CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false));
             rows.add(new CustomWrapperSchemaParameter(ParameterNaming.COL_STOPROW, java.sql.Types.VARCHAR, null,
                     true, CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false));
+            
             return rows.toArray(new CustomWrapperSchemaParameter[] {});
 
         } catch (final Exception e) {
-            log(LOG_ERROR, "Error in mapping format: " + ExceptionUtils.getStackTrace(e));
-            throw new CustomWrapperException("Error in mapping format: ", e);
+            log(LOG_ERROR, "Error in table mapping format: " + ExceptionUtils.getStackTrace(e));
+            throw new CustomWrapperException("Error in table mapping format: " + e.getMessage(), e);
         }
 
     }
 
     @Override
-    public void run(final CustomWrapperConditionHolder condition,
-            final List<CustomWrapperFieldExpression> projectedFields,
-            final CustomWrapperResult result, final Map<String, String> inputValues)
-            throws CustomWrapperException {
+    public void run(final CustomWrapperConditionHolder condition, final List<CustomWrapperFieldExpression> projectedFields,
+            final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
         log(LOG_INFO, "Start run hbase-customwrapper");
         Map<String, List<HBaseColumnDetails>> mappingMap;
@@ -180,18 +171,17 @@ public class HBaseConnector extends AbstractCustomWrapper {
             final String mapping = inputValues.get(ParameterNaming.CONF_TABLE_MAPPING);
             mappingMap = HbaseUtil.parseMapping(mapping);
         } catch (final Exception e) {
-            log(LOG_ERROR, "Error in mapping format: " + ExceptionUtils.getStackTrace(e));
-            throw new CustomWrapperException("Error in mapping format: ", e);
+            log(LOG_ERROR, "Error in table mapping format: " + ExceptionUtils.getStackTrace(e));
+            throw new CustomWrapperException("Error in table mapping format: " + e.getMessage(), e);
         }
 
         Integer cacheSize = null;
         if (inputValues.containsKey(ParameterNaming.CONF_CACHING_SIZE)) {
-            cacheSize = ((Integer) getInputParameterValue(ParameterNaming.CONF_CACHING_SIZE).getValue()).intValue();
+            cacheSize = (Integer) getInputParameterValue(ParameterNaming.CONF_CACHING_SIZE).getValue();
             log(LOG_INFO, "Using cache size of " + cacheSize.toString());
         }
 
         // Connects to HBase server
-        final String tableName = inputValues.get(ParameterNaming.CONF_TABLE_NAME);
         final Configuration config = HBaseConfiguration.create();
         config.set(ParameterNaming.CONF_ZOOKEEPER_QUORUM, inputValues.get(ParameterNaming.CONF_HBASE_IP));
         final String port = inputValues.get(ParameterNaming.CONF_HBASE_PORT);
@@ -210,42 +200,38 @@ public class HBaseConnector extends AbstractCustomWrapper {
             log(LOG_ERROR, "Error connecting HBase: " + ExceptionUtils.getStackTrace(e));
             throw new CustomWrapperException("Error connecting HBase: " + e.getMessage(), e);
         }
-        HTable table;
-
+        
+        HTable table = null;
+        final String tableName = inputValues.get(ParameterNaming.CONF_TABLE_NAME);
         try {
             // Get table metadata
             table = new HTable(config, tableName);
             log(LOG_TRACE, "the connection was successfully established with HBase");
 
-            final CustomWrapperCondition conditionComplex = condition.getComplexCondition();
-            final Scan scan = new Scan();
+            Scan scan = new Scan();
             // Set scan cache size if present
             if (cacheSize != null) {
                 scan.setCaching(cacheSize.intValue());
             }
 
+            final CustomWrapperCondition conditionComplex = condition.getComplexCondition();
             CustomWrapperSimpleCondition simpleCondition = null;
-            if (conditionComplex != null) {
-                if (condition.getComplexCondition().isSimpleCondition()) {
-                    simpleCondition = (CustomWrapperSimpleCondition) conditionComplex;
-                }
+            if (conditionComplex != null && condition.getComplexCondition().isSimpleCondition()) {
+                simpleCondition = (CustomWrapperSimpleCondition) conditionComplex;
             }
             if ((simpleCondition != null)
                     && simpleCondition.getField().toString().equals(ParameterNaming.COL_ROWKEY)
                     && (simpleCondition.getOperator().equals(Operator.EQUALS_TO))) {
                 // The simple queries by row query are implemented in a different way using Get instead of Scan.
-                // Get operates directly on a particular row identified by the rowkey passed as a parameter to the the
-                // Get instance.
-                // While Scan operates on all the rows, if you haven't used range query by providing start and end
-                // rowkeys to your Scan instance.
+                // Get operates directly on a particular row identified by the rowkey passed as a parameter to the the Get instance.
+                // While Scan operates on all the rows, if you haven't used range query by providing start and end rowkeys to your Scan instance.
                 final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) simpleCondition
                         .getRightExpression()[0];
                 final String value = simpleExpression.getValue().toString();
                 final Get get = new Get(getBytesFromExpresion(simpleExpression));
                 final String logString = buildStringGetQuery(tableName, mappingMap, value);
                 log(LOG_TRACE, "In the hbase shell would be:" + logString);
-                getCustomWrapperPlan().addPlanEntry("In the hbase shell would be ",
-                        logString);
+                getCustomWrapperPlan().addPlanEntry("In the hbase shell would be ", logString);
                 final Result resultRow = table.get(get);
                 if ((resultRow != null) && !resultRow.isEmpty()) {
                     final Object[] rowArray = processRow(resultRow, mappingMap);
@@ -253,55 +239,46 @@ public class HBaseConnector extends AbstractCustomWrapper {
                 }
 
             } else {
+                
+                Filter rowKeyFilter = null;
+                if (mappingMap.isEmpty()) {
+                    rowKeyFilter = buildRowKeyFilter(tableName);
+                }
+                
+                for (final String family : mappingMap.keySet()) {
+                    for (final HBaseColumnDetails subrowData : mappingMap.get(family)) {
+                        scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
+                    }
+                }
+                
+                Filter conditionFilter = null;
                 if ((conditionComplex != null)) {
-                    /*
-                     * CACHING, AND OTHER COMPLEX HBASE SCANNING FEATURES COULD BE ADDED HERE
-                     */
-                    for (final String family : mappingMap.keySet()) {
-                        for (final HBaseColumnDetails subrowData : mappingMap.get(family)) {
-                            scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
-                        }
-                    }
-                    if (conditionComplex.isAndCondition() || conditionComplex.isOrCondition()) {
-                        log(LOG_TRACE,
-                                "This query has more than one condition. The filters that appear would be the equivalent "
-                                        +
-                                        "each one by separate in hbase shell, but not jointly.");
-                        getCustomWrapperPlan()
-                                .addPlanEntry(
-                                        "This query has more than one condition.The filters that appear would be the equivalent "
-                                                +
-                                                "each one by separate in hbase shell, but not jointly.", "");
-                    }
-                    final Filter filter = buildFilterFromCustomWrapperCondition(conditionComplex, false, scan,
-                            tableName, mappingMap);
-                    if (filter != null) {
 
-                        scan.setFilter(filter);
+                    conditionFilter = buildFilterFromCustomWrapperCondition(conditionComplex, false, scan, tableName, mappingMap);                    
+                    if (conditionComplex.isAndCondition() || conditionComplex.isOrCondition()) {
+                        log(LOG_TRACE, "This query has more than one condition. The filters that appear would be the equivalent "
+                                + "each one by separate in hbase shell, but not jointly.");
+                        getCustomWrapperPlan().addPlanEntry("This query has more than one condition.The filters that appear would be the equivalent "
+                                + "each one by separate in hbase shell, but not jointly.", "");
                     }
 
                 } else {
-                    // For performance reasons, just add to the scanner the families and qualifiers
-                    // specified in the mapping
-                    for (final String family : mappingMap.keySet()) {
-                        for (final HBaseColumnDetails subrowData : mappingMap.get(family)) {
-                            scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
-                        }
-                    }
                     final String logString = buildStringScanQueryWithoutConditions(tableName, mappingMap);
                     log(LOG_TRACE, "In the hbase shell would be :  " + logString);
                     getCustomWrapperPlan().addPlanEntry("In the hbase shell would be ", logString);
                 }
+                
+                scan = setFilter(rowKeyFilter, conditionFilter, scan);
 
-                final Date date = new Date();
-                log(LOG_TRACE, "Time before scan: " + (date.getTime()));
+                long startTime = System.nanoTime();
                 final ResultScanner scanner = table.getScanner(scan);
-                final Date date2 = new Date();
-                log(LOG_TRACE, "Time after scan startStop: " + (date2.getTime()));
-                log(LOG_TRACE, "It has taken " + (date2.getTime() - date.getTime()) + " milliseconds, the filtering.");
+                long elapsedTime = System.nanoTime() - startTime;
+                double milliseconds = elapsedTime / 1000000.0;
+                log(LOG_TRACE, "Scanning has taken " + milliseconds  + " milliseconds.");
                 log(LOG_TRACE, "The resultscanner of the table " + tableName + " has been created successfully.");
                 try {
 
+                    startTime = System.nanoTime();
                     for (final Result resultRow : scanner) {
                         // Stop the scan if requested from outside
                         if (this.stopRequested) {
@@ -311,6 +288,9 @@ public class HBaseConnector extends AbstractCustomWrapper {
                         final Object[] rowArray = processRow(resultRow, mappingMap);
                         result.addRow(rowArray, HbaseUtil.getGenericOutputpStructure(mappingMap));
                     }
+                    elapsedTime = System.nanoTime() - startTime;
+                    milliseconds = elapsedTime / 1000000.0;
+                    log(LOG_TRACE, "Retrieving has taken " + milliseconds  + " milliseconds.");
 
                 } finally {
                     scanner.close();
@@ -326,14 +306,47 @@ public class HBaseConnector extends AbstractCustomWrapper {
         } catch (final Exception e) {
             log(LOG_ERROR, "Error accessing HBase: " + ExceptionUtils.getStackTrace(e));
             throw new CustomWrapperException("Error accessing HBase: " + e.getMessage(), e);
+        } finally {
+            if (table != null) {
+                try {
+                    table.close();
+                } catch (IOException e) {
+                }
+            }
         }
         log(LOG_INFO, "End- Run hbase-customwrapper");
 
     }
 
-    private Filter buildFilterFromCustomWrapperCondition(final CustomWrapperCondition conditionComplex,
-            final boolean not, final Scan scan, final String tableName,
-            final Map<String, List<HBaseColumnDetails>> attributesMappingMap) throws CustomWrapperException,
+    private static Scan setFilter(Filter rowKeyFilter, Filter conditionFilter, Scan scan) {
+        
+        if (rowKeyFilter != null || conditionFilter != null) {
+            FilterList mergedFilter = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+            if (rowKeyFilter != null) {
+                mergedFilter.addFilter(rowKeyFilter);
+            }
+            if (conditionFilter != null) {
+                mergedFilter.addFilter(conditionFilter);
+            }
+            scan.setFilter(mergedFilter);
+            
+        }
+        return scan;
+        
+    }
+
+    private Filter buildRowKeyFilter(String tableName) {
+        
+        final String equivalentQuery = "import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter \nscan '" + tableName + "',FILTER=>\"FirstKeyOnlyFilter()\"";
+        log(LOG_DEBUG, "The hbase shell query equivalent should be  " + equivalentQuery);
+        getCustomWrapperPlan().addPlanEntry("Simple filter number " + (this.filterNumber++) + "  (hbase shell query equivalent) ",
+                equivalentQuery);
+        
+        return new FirstKeyOnlyFilter();
+    }
+
+    private Filter buildFilterFromCustomWrapperCondition(final CustomWrapperCondition conditionComplex, final boolean not, final Scan scan,
+            final String tableName, final Map<String, List<HBaseColumnDetails>> attributesMappingMap) throws CustomWrapperException,
             UnsupportedEncodingException {
 
         if (conditionComplex.isAndCondition()) {
@@ -1134,11 +1147,9 @@ public class HBaseConnector extends AbstractCustomWrapper {
         return rowArray;
     }
 
-    private static String buildEquivalentShellQuery(final String tableName,
-            final Map<String, List<HBaseColumnDetails>> fields,
-            final String familyColumn, final String column, final String filter, final String operator,
-            final String value, final String startRow, final String stopRow, final Boolean isRegex,
-            final Boolean filterIfMissing) {
+    private static String buildEquivalentShellQuery(final String tableName, final Map<String, List<HBaseColumnDetails>> fields,
+            final String familyColumn, final String column, final String filter, final String operator, final String value,
+            final String startRow, final String stopRow, final Boolean isRegex, final Boolean filterIfMissing) {
 
         final StringBuilder query = new StringBuilder();
         query.append("Before executing this query in the shell, You should import the folowing classes:\n");
@@ -1185,7 +1196,9 @@ public class HBaseConnector extends AbstractCustomWrapper {
             }
         }
 
-        query.deleteCharAt(query.length() - 1);
+        if (query.charAt(query.length() -1 ) == ',') {
+            query.deleteCharAt(query.length() - 1);
+        }
         query.append("] ");
         if (startRow != null) {
             query.append(",");
@@ -1208,38 +1221,40 @@ public class HBaseConnector extends AbstractCustomWrapper {
 
     }
 
-    private static String buildStringGetQuery(final String tableName,
-            final Map<String, List<HBaseColumnDetails>> fields,
-            final String value) {
+    private static String buildStringGetQuery(final String tableName, final Map<String, List<HBaseColumnDetails>> fields, final String value) {
+        
         final StringBuilder logString = new StringBuilder();
-        logString.append("get  '" + tableName + "','" + value + "',");
+        logString.append("get  '").append(tableName).append("','").append(value).append("',");
         logString.append("{COLUMNS => [");
 
         for (final String family : fields.keySet()) {
             for (final HBaseColumnDetails subrowData : fields.get(family)) {
-                logString.append("'").append(family).append(":").append(subrowData.getName())
-                        .append("',");
+                logString.append("'").append(family).append(":").append(subrowData.getName()).append("',");
             }
         }
-        logString.deleteCharAt(logString.length() - 1);
+        if (logString.charAt(logString.length() -1 ) == ',') {
+            logString.deleteCharAt(logString.length() - 1);
+        }
         logString.append("]}");
 
         return logString.toString();
     }
 
-    private static String buildStringScanQueryWithoutConditions(final String tableName,
-            final Map<String, List<HBaseColumnDetails>> fields) {
+    private static String buildStringScanQueryWithoutConditions(final String tableName, final Map<String, List<HBaseColumnDetails>> fields) {
+        
         final StringBuilder logString = new StringBuilder();
-        logString.append("scan  '" + tableName + "',");
+        logString.append("scan  '").append(tableName).append("',");
         logString.append("{COLUMNS => [");
 
         for (final String family : fields.keySet()) {
             for (final HBaseColumnDetails subrowData : fields.get(family)) {
-                logString.append("'").append(family).append(":").append(subrowData.getName())
-                        .append("',");
+                logString.append("'").append(family).append(":").append(subrowData.getName()).append("',");
             }
         }
-        logString.deleteCharAt(logString.length() - 1);
+        
+        if (logString.charAt(logString.length() -1 ) == ',') {
+            logString.deleteCharAt(logString.length() - 1);
+        }
         logString.append("]}");
 
         return logString.toString();

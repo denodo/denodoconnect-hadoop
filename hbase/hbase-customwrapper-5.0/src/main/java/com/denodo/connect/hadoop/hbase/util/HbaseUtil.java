@@ -23,6 +23,7 @@ package com.denodo.connect.hadoop.hbase.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,31 +61,49 @@ public final class HbaseUtil {
     }
 
     public static Map<String, List<HBaseColumnDetails>> parseMapping(final String jsonMap) throws JSONException {
+        
         final HashMap<String, List<HBaseColumnDetails>> structure = new HashMap<String, List<HBaseColumnDetails>>();
         final String mapping = jsonMap.replaceAll("\\\\", "");
         final JSONObject json = new JSONObject(mapping);
+        if (retrieveOnlyRowKey(json)) {
+            return Collections.emptyMap();
+        }
         for (int i = 0; i < json.length(); i++) {
             final String rowName = json.names().get(i).toString();
-            final JSONObject subrow = json.getJSONObject(rowName);
-            final List<HBaseColumnDetails> subrows = new ArrayList<HBaseColumnDetails>();
-            for (int j = 0; j < subrow.length(); j++) {
-                final String subrowName = subrow.names().get(j).toString();
-                subrows.add(new HBaseColumnDetails(subrowName, subrow.getString(subrowName)));
+            try {
+                final JSONObject subrow = json.getJSONObject(rowName);
+                final List<HBaseColumnDetails> subrows = new ArrayList<HBaseColumnDetails>();
+                for (int j = 0; j < subrow.length(); j++) {
+                    final String subrowName = subrow.names().get(j).toString();
+                    subrows.add(new HBaseColumnDetails(subrowName, subrow.getString(subrowName)));
+                }
+                structure.put(rowName, subrows);
+            } catch (JSONException e) {
+                throw new IllegalArgumentException("'" + rowName + "' is not defined as a column family. Only '" + ParameterNaming.COL_ROWKEY
+                        + "' could be provided as is, without a column family", e);
             }
-            structure.put(rowName, subrows);
         }
 
         return structure;
     }
 
+    /**
+     * Checks if json contains only row_key field. Retrieving only the row_key
+     * field of data set is a special case: for performance reasons (Redmine #17877)
+     */
+    private static boolean retrieveOnlyRowKey(JSONObject json) {
+        return (json.length() == 1) && json.has(ParameterNaming.COL_ROWKEY);        
+    }
+
     public static List<CustomWrapperFieldExpression> getGenericOutputpStructure(
             final Map<String, List<HBaseColumnDetails>> mapping) {
+        
         final List<CustomWrapperFieldExpression> output = new ArrayList<CustomWrapperFieldExpression>();
-
         for (final String family : mapping.keySet()) {
             output.add(new CustomWrapperFieldExpression(family));
         }
         output.add(new CustomWrapperFieldExpression(ParameterNaming.COL_ROWKEY));
+        
         return output;
     }
 

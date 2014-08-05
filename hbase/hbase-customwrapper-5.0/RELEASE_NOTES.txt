@@ -1,3 +1,20 @@
+20140805
+========
+- Add #17877: Allow projection of only rowkey in HBase
+
+
+20140721
+========
+- AND and OR conditions: check that simple conditions forming the complex conditions are not null
+  In Redmine -> #17753: HBase wrapper not returning results in query with start row and stop rowFix.
+
+
+20140716
+========
+- Avoid the need of CREATE permission for table read
+- Add #15709: Update version of Hadoop libraries
+
+
 20131120
 ========
 - Added delegation of operators ISTRUE and ISFALSE to HBase.
