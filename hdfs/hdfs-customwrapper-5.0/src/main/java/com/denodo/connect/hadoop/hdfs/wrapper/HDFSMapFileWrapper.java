@@ -25,6 +25,7 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
@@ -48,26 +49,29 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * </p>
  *
  */
-public class HDFSMapFileWrapper extends AbstractHDFSFileWrapper {
+public class HDFSMapFileWrapper extends AbstractHDFSKeyValueFileWrapper {
+
+    private static final  CustomWrapperInputParameter[] INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(Parameter.HADOOP_KEY_CLASS,
+                "Hadoop key class", true,
+                CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.HADOOP_VALUE_CLASS,
+                "Hadoop value class", true,
+                 CustomWrapperInputParameterTypeFactory.stringType())
+        };
 
     public HDFSMapFileWrapper() {
         super();
     }
 
     @Override
-    public CustomWrapperInputParameter[] getSpecificInputParameters() {
-        return new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(Parameter.HADOOP_KEY_CLASS,
-                "Hadoop key class", true,
-                CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.HADOOP_VALUE_CLASS,
-                "Hadoop value class", true,
-                CustomWrapperInputParameterTypeFactory.stringType())
-        };
+    public CustomWrapperInputParameter[] doGetInputParameters() {
+        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(super.doGetInputParameters(), INPUT_PARAMETERS);
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException {
+    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException, InterruptedException {
 
         String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
         Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
@@ -78,7 +82,7 @@ public class HDFSMapFileWrapper extends AbstractHDFSFileWrapper {
         String inputFilePath = inputValues.get(Parameter.FILE_PATH);
         Path path = new Path(inputFilePath);
 
-        return new HDFSMapFileReader(conf, hadoopKeyClass, hadoopValueClass, path);
+        return new HDFSMapFileReader(conf, hadoopKeyClass, hadoopValueClass, path, null);
     }
 
 }

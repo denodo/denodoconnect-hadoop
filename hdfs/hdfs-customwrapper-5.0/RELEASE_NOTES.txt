@@ -1,0 +1,5 @@
+20140808
+=========
+
+- #15683 - Add authentication artifacts for kerberized Hadoop clusters.
+- #15709 - Update version of Hadoop client libraries (v2.4.0)

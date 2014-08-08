@@ -35,7 +35,6 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
-import com.denodo.connect.hadoop.hdfs.util.classloader.ClassLoaderUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.util.http.HTTPUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.util.http.URIUtils;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
@@ -115,7 +114,6 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
         CustomWrapperResult result, Map<String, String> inputValues)
         throws CustomWrapperException {
 
-        ClassLoader originalCtxClassLoader = ClassLoaderUtils.changeContextClassLoader();
 
         String host = inputValues.get(Parameter.HOST_IP);
         int port = Integer.parseInt(inputValues.get(Parameter.HOST_PORT));
@@ -160,7 +158,6 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
 
             httpClient.getConnectionManager().shutdown();
 
-            ClassLoaderUtils.restoreContextClassLoader(originalCtxClassLoader);
         }
     }
 

@@ -12,10 +12,8 @@ import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.keyvalue.AbstractHDFSKeyValueFileReader;
-import com.denodo.connect.hadoop.hdfs.util.classloader.ClassLoaderUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.type.TypeUtils;
-import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
@@ -31,9 +29,9 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * reads key value files stored in HDFS (Hadoop Distributed File System).
  *
  */
-public abstract class AbstractHDFSFileWrapper extends AbstractCustomWrapper {
+public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHadoopWrapper {
 
-    private static final Logger logger = Logger.getLogger(AbstractHDFSFileWrapper.class);
+    private static final Logger logger = Logger.getLogger(AbstractHDFSKeyValueFileWrapper.class);
 
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
@@ -51,7 +49,7 @@ public abstract class AbstractHDFSFileWrapper extends AbstractCustomWrapper {
 
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
-        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(INPUT_PARAMETERS, getSpecificInputParameters());
+        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(doGetInputParameters(), super.getInputParameters());
     }
 
     @Override
@@ -64,7 +62,7 @@ public abstract class AbstractHDFSFileWrapper extends AbstractCustomWrapper {
     }
 
     @Override
-    public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues)
+    public CustomWrapperSchemaParameter[] doGetSchemaParameters(Map<String, String> inputValues)
         throws CustomWrapperException {
 
         String keyHadoopClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
@@ -78,12 +76,10 @@ public abstract class AbstractHDFSFileWrapper extends AbstractCustomWrapper {
     }
 
     @Override
-    public void run(CustomWrapperConditionHolder condition,
+    public void doRun(CustomWrapperConditionHolder condition,
         List<CustomWrapperFieldExpression> projectedFields,
         CustomWrapperResult result, Map<String, String> inputValues)
         throws CustomWrapperException {
-
-        ClassLoader originalCtxClassLoader = ClassLoaderUtils.changeContextClassLoader();
 
         boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
 
@@ -114,13 +110,15 @@ public abstract class AbstractHDFSFileWrapper extends AbstractCustomWrapper {
                 logger.error("Error releasing the reader", e);
             }
 
-            ClassLoaderUtils.restoreContextClassLoader(originalCtxClassLoader);
         }
     }
 
-    public abstract CustomWrapperInputParameter[] getSpecificInputParameters();
+    public CustomWrapperInputParameter[] doGetInputParameters() {
+        return INPUT_PARAMETERS;
+    }
 
     public abstract HDFSFileReader getHDFSFileReader(Map<String, String> inputValues)
-        throws IOException;
+        throws IOException, InterruptedException;
+
 
 }

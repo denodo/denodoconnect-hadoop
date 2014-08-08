@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.avro.Schema;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
@@ -36,11 +37,9 @@ import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSAvroFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
-import com.denodo.connect.hadoop.hdfs.util.classloader.ClassLoaderUtils;
 import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.AvroSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
-import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
@@ -59,18 +58,12 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * schema file path or Avro schema JSON. <br/>
  *
  */
-public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
+public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
 
     private static final Logger logger = Logger.getLogger(HDFSAvroFileWrapper.class);
 
-
-    public HDFSAvroFileWrapper() {
-        super();
-    }
-
-    @Override
-    public CustomWrapperInputParameter[] getInputParameters() {
-        return  new CustomWrapperInputParameter[] {
+    private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
                 "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
                 true, CustomWrapperInputParameterTypeFactory.stringType()),
@@ -86,6 +79,10 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
                 "Delete the file after reading it? ", true,
                 CustomWrapperInputParameterTypeFactory.booleanType(false))
         };
+
+    @Override
+    public CustomWrapperInputParameter[] getInputParameters() {
+        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(INPUT_PARAMETERS, super.getInputParameters());
     }
 
     @Override
@@ -98,7 +95,7 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
     }
 
     @Override
-    public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues)
+    public CustomWrapperSchemaParameter[] doGetSchemaParameters(Map<String, String> inputValues)
         throws CustomWrapperException {
 
         try {
@@ -129,10 +126,8 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
 
 
     @Override
-    public void run(CustomWrapperConditionHolder condition, List<CustomWrapperFieldExpression> projectedFields,
+    public void doRun(CustomWrapperConditionHolder condition, List<CustomWrapperFieldExpression> projectedFields,
         CustomWrapperResult result, Map<String, String> inputValues) throws CustomWrapperException {
-
-        ClassLoader originalCtxClassLoader = ClassLoaderUtils.changeContextClassLoader();
 
         String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
         boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
@@ -145,7 +140,7 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
         try {
 
             Schema avroSchema = AvroSchemaUtils.buildSchema(inputValues, conf);
-            reader = new HDFSAvroFileReader(conf, path, avroSchema);
+            reader = new HDFSAvroFileReader(conf, path, avroSchema, null);
             Object[] rowData = new Object[2];
             rowData[0] = avroFilePath;
             Object avroData = reader.read();
@@ -173,7 +168,6 @@ public class HDFSAvroFileWrapper extends AbstractCustomWrapper {
                 logger.error("Error releasing the reader", e);
             }
 
-            ClassLoaderUtils.restoreContextClassLoader(originalCtxClassLoader);
         }
     }
 

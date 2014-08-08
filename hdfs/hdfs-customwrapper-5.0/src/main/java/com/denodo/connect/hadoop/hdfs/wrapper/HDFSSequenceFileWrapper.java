@@ -24,6 +24,7 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
@@ -47,16 +48,10 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * </p>
  *
  */
-public class HDFSSequenceFileWrapper extends AbstractHDFSFileWrapper {
+public class HDFSSequenceFileWrapper extends AbstractHDFSKeyValueFileWrapper {
 
-
-    public HDFSSequenceFileWrapper() {
-        super();
-    }
-
-    @Override
-    public CustomWrapperInputParameter[] getSpecificInputParameters() {
-        return  new CustomWrapperInputParameter[] {
+    private static final  CustomWrapperInputParameter[] INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.HADOOP_KEY_CLASS,
                 "Hadoop key class", true,
                 CustomWrapperInputParameterTypeFactory.stringType()),
@@ -65,10 +60,17 @@ public class HDFSSequenceFileWrapper extends AbstractHDFSFileWrapper {
                 CustomWrapperInputParameterTypeFactory.stringType())
         };
 
+    public HDFSSequenceFileWrapper() {
+        super();
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException {
+    public CustomWrapperInputParameter[] doGetInputParameters() {
+        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(super.doGetInputParameters(), INPUT_PARAMETERS);
+    }
+
+    @Override
+    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException, InterruptedException {
 
         String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
         Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
@@ -79,7 +81,7 @@ public class HDFSSequenceFileWrapper extends AbstractHDFSFileWrapper {
         String inputFilePath = inputValues.get(Parameter.FILE_PATH);
         Path path = new Path(inputFilePath);
 
-        return new HDFSSequenceFileReader(conf, hadoopKeyClass, hadoopValueClass, path);
+        return new HDFSSequenceFileReader(conf, hadoopKeyClass, hadoopValueClass, path, null);
     }
 
 }

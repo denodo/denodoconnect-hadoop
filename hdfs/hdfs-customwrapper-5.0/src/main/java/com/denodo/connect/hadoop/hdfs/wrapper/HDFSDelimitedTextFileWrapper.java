@@ -24,6 +24,7 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
@@ -46,7 +47,14 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * </p>
  *
  */
-public class HDFSDelimitedTextFileWrapper extends AbstractHDFSFileWrapper {
+public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrapper {
+
+    private static final  CustomWrapperInputParameter[] INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(Parameter.SEPARATOR,
+                "Separator of the delimited file(s) ", true,
+                CustomWrapperInputParameterTypeFactory.stringType())
+    };
 
 
     public HDFSDelimitedTextFileWrapper() {
@@ -54,17 +62,12 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSFileWrapper {
     }
 
     @Override
-    public CustomWrapperInputParameter[] getSpecificInputParameters() {
-        return new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(Parameter.SEPARATOR,
-                "Separator of the delimited file(s) ", true,
-                CustomWrapperInputParameterTypeFactory.stringType())
-        };
-
+    public CustomWrapperInputParameter[] doGetInputParameters() {
+        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(super.doGetInputParameters(), INPUT_PARAMETERS);
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException {
+    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException, InterruptedException {
 
         String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
         Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
@@ -74,6 +77,6 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSFileWrapper {
         String inputFilePath = inputValues.get(Parameter.FILE_PATH);
         Path path = new Path(inputFilePath);
 
-        return new HDFSDelimitedFileReader(conf, separator, path);
+        return new HDFSDelimitedFileReader(conf, separator, path, null);
     }
 }
