@@ -44,9 +44,9 @@ public class HDFSMapFileReader extends AbstractHDFSKeyValueFileReader {
     private MapFile.Reader currentReader;
 
     public HDFSMapFileReader(Configuration configuration, String hadoopKeyClass,
-        String hadoopValueClass, Path outputPath) throws IOException {
+        String hadoopValueClass, Path outputPath, String user) throws IOException, InterruptedException {
 
-        super(configuration, hadoopKeyClass, hadoopValueClass, outputPath);
+        super(configuration, hadoopKeyClass, hadoopValueClass, outputPath, user);
     }
 
     @Override

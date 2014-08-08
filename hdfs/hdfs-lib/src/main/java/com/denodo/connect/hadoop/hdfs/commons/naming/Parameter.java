@@ -23,18 +23,24 @@ package com.denodo.connect.hadoop.hdfs.commons.naming;
 
 public final class Parameter {
 
+    /* SSH Credentials */
     public static final String PASSWORD = "Password";
-    public static final String TIMEOUT = "Host timeout";
     public static final String PASSPHRASE = "Passphrase";
     public static final String KEY_FILE = "Key file";
 
+    /* Kerberos Credentials */
+    public static final String KERBEROS_ENABLED = "Kerberos enabled";
+    public static final String PRINCIPAL = "Kerberos principal name";
+    public static final String KERBEROS_PASWORD = "Kerberos password";
+    public static final String KEYTAB = "Kerberos keytab file";
+    public static final String KDC = "Kerberos Distribution Center";
+
+
     public static final String PATH_TO_JAR_IN_HOST = "Path to jar in host";
-    public static final String MAIN_CLASS_IN_JAR = "Main class in jar";
 
     public static final String MAPREDUCE_PARAMETERS = "MapReduce job parameters ";
 
-    public static final String MAPREDUCEJOBHANDLER_IMPLEMENTATION =
-        "MapReduceJobHandler implementation ";
+    public static final String OUTPUTFILE_HANDLER = "Output file type ";
 
     public static final String FILESYSTEM_URI = "File system URI";
     public static final String HOST_IP = "Host IP";

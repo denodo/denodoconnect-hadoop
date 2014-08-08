@@ -51,9 +51,10 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
     private Schema schema;
     private DataFileReader<Object> dataFileReader;
 
-    public HDFSAvroFileReader(Configuration conf, Path path, Schema schema) throws IOException {
+    public HDFSAvroFileReader(Configuration conf, Path path, Schema schema,
+        String user) throws IOException, InterruptedException {
 
-        super(conf, path);
+        super(conf, path, user);
         this.schema = schema;
     }
 

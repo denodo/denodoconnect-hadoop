@@ -51,6 +51,8 @@ public final class HadoopConfigurationUtils {
         // Remove SUCESS file from output dir
         conf.set("mapreduce.fileoutputcommitter.marksuccessfuljobs", "false");
 
+        conf.set("dfs.namenode.kerberos.principal.pattern", "*");
+
         logger.debug("Returning configuration: " + conf
             + " - value of 'fs.default.name' -> " + conf.get("fs.default.name")
             + " - value of 'mapreduce.fileoutputcommitter.marksuccessfuljobs' -> " + conf.get("mapreduce.fileoutputcommitter.marksuccessfuljobs"));

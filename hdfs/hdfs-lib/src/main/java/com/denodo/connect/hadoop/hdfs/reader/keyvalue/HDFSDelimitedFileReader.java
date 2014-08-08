@@ -44,9 +44,9 @@ public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueFileReader {
 
 
     public HDFSDelimitedFileReader(Configuration configuration, String separator,
-        Path outputPath) throws IOException {
+        Path outputPath, String user) throws IOException, InterruptedException {
 
-        super(configuration, Text.class.getName(), Text.class.getName(), outputPath);
+        super(configuration, Text.class.getName(), Text.class.getName(), outputPath, user);
         this.separator = separator;
         this.currentLine = new Text();
     }
@@ -73,7 +73,7 @@ public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueFileReader {
                 ((Text) value).set(StringUtils.substringAfter(lineString, this.separator));
                 return true;
             }
-            throw new IOException("Error reading line: line does not contain the specified separator '"
+            throw new IOException("Error reading line: line '" + lineString + "' does not contain the specified separator '"
                 + this.separator + "'");
         }
 

@@ -28,6 +28,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 
 import com.denodo.connect.hadoop.hdfs.reader.keyvalue.AbstractHDFSKeyValueFileReader;
@@ -44,15 +45,18 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
     private int currentFileIndex;
 
 
-    public AbstractHDFSFileReader(Configuration configuration, Path outputPath)
-        throws IOException {
+    public AbstractHDFSFileReader(Configuration configuration, Path outputPath, String user)
+        throws IOException, InterruptedException {
 
         this.configuration = configuration;
         this.outputPath = outputPath;
         this.currentFileIndex = -1;
 
-        this.fileSystem = FileSystem.get(this.configuration);
-
+        if (!UserGroupInformation.isSecurityEnabled()) {
+            this.fileSystem = FileSystem.get(FileSystem.getDefaultUri(this.configuration), this.configuration, user);
+        } else {
+            this.fileSystem = FileSystem.get(this.configuration);
+        }
         if (logger.isDebugEnabled()) {
             logger.debug("FileSystem is: " + this.fileSystem.getUri());
             logger.debug("Path is: " + outputPath);

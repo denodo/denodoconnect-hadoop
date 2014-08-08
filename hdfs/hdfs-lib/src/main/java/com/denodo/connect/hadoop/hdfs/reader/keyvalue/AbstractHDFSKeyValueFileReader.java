@@ -47,10 +47,10 @@ public abstract class AbstractHDFSKeyValueFileReader extends AbstractHDFSFileRea
 
 
     public AbstractHDFSKeyValueFileReader(Configuration configuration,
-        String hadoopKeyClass, String hadoopValueClass, Path outputPath)
-        throws IOException {
+        String hadoopKeyClass, String hadoopValueClass, Path outputPath, String user)
+        throws IOException, InterruptedException {
 
-        super(configuration, outputPath);
+        super(configuration, outputPath, user);
 
         this.hadoopKeyClass = hadoopKeyClass;
         this.hadoopValueClass = hadoopValueClass;
