@@ -8,13 +8,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-5.0</artifactId>
-    <version>20130702</version>
+    <version>20140808</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
     <properties>
-        <avro.version>1.7.2</avro.version>
-        <hadoop.version>1.1.2</hadoop.version>
+        <avro.version>1.7.4</avro.version>
+        <hadoop.version>2.4.0</hadoop.version>
     </properties>
 
     <!-- *************************** -->
@@ -76,54 +76,62 @@
                     </execution>
                 </executions>
             </plugin>
-
+        
             <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-jar-plugin</artifactId>
-              <version>2.4</version>
-              <configuration>
-                <archive>
-                  <addMavenDescriptor>false</addMavenDescriptor>
-                  <manifestSections>
-                    <manifestSection>
-                      <name>com.denodo</name>
-                      <manifestEntries>
-                        <Extension-Name>${project.artifactId}</Extension-Name>
-                        <Extension-Description>${project.name}</Extension-Description>
-                        <Extension-Version>${project.version}</Extension-Version>
-                        <Extension-Target-Version>5.0</Extension-Target-Version>
-                        <Extension-Target-Update>20130103</Extension-Target-Update>
-                        <Extension-Website>http://support.denodo.com</Extension-Website>
-                      </manifestEntries>
-                    </manifestSection>
-                  </manifestSections>
-                </archive>
-              </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                     <finalName>denodo-hdfs-customwrapper-5.0-${project.version}-jar-with-dependencies</finalName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                            <!--Symptom: 
+                                Custom wrapper throws "IOException: No FileSystem for scheme: 
+                                hdfs" because differents JARs (hadoop-commons for LocalFileSystem, hadoop-hdfs 
+                                for DistributedFileSystem) each contain a different file called org.apache.hadoop.fs.FileSystem 
+                                in their META-INFO/services directory. When we use maven-assembly, it merges 
+                                all our JARs into one, and all META-INFO/services/org.apache.hadoop.fs.FileSystem 
+                                overwrite each-other. Only one of these files remains (the last one that 
+                                was added). In this case, the Filesystem list from hadoop-commons overwrites 
+                                the list from hadoop-hdfs, so DistributedFileSystem was no longer declared. 
+                                
+                                Solution: 
+                                Use maven-shade plugin to merge services files when building JAR 
+                                with dependencies -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-shade-plugin</artifactId>
-              <version>2.3</version>
-              <executions>
-                <execution>
-                  <phase>package</phase>
-                  <goals>
-                    <goal>shade</goal>
-                  </goals>
-                  <configuration>
-                    <outputFile>target/${project.artifactId}-${project.version}-jar-with-dependencies.jar</outputFile>
-                    <filters>
-                      <filter>
-                        <artifact>*:*</artifact>
-                        <excludes>
-                          <exclude>META-INF/maven/**/*</exclude>
-                        </excludes>
-                      </filter>
-                    </filters>
-                  </configuration>
-                </execution>
-              </executions>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2-beta-5</version>
+                 <executions>
+                    <execution>
+                        <id>make-assembly-dist</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>${basedir}/src/main/assembly/dist.xml</descriptor>
+                            </descriptors>
+                            <appendAssemblyId>true</appendAssemblyId>
+                            <finalName>denodo-hdfs-customwrapper-5.0-${project.version}</finalName>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -214,7 +222,7 @@
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-core</artifactId>
+            <artifactId>hadoop-common</artifactId>
             <version>${hadoop.version}</version>
             <exclusions>
                 <exclusion>
@@ -230,8 +238,12 @@
                     <artifactId>commons-el</artifactId>
                 </exclusion>
                 <exclusion>
+                  <groupId>commons-logging</groupId>
+                  <artifactId>commons-logging-api</artifactId>
+                </exclusion>                
+                <exclusion>
                     <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-math</artifactId>
+                    <artifactId>commons-math3</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>tomcat</groupId>
@@ -258,27 +270,69 @@
                     <artifactId>jetty-util</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>jsp-2.1</artifactId>
+                  <groupId>com.sun.jersey</groupId>
+                  <artifactId>jersey-core</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>com.sun.jersey</groupId>
+                  <artifactId>jersey-json</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>com.sun.jersey</groupId>
+                  <artifactId>jersey-server</artifactId>
+                </exclusion>                
+                <exclusion>
+                  <groupId>org.aspectj</groupId>
+                  <artifactId>aspectjrt</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>net.java.dev.jets3t</groupId>
+                  <artifactId>jets3t</artifactId>
+                </exclusion>
+            </exclusions>                        
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs</artifactId>
+            <version>${hadoop.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-cli</groupId>
+                    <artifactId>commons-cli</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>commons-daemon</groupId>
+                  <artifactId>commons-daemon</artifactId>
+                </exclusion>                
+                <exclusion>
+                    <groupId>tomcat</groupId>
+                    <artifactId>jasper-runtime</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet.jsp</groupId>
+                    <artifactId>jsp-api</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>jsp-api-2.1</artifactId>
+                    <artifactId>jetty</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>org.eclipse.jdt</groupId>
-                    <artifactId>core</artifactId>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>jetty-util</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>hsqldb</groupId>
                     <artifactId>hsqldb</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>net.java.dev.jets3t</groupId>
-                    <artifactId>jets3t</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
+        
+        
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -286,7 +340,7 @@
             <version>4.2.1</version>
             <scope>compile</scope>
         </dependency>
-
+        
         <dependency>
             <groupId>com.hadoop.gplcompression</groupId>
             <artifactId>hadoop-lzo</artifactId>
@@ -297,14 +351,14 @@
         <dependency>
             <groupId>com.denodo.connect.hadoop</groupId>
             <artifactId>denodo-hdfs-lib</artifactId>
-            <version>20130702</version>
+            <version>20140808</version>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>net.java.dev.jets3t</groupId>
             <artifactId>jets3t</artifactId>
-            <version>0.7.4</version>
+            <version>0.9.0</version>
             <scope>compile</scope>
         </dependency>
 
