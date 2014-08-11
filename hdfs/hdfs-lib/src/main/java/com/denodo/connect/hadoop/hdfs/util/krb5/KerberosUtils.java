@@ -47,6 +47,7 @@ public final class KerberosUtils {
         
         Configuration conf = new Configuration();
         conf.set("hadoop.security.authentication", "Kerberos");
+        conf.set("hadoop.security.auth_to_local",  "RULE:[1:$1] RULE:[2:$1]");
         UserGroupInformation.setConfiguration(conf);
     }
 
@@ -103,9 +104,17 @@ public final class KerberosUtils {
     }
 
     public static void logout() {
+        
+        System.clearProperty("java.security.krb5.realm");
+        System.clearProperty("java.security.krb5.kdc");
+        System.clearProperty("sun.security.krb5.principal");
+                
+        Configuration conf = new Configuration();
+        conf.set("hadoop.security.authentication", "simple");
+        UserGroupInformation.setConfiguration(conf);
+        
+        UserGroupInformation.setLoginUser(null);
 
-        System.setProperty("java.security.krb5.realm", "");
-        System.setProperty("java.security.krb5.kdc", "");
     }
 
 }
