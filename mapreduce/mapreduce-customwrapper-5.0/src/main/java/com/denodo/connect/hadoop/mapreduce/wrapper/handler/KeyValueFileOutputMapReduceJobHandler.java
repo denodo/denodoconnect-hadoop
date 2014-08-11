@@ -61,14 +61,15 @@ public abstract class KeyValueFileOutputMapReduceJobHandler extends
 
 
     @Override
-    public MapReduceJobFileReader getOutputReader(Map<String, String> inputParameters) throws IOException {
+    public MapReduceJobFileReader getOutputReader(Map<String, String> inputParameters) throws IOException, InterruptedException {
 
         String hadoopKeyClass = inputParameters.get(Parameter.HADOOP_KEY_CLASS);
         String hadoopValueClass = inputParameters.get(Parameter.HADOOP_VALUE_CLASS);
+        String user = inputParameters.get(Parameter.USER);
 
         Configuration conf = getConfiguration(inputParameters);
         return new MapReduceJobFileReader(new HDFSSequenceFileReader(conf, hadoopKeyClass,
-            hadoopValueClass, getOutputPath()));
+            hadoopValueClass, getOutputPath(), user));
     }
 
     @Override

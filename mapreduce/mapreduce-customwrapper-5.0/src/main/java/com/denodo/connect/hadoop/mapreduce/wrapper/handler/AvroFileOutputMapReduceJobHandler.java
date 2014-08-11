@@ -70,12 +70,13 @@ public class AvroFileOutputMapReduceJobHandler extends
     }
 
     @Override
-    public MapReduceJobFileReader getOutputReader(Map<String, String> inputParameters) throws IOException {
+    public MapReduceJobFileReader getOutputReader(Map<String, String> inputParameters) throws IOException, InterruptedException {
 
         Configuration conf = getConfiguration(inputParameters);
         Schema schema = AvroSchemaUtils.buildSchema(inputParameters, conf);
+        String user = inputParameters.get(Parameter.USER);
 
-        return new MapReduceJobAvroFileReader(new HDFSAvroFileReader(conf, getOutputPath(), schema));
+        return new MapReduceJobAvroFileReader(new HDFSAvroFileReader(conf, getOutputPath(), schema, user));
     }
 
     @Override

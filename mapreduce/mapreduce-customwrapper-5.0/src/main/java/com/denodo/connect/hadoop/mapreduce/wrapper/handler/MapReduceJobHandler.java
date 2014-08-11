@@ -45,6 +45,6 @@ public interface MapReduceJobHandler {
      * Returns a reader to be able to iterate over the results. Such a
      * reader is in charge of reading all the output files and closing them.
      */
-    public MapReduceJobOutputReader getOutputReader(Map<String, String> inputParameters) throws IOException;
+    public MapReduceJobOutputReader getOutputReader(Map<String, String> inputParameters) throws IOException, InterruptedException;
 
 }

@@ -59,13 +59,14 @@ public class DelimitedFileOutputMapReduceJobHandler extends
     }
 
     @Override
-    public MapReduceJobFileReader getOutputReader(Map<String, String> inputParameters) throws IOException {
+    public MapReduceJobFileReader getOutputReader(Map<String, String> inputParameters) throws IOException, InterruptedException {
 
         Configuration conf = getConfiguration(inputParameters);
 
         String separator = inputParameters.get(Parameter.SEPARATOR);
+        String user = inputParameters.get(Parameter.USER);
 
-        return new MapReduceJobFileReader(new HDFSDelimitedFileReader(conf, separator, getOutputPath()));
+        return new MapReduceJobFileReader(new HDFSDelimitedFileReader(conf, separator, getOutputPath(), user));
     }
 
     @Override
@@ -73,7 +74,7 @@ public class DelimitedFileOutputMapReduceJobHandler extends
 
         String separator = inputValues.get(Parameter.SEPARATOR);
 
-        if (StringUtils.isBlank(separator)) {
+        if (StringUtils.isEmpty(separator)) {
             throw new IllegalArgumentException("'" + Parameter.SEPARATOR + "' is mandatory");
         }
     }

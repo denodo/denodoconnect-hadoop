@@ -34,31 +34,25 @@ public final class MapReduceUtils {
 
     }
 
-    public static String buildFileSystemURI(String dataNodeIP, String dataNodePort) {
-        return "hdfs://" + dataNodeIP + ":" + dataNodePort;
-    }
-
     /**
      * It returns the command to be executed:
-     * hadoop jar PATH_TO_JAR_IN_HOST MAIN_CLASS_IN_JAR DATANODE_IP DATANODE_PORT
-     * JOBTRACKER_IP JOBTRACKER_PORT INPUT_FILE_PATH OUTPUT_FILE_PATH
+     * hadoop jar PATH_TO_JAR_IN_HOST [MAIN_CLASS_IN_JAR] [ARGS] OUTPUT_FILE_PATH
      *
      * (i.e. hadoop jar /home/cloudera/jars/hadooptestwordcount-1.0-SNAPSHOT.jar
      * test.MapReduceDriver1 172.16.0.58 8020 172.16.0.58 8021
      * /user/cloudera/input /user/cloudera/output
      *
      * The specific parameters to be added to
-     * "hadoop jar PATH_TO_JAR_IN_HOST MAIN_CLASS_IN_JAR MAPREDUCE_PARAMETERS" come from
+     * "hadoop jar PATH_TO_JAR_IN_HOST [MAIN_CLASS_IN_JAR] MAPREDUCE_PARAMETERS" come from
      * {@link MapReduceJobHandler#getJobParameters()}
      */
-    public static String getCommand(String jar, String mainClass, String jobParams,
+    public static String getCommand(String jar, String jobParams,
         Collection<String> jobSpecificParams) {
 
         Collection<String> command = new ArrayList<String>();
         command.add("hadoop");
         command.add("jar");
         command.add(jar);
-        command.add(mainClass);
 
         if (jobParams != null) {
             String[] out = jobParams.split(",");

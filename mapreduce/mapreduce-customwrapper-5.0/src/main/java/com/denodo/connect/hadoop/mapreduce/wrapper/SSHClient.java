@@ -17,32 +17,29 @@ public final class SSHClient {
     private static final Logger logger = Logger.getLogger(SSHClient.class);
 
     private Session session;
-    private int timeout;
     private String executionOutput;
     private String executionError;
-    private int exitStatus;
 
-    public SSHClient(String host, int port, String user, int timeout) throws JSchException {
+    public SSHClient(String host, int port, String user) throws JSchException {
 
         JSch jsch = new JSch();
-        init(host, port, user, timeout, jsch);
+        init(host, port, user, jsch);
 
     }
 
-    public SSHClient(String host, int port, String user, int timeout, String keyFile,
+    public SSHClient(String host, int port, String user, String keyFile,
         String passphrase) throws JSchException {
 
         JSch jsch = new JSch();
         jsch.addIdentity(keyFile, passphrase);
-        init(host, port, user, timeout, jsch);
+        init(host, port, user, jsch);
     }
 
-    private void init(String host, int port, String user, int t, JSch jsch)
+    private void init(String host, int port, String user, JSch jsch)
         throws JSchException {
 
         this.session = jsch.getSession(user, host, port);
         this.session.setConfig("StrictHostKeyChecking", "no");
-        this.timeout = t;
     }
 
     public void setPassword(String password) {
@@ -54,7 +51,7 @@ public final class SSHClient {
 
         try {
 
-            this.session.connect(this.timeout);
+            this.session.connect();
             logger.debug("Openning channel...");
             ChannelExec channel = (ChannelExec) this.session.openChannel("exec");
             channel.setCommand(command);
@@ -64,15 +61,15 @@ public final class SSHClient {
 
             InputStream in = channel.getInputStream();
             InputStream err = channel.getErrStream();
-            channel.connect(this.timeout);
+            channel.connect();
 
             this.executionOutput = IOUtils.toString(in);
             this.executionError = IOUtils.toString(err);
 
-            this.exitStatus = channel.getExitStatus();
-            logger.debug("Exit status: " + this.exitStatus);
+            int exitStatus = channel.getExitStatus();
+            logger.debug("Exit status: " + exitStatus);
 
-            return this.exitStatus;
+            return exitStatus;
 
         } finally {
             if (this.session != null) {
