@@ -92,7 +92,7 @@
                         <Extension-Description>${project.name}</Extension-Description>
                         <Extension-Version>${project.version}</Extension-Version>
                         <Extension-Target-Version>5.0</Extension-Target-Version>
-                        <Extension-Target-Update>20140808</Extension-Target-Update>
+                        <Extension-Target-Update>20130103</Extension-Target-Update>
                         <Extension-Website>http://support.denodo.com</Extension-Website>
                       </manifestEntries>
                     </manifestSection>
