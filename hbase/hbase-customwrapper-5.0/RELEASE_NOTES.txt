@@ -1,3 +1,9 @@
+20140821
+========
+
+- #15683 - Add authentication artifacts for kerberized Hadoop clusters.
+
+
 20140805
 ========
 - Add #17877: Allow projection of only rowkey in HBase
@@ -12,7 +18,7 @@
 20140716
 ========
 - Avoid the need of CREATE permission for table read
-- Add #15709: Update version of Hadoop libraries
+- Add #15709: Update version of Hadoop libraries (v2.4.0)
 
 
 20131120

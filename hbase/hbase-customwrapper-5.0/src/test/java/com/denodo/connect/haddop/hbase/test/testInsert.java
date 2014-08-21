@@ -43,8 +43,8 @@ public class testInsert {
         } catch (final ZooKeeperConnectionException e) {
 
             throw new CustomWrapperException("Error ZooKeeper Connection: " + e.getMessage(), e);
-        } catch (Exception e) {
-            throw new CustomWrapperException("Error connecting HBase: " + e.getMessage(), e);
+        } catch (final Exception e) {
+            throw new CustomWrapperException("HBase is not available: " + e.getMessage(), e);
         }
         HTable table;
 
