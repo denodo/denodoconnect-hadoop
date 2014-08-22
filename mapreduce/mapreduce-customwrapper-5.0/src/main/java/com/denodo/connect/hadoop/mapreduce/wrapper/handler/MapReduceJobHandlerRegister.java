@@ -29,7 +29,14 @@ import java.util.Set;
 
 import org.reflections.Reflections;
 
-
+/**
+ * 
+ * This class scans, using reflection, the current package searching for all the implementations of MapReduceJobHandler.
+ * 
+ * The list with the implementations is displayed in a selector in the 'Output file type' configuration parameter of this wrapper.
+ * This way the user does not have to type the whole name of the class.
+ *
+ */
 public final class MapReduceJobHandlerRegister {
 
     private static Map<String, Class<? extends MapReduceJobHandler>> handlers = scanHandlers();

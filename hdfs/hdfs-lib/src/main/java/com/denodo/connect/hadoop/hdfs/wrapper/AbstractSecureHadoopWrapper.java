@@ -159,11 +159,16 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
 
     }
 
+    /*
+     * Two ways for login to a kerberized Hadoop cluster:
+     * - Using a Kerberos ticket from the machine this wrapper is running on.
+     * - Using the parameters provided by the user to login in Kerberos programmatically.
+     */
     private void login(Map<String, String> inputValues) throws IOException {
 
         this.userPrincipal = inputValues.get(Parameter.PRINCIPAL);
 
-        if (this.userPrincipal == null) {
+        if (loginWithKerberosTicket()) {
             KerberosUtils.enableKerberos();
         } else {
 
@@ -178,6 +183,13 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         }
     }
 
+    public boolean loginWithKerberosTicket() {
+        return this.userPrincipal == null;
+    }
+    
+    /* 
+     * When switching Kerberos configurations, the logout is REQUIRED because Hadoop caches some information between logins.
+     */
     private void logout() {
         KerberosUtils.logout();
     }

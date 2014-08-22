@@ -336,7 +336,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
 
         config.set("hbase.security.authentication", "Kerberos");
 
-        if (authenticateWithKerberosTicket()) {
+        if (loginWithKerberosTicket()) {
             
             // NOTE: Although using the Kerberos ticket requested with kinit Hadoop code requires the kerberos principal name that runs the HMaster process.
             // The principal should be in the form: user/hostname@REALM.  If "_HOST" is used as the hostname portion, 
@@ -349,10 +349,6 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
             config.set("hbase.master.kerberos.principal", serverPrincipal);
             config.set("hbase.regionserver.kerberos.principal", serverPrincipal);
         }
-    }
-
-    private boolean authenticateWithKerberosTicket() {
-        return getUserPrincipal() == null;
     }
     
     private String getHBasePrincipal(final String hbaseIP) {

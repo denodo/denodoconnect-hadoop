@@ -48,14 +48,14 @@ public final class HadoopConfigurationUtils {
         Configuration conf = new Configuration();
         conf.set("fs.default.name", fileSystemURI);
 
-        // Remove SUCESS file from output dir
+        // Disables the creation of _SUCCESS file in the output folder as the wrapper only expects output files.
         conf.set("mapreduce.fileoutputcommitter.marksuccessfuljobs", "false");
 
+        // General pattern that avoids having to specify the server's Kerberos principal name when using Kerberos authentication
         conf.set("dfs.namenode.kerberos.principal.pattern", "*");
 
         logger.debug("Returning configuration: " + conf
-            + " - value of 'fs.default.name' -> " + conf.get("fs.default.name")
-            + " - value of 'mapreduce.fileoutputcommitter.marksuccessfuljobs' -> " + conf.get("mapreduce.fileoutputcommitter.marksuccessfuljobs"));
+            + " - value of 'fs.default.name' -> " + conf.get("fs.default.name"));
         return conf;
     }
 

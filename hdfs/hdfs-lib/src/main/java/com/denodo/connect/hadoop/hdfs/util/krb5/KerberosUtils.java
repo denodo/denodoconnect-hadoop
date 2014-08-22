@@ -47,7 +47,7 @@ public final class KerberosUtils {
         
         Configuration conf = new Configuration();
         conf.set("hadoop.security.authentication", "Kerberos");
-        conf.set("hadoop.security.auth_to_local",  "RULE:[1:$1] RULE:[2:$1]");
+        conf.set("hadoop.security.auth_to_local",  "RULE:[1:$1] RULE:[2:$1]"); // just extract the simple user name
         UserGroupInformation.setConfiguration(conf);
     }
 
@@ -103,6 +103,10 @@ public final class KerberosUtils {
 
     }
 
+    /**
+     * Clears the information cached after the login.
+     * When switching Kerberos configurations, the logout is REQUIRED because Hadoop caches some information between logins.
+     */
     public static void logout() {
         
         System.clearProperty("java.security.krb5.realm");
