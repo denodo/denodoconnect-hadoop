@@ -21,7 +21,6 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -83,22 +82,11 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         throws CustomWrapperException {
 
         try {
-        setSecurityEnabled(inputValues);
-        if (isSecurityEnabled()) {
-            try {
-                checkConfig(inputValues);
-                login(inputValues);
-            } catch (Exception e) {
-                logger.error("Hadoop security error", e);
-                String msg = "Hadoop security error: " + e.getMessage();
-                if (e.getCause() != null) {
-                    msg += " " + e.getCause().getMessage();
-                }
-                throw new CustomWrapperException(msg, e);
-            }
-        }
+            setSecurityEnabled(inputValues);
+            checkConfig(inputValues);
+            login(inputValues);
 
-        return doGetSchemaParameters(inputValues);
+            return doGetSchemaParameters(inputValues);
 
         } finally {
             logout();
@@ -115,19 +103,8 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         try {
 
             setSecurityEnabled(inputValues);
-            if (isSecurityEnabled()) {
-                try {
-                    login(inputValues);
-                } catch (Exception e) {
-                    logger.error("Hadoop security error", e);
-                    String msg = "Hadoop security error: " + e.getMessage();
-                    if (e.getCause() != null) {
-                        msg += " " + e.getCause().getMessage();
-                    }
-                    throw new CustomWrapperException(msg, e);
-                }
-            }
-
+            login(inputValues);
+            
             doRun(condition, projectedFields, result, inputValues);
 
         } finally {
@@ -135,7 +112,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         }
     }
 
-    private void checkConfig(Map<String, String> inputValues) {
+    private static void checkConfig(Map<String, String> inputValues) {
         
         if (inputValues.get(Parameter.PRINCIPAL) != null) {
 
@@ -164,22 +141,34 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
      * - Using a Kerberos ticket from the machine this wrapper is running on.
      * - Using the parameters provided by the user to login in Kerberos programmatically.
      */
-    private void login(Map<String, String> inputValues) throws IOException {
+    private void login(Map<String, String> inputValues) throws CustomWrapperException {
 
-        this.userPrincipal = inputValues.get(Parameter.PRINCIPAL);
+        try {
+            if (isSecurityEnabled()) {
+                this.userPrincipal = inputValues.get(Parameter.PRINCIPAL);
 
-        if (loginWithKerberosTicket()) {
-            KerberosUtils.enableKerberos();
-        } else {
+                if (loginWithKerberosTicket()) {
+                    KerberosUtils.enableKerberos();
+                } else {
 
-            String kdc = inputValues.get(Parameter.KDC);
-            if (inputValues.get(Parameter.KEYTAB) != null) {
-                String keytabPath = ((CustomWrapperInputParameterLocalRouteValue) getInputParameterValue(Parameter.KEYTAB)).getPath();
-                KerberosUtils.loginFromKeytab(this.userPrincipal, kdc, keytabPath);
-            } else if (inputValues.get(Parameter.KERBEROS_PASWORD) != null) {
-                String password = inputValues.get(Parameter.KERBEROS_PASWORD);
-                KerberosUtils.loginFromPassword(this.userPrincipal, kdc, password);
+                    String kdc = inputValues.get(Parameter.KDC);
+                    if (inputValues.get(Parameter.KEYTAB) != null) {
+                        String keytabPath = ((CustomWrapperInputParameterLocalRouteValue) getInputParameterValue(Parameter.KEYTAB)).getPath();
+                        KerberosUtils.loginFromKeytab(this.userPrincipal, kdc, keytabPath);
+                    } else if (inputValues.get(Parameter.KERBEROS_PASWORD) != null) {
+                        String password = inputValues.get(Parameter.KERBEROS_PASWORD);
+                        KerberosUtils.loginFromPassword(this.userPrincipal, kdc, password);
+                    }
+                }
             }
+
+        } catch (Exception e) {
+            logger.error("Hadoop security error", e);
+            String msg = "Hadoop security error: " + e.getMessage();
+            if (e.getCause() != null) {
+                msg += " " + e.getCause().getMessage();
+            }
+            throw new CustomWrapperException(msg, e);
         }
     }
 
@@ -191,7 +180,10 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
      * When switching Kerberos configurations, the logout is REQUIRED because Hadoop caches some information between logins.
      */
     private void logout() {
-        KerberosUtils.logout();
+       
+        if (isSecurityEnabled()) {
+            KerberosUtils.logout();
+        }
     }
 
     private void setSecurityEnabled(Map<String, String> inputValues) {

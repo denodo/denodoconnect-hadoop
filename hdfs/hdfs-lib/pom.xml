@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-lib</artifactId>
-    <version>20140811</version>
+    <version>20140822</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-lib</name>
 
