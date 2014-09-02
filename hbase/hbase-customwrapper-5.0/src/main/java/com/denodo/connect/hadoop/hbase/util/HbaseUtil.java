@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +34,6 @@ import org.json.JSONObject;
 
 import com.denodo.connect.hadoop.hbase.HBaseColumnDetails;
 import com.denodo.connect.hadoop.hbase.commons.naming.ParameterNaming;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
 public final class HbaseUtil {
 
@@ -62,10 +62,10 @@ public final class HbaseUtil {
 
     public static Map<String, List<HBaseColumnDetails>> parseMapping(final String jsonMap) throws JSONException {
         
-        final HashMap<String, List<HBaseColumnDetails>> structure = new HashMap<String, List<HBaseColumnDetails>>();
+        final HashMap<String, List<HBaseColumnDetails>> structure = new LinkedHashMap<String, List<HBaseColumnDetails>>();
         final String mapping = jsonMap.replaceAll("\\\\", "");
         final JSONObject json = new JSONObject(mapping);
-        if (retrieveOnlyRowKey(json)) {
+        if (isRowKeyColumn(json)) {
             return Collections.emptyMap();
         }
         for (int i = 0; i < json.length(); i++) {
@@ -91,20 +91,8 @@ public final class HbaseUtil {
      * Checks if json contains only row_key field. Retrieving only the row_key
      * field of data set is a special case: for performance reasons (Redmine #17877)
      */
-    private static boolean retrieveOnlyRowKey(JSONObject json) {
+    private static boolean isRowKeyColumn(JSONObject json) {
         return (json.length() == 1) && json.has(ParameterNaming.COL_ROWKEY);        
-    }
-
-    public static List<CustomWrapperFieldExpression> getGenericOutputpStructure(
-            final Map<String, List<HBaseColumnDetails>> mapping) {
-        
-        final List<CustomWrapperFieldExpression> output = new ArrayList<CustomWrapperFieldExpression>();
-        for (final String family : mapping.keySet()) {
-            output.add(new CustomWrapperFieldExpression(family));
-        }
-        output.add(new CustomWrapperFieldExpression(ParameterNaming.COL_ROWKEY));
-        
-        return output;
     }
 
     public static String getRegExpformLike(final String expr)
@@ -145,14 +133,10 @@ public final class HbaseUtil {
     /**
      * Fill a byte[] with 0 in the start.
      * 
-     * 
      * @param item
      * @param numberOfSpaces
      * @return byte[]
-     * 
-     * 
      */
-
     public static byte[] fillWithZeroBytes(final byte[] item, final int numberOfSpaces) {
         final byte[] result = new byte[item.length + numberOfSpaces];
         Arrays.fill(result, 0, numberOfSpaces, (byte) 0);
