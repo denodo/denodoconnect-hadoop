@@ -1,3 +1,9 @@
+20140904
+========
+
+- #18210 - Delegate to HBase simple fields projections.
+- Contains and iscointained operators are no longer delegated to HBase following proddev team advice. 
+
 20140821
 ========
 
