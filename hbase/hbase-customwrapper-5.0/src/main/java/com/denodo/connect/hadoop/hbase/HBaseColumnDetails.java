@@ -48,5 +48,10 @@ public class HBaseColumnDetails {
 		this.type = type;
 	}
 
+    @Override
+    public String toString() {
+        return "HBaseColumnDetails [name=" + this.name + ", type=" + this.type + "]";
+    }
+
 
 }

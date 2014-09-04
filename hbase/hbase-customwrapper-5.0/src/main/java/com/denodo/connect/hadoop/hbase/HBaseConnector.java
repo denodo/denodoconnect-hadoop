@@ -23,6 +23,7 @@ package com.denodo.connect.hadoop.hbase;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -105,6 +106,8 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
 
         final CustomWrapperConfiguration configuration = new CustomWrapperConfiguration();
         configuration.setDelegateProjections(true);
+        configuration.setDelegateCompoundFieldProjections(true); // NOTE that "#18209 - Setting property delegateCompoundFieldProjections to true does not have effect"
+                                                                 // VDP will postfilter results while this bug is not fixed
         configuration.setDelegateNotConditions(true);
         configuration.setDelegateOrConditions(true);
         configuration.setDelegateRightLiterals(true);
@@ -185,6 +188,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
             
             final String mapping = inputValues.get(ParameterNaming.CONF_TABLE_MAPPING);
             Map<String, List<HBaseColumnDetails>> mappingMap = HbaseUtil.parseMapping(mapping);
+            mappingMap = filterNonProjectedFields(mappingMap, projectedFields);
             
             final CustomWrapperCondition complexCondition = condition.getComplexCondition();
             if (isSingleRowResult(complexCondition)) {
@@ -197,7 +201,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
 
                 final Result resultRow = table.get(get);
                 if (!resultRow.isEmpty()) {
-                    final Object[] rowArray = processRow(resultRow, mappingMap);
+                    final Object[] rowArray = processRow(resultRow, mappingMap, projectedFields);
                     result.addRow(rowArray, projectedFields);
                 }
             } else {
@@ -209,9 +213,11 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                     scan.setCaching(cacheSize.intValue());
                 }
                 
-                for (final String family : mappingMap.keySet()) {
-                    for (final HBaseColumnDetails subrowData : mappingMap.get(family)) {
-                        scan.addColumn(family.getBytes(), subrowData.getName().getBytes());
+                for (final Map.Entry<String, List<HBaseColumnDetails>> entry : mappingMap.entrySet()) {
+                    String family = entry.getKey();
+                    List<HBaseColumnDetails> columns = entry.getValue();
+                    for (final HBaseColumnDetails column : columns) {
+                        scan.addColumn(family.getBytes(), column.getName().getBytes());
                     }
                 }
                 
@@ -224,9 +230,9 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                 if ((complexCondition != null)) {
                     conditionFilter = buildFilterFromCondition(complexCondition, false, scan, tableName, mappingMap);                    
                     if (complexCondition.isAndCondition() || complexCondition.isOrCondition()) {
-                        log(LOG_TRACE, "This query has more than one condition. The filters listed, each one by separate, would be the equivalent "
+                        log(LOG_TRACE, "This query has more than one condition. The commands listed, each one by separate, would be the equivalent "
                                 + "in HBase shell.");
-                        getCustomWrapperPlan().addPlanEntry("This query has more than one condition.The filters listed, each one by separate, "
+                        getCustomWrapperPlan().addPlanEntry("This query has more than one condition.The commands listed, each one by separate, "
                                 + "would be the equivalent in HBase shell.", "");
                     }
 
@@ -251,7 +257,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                             break;
                         }
 
-                        final Object[] rowArray = processRow(resultRow, mappingMap);
+                        final Object[] rowArray = processRow(resultRow, mappingMap, projectedFields);
                         result.addRow(rowArray, projectedFields);
                     }
                     elapsedTime = System.nanoTime() - startTime;
@@ -285,6 +291,25 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                     
         }
 
+    }
+
+    /*
+     * NOTE that due to "#18209 - Setting property delegateCompoundFieldProjections to true does not have effect"
+     * projectedFields will not contain subfields so this method only deals with families and not with their columns.
+     * VDP will postfilter results while this bug is not fixed.
+     */
+    private static Map<String, List<HBaseColumnDetails>> filterNonProjectedFields(Map<String, List<HBaseColumnDetails>> mappingMap,
+            List<CustomWrapperFieldExpression> projectedFields) {
+
+        Map<String, List<HBaseColumnDetails>> projectionMap = new LinkedHashMap<String, List<HBaseColumnDetails>>();
+        for (CustomWrapperFieldExpression projectedField : projectedFields) {
+            String projectedFieldName = projectedField.getName();
+            if (mappingMap.containsKey(projectedFieldName)) {
+                projectionMap.put(projectedFieldName, mappingMap.get(projectedFieldName));
+            }
+        }
+        
+        return projectionMap;
     }
 
     private Configuration getHBaseConfig(final Map<String, String> inputValues) {
@@ -349,7 +374,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                 + "import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter \nscan '" + tableName
                 + "',FILTER=>\"FirstKeyOnlyFilter()\"\n";
         log(LOG_DEBUG, "HBase shell command:  " + equivalentQuery);
-        getCustomWrapperPlan().addPlanEntry("Simple filter number " + (this.filterNumber++) + "  (HBase shell command) ", equivalentQuery);
+        getCustomWrapperPlan().addPlanEntry("HBase shell command " + this.filterNumber++, equivalentQuery);
         
         return new FirstKeyOnlyFilter();
     }
@@ -743,76 +768,78 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         }
     }
 
-    private static Object[] processRow(final Result resultSet, final Map<String, List<HBaseColumnDetails>> mappingMap) {
+    private static Object[] processRow(final Result resultSet, final Map<String, List<HBaseColumnDetails>> mappingMap, List<CustomWrapperFieldExpression> projectedFields) {
 
-        // Iterates through the families if they are mapped
-        final Object[] row = new Object[mappingMap.keySet().size() + 1];
+        final Object[] row = new Object[projectedFields.size()];
 
         int i = 0;
-        
-        // the row key for this row
-        row[i++] = Bytes.toString(resultSet.getRow());
-        
-        for (final Map.Entry<String, List<HBaseColumnDetails>> entry : mappingMap.entrySet()) {
+        for (CustomWrapperFieldExpression projectedField : projectedFields) {
 
-            String mappingFamily = entry.getKey();
-            List<HBaseColumnDetails> mappingColumns = entry.getValue();
-            
-            final NavigableMap<byte[], byte[]> resultFamily = resultSet.getFamilyMap(mappingFamily.getBytes());
+            String projectedFieldName = projectedField.getName();
+            if (projectedFieldName.equals(ParameterNaming.COL_ROWKEY)) {
+                row[i] = Bytes.toString(resultSet.getRow());
+            } else {
+                List<HBaseColumnDetails> mappingColumns = mappingMap.get(projectedFieldName);
+                
+                if (mappingColumns != null) {
+                    final NavigableMap<byte[], byte[]> resultFamily = resultSet.getFamilyMap(projectedFieldName.getBytes());
+                    final Set<byte[]> resultColumns = resultFamily.keySet();
 
-            final Set<byte[]> resultColumns = resultFamily.keySet();
-            final Object[] subrow = new Object[mappingColumns.size()];
-            int j = 0;
-            for (final HBaseColumnDetails mappingColumn : mappingColumns) {
-                if (resultColumns.contains(mappingColumn.getName().getBytes())) {
-                    byte[] content = resultFamily.get(mappingColumn.getName().getBytes());
-                    
-                    if (mappingColumn.getType().equals(ParameterNaming.TYPE_TEXT)) {
-                        subrow[j] = Bytes.toString(content);
-                    } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_INTEGER)) {
-                        
-                        final int max_int = Integer.SIZE / Byte.SIZE;
-                        if (content.length < max_int) {
-                            content = HbaseUtil.fillWithZeroBytes(content, max_int - content.length);
+                    final Object[] subrow = new Object[mappingColumns.size()];
+
+                    int j = 0;
+                    for (final HBaseColumnDetails mappingColumn : mappingColumns) {
+                        if (resultColumns.contains(mappingColumn.getName().getBytes())) {
+                            byte[] content = resultFamily.get(mappingColumn.getName().getBytes());
+
+                            if (mappingColumn.getType().equals(ParameterNaming.TYPE_TEXT)) {
+                                subrow[j] = Bytes.toString(content);
+                            } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_INTEGER)) {
+
+                                final int max_int = Integer.SIZE / Byte.SIZE;
+                                if (content.length < max_int) {
+                                    content = HbaseUtil.fillWithZeroBytes(content, max_int - content.length);
+                                }
+
+                                subrow[j] = Integer.valueOf(Bytes.toInt(content));
+                            } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_LONG)) {
+                                final int max_long = Long.SIZE / Byte.SIZE;
+                                if (content.length < max_long) {
+                                    content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
+                                }
+
+                                subrow[j] = Long.valueOf(Bytes.toLong(content));
+
+                            } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_FLOAT)) {
+                                final int max_float = Float.SIZE / Byte.SIZE;
+                                if (content.length < max_float) {
+                                    content = HbaseUtil.fillWithZeroBytes(content, max_float - content.length);
+                                }
+                                subrow[j] = Float.valueOf(Bytes.toFloat(content));
+
+                            } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_DOUBLE)) {
+                                final int max_long = Long.SIZE / Byte.SIZE;
+                                if (content.length < max_long) {
+                                    content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
+                                }
+                                subrow[j] = Double.valueOf(Bytes.toDouble(content));
+                            } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_BOOLEAN)) {
+                                subrow[j] = Boolean.valueOf(Bytes.toBoolean(content));
+                            } else {
+                                subrow[j] = content;
+                            }
+                        } else {
+                            subrow[j] = null;
                         }
-
-                        subrow[j] = Integer.valueOf(Bytes.toInt(content));
-                    } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_LONG)) {
-                        final int max_long = Long.SIZE / Byte.SIZE;
-                        if (content.length < max_long) {
-                            content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
-                        }
-
-                        subrow[j] = Long.valueOf(Bytes.toLong(content));
-
-                    } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_FLOAT)) {
-                        final int max_float = Float.SIZE / Byte.SIZE;
-                        if (content.length < max_float) {
-                            content = HbaseUtil.fillWithZeroBytes(content, max_float - content.length);
-                        }
-                        subrow[j] = Float.valueOf(Bytes.toFloat(content));
-
-                    } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_DOUBLE)) {
-                        final int max_long = Long.SIZE / Byte.SIZE;
-                        if (content.length < max_long) {
-                            content = HbaseUtil.fillWithZeroBytes(content, max_long - content.length);
-                        }
-                        subrow[j] = Double.valueOf(Bytes.toDouble(content));
-                    } else if (mappingColumn.getType().equals(ParameterNaming.TYPE_BOOLEAN)) {
-                        subrow[j] = Boolean.valueOf(Bytes.toBoolean(content));
-                    } else {
-                        subrow[j] = content;
+                        j++;
                     }
-                } else {
-                    subrow[j] = null;
-                }
-                j++;
-            }
-            row[i] = subrow;
+                    row[i] = subrow;
 
+                }
+            }
+            
             i++;
         }
-        
 
         return row;
     }
@@ -837,7 +864,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
 
         String command = commandSb.toString();
         log(LOG_TRACE, "HBase shell command:" + command);
-        getCustomWrapperPlan().addPlanEntry("HBase shell command ", command);
+        getCustomWrapperPlan().addPlanEntry("HBase shell command " + this.filterNumber++, command);
     }
 
     private void recordShellScanCommand(final String tableName, final Map<String, List<HBaseColumnDetails>> mappingMap, String startRow,
@@ -871,7 +898,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         String command = commandSb.toString();
         
         log(LOG_TRACE, "HBase shell command:" + command);
-        getCustomWrapperPlan().addPlanEntry("HBase shell command ", command);
+        getCustomWrapperPlan().addPlanEntry("HBase shell command " + this.filterNumber++, command);
     }
     
     private void recordShellScanWithFiltersCommand(final String tableName, final Map<String, List<HBaseColumnDetails>> mappingMap,
@@ -931,7 +958,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         String command = commandSb.toString();
         
         log(LOG_TRACE, "HBase shell command:" + command);
-        getCustomWrapperPlan().addPlanEntry("Simple filter number " + (this.filterNumber++) + "  (HBase shell command) ", command);
+        getCustomWrapperPlan().addPlanEntry("HBase shell command " + this.filterNumber++, command);
 
     }
 
