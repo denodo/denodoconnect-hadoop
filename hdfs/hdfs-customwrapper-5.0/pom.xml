@@ -383,7 +383,7 @@
         <dependency>
             <groupId>com.denodo.connect.hadoop</groupId>
             <artifactId>denodo-hdfs-lib</artifactId>
-            <version>20140811</version>
+            <version>20140822</version>
             <scope>compile</scope>
         </dependency>
 
