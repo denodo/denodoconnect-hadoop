@@ -1,0 +1,3 @@
+CURRENT VERSION
+-----------------------
+- Created first version of this component for Denodo 5.5

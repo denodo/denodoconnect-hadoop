@@ -30,7 +30,7 @@
 	      </includes>
 	    </fileSet>
         <fileSet>
-            <directory>${basedir}/doc/</directory>
+            <directory>${basedir}/../hbase-customwrapper-5.0/doc/</directory>
             <outputDirectory>/doc</outputDirectory>
             <includes>
                 <include>**/*.pdf</include>

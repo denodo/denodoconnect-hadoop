@@ -23,28 +23,21 @@
             </includes>
         </fileSet>
         <fileSet>
-	      <directory>src/main/resources/</directory>
-	      <outputDirectory>/conf</outputDirectory>
-	      <includes>
-	        <include>hbase-site.xml</include>
-	      </includes>
-	    </fileSet>
-        <fileSet>
-            <directory>${basedir}/doc/</directory>
-            <outputDirectory>/doc</outputDirectory>
-            <includes>
-                <include>**/*.pdf</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>${basedir}/</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>README.txt</include>
                 <include>LICENSE.txt</include>
                 <include>NOTICE.txt</include>
-                <include>RELEASE_NOTES.txt</include>
+                <include>RELEASE_NOTES.txt</include>                
             </includes>
+        </fileSet>
+        <fileSet>
+          <directory>${basedir}/../hdfs-customwrapper-5.0/doc/</directory>
+          <outputDirectory>/doc</outputDirectory>
+          <includes>
+            <include>**/*.pdf</include>
+          </includes>
         </fileSet>
     </fileSets>
 
@@ -54,9 +47,9 @@
             <outputDirectory>/lib</outputDirectory>
             <unpack>false</unpack>
             <scope>runtime</scope>
-            <excludes>
-                <exclude>${project.groupId}:${project.artifactId}</exclude>
-            </excludes>
+		    <excludes>
+        		<exclude>${project.groupId}:${project.artifactId}</exclude>
+      		</excludes>
         </dependencySet>
     </dependencySets>
 

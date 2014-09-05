@@ -28,11 +28,11 @@
         <include>README.txt</include>
         <include>LICENSE.txt</include>
         <include>NOTICE.txt</include>
-        <include>RELEASE_NOTES.txt</include>
+        <include>RELEASE_NOTES.txt</include>        
       </includes>
     </fileSet>
 	<fileSet>
-	  <directory>${basedir}/doc/</directory>
+	  <directory>${basedir}/../mapreduce-customwrapper-5.0/doc/</directory>
 	  <outputDirectory>/doc</outputDirectory>
 	  <includes>
 		<include>**/*.pdf</include>

@@ -1,28 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <!-- *************************** -->
     <!-- BASIC PROJECT INFO -->
     <!-- *************************** -->
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
-    <artifactId>denodo-hdfs-customwrapper-5.0</artifactId>
-    <version>20140811</version>
+    <artifactId>denodo-mapreduce-customwrapper-5.5</artifactId>
+    <version>20140905</version>
     <packaging>jar</packaging>
-    <name>denodo-hdfs-customwrapper</name>
+    <name>denodo-mapreduce-customwrapper</name>
 
-    <properties>
-        <avro.version>1.7.4</avro.version>
+  <properties>
         <hadoop.version>2.4.0</hadoop.version>
-    </properties>
+  </properties>
+
 
     <!-- *************************** -->
     <!-- BUILD INFO -->
     <!-- *************************** -->
     <build>
         <resources>
-            <resource>
+             <resource>
                 <directory>.</directory>
                 <targetPath>META-INF</targetPath>
                 <includes>
@@ -32,23 +31,32 @@
             </resource>
         </resources>
 
+        <sourceDirectory>../mapreduce-customwrapper-5.0/src/main/java</sourceDirectory>
         <!-- ============================================================== -->
         <!-- Test-related directory locations -->
         <!-- ============================================================== -->
-        <testSourceDirectory>src/test/java</testSourceDirectory>
-        <testOutputDirectory>target/test-classes</testOutputDirectory>
+
+        <testSourceDirectory>../mapreduce-customwrapper-5.0/src/test/java</testSourceDirectory>
+        <testOutputDirectory>../mapreduce-customwrapper-5.0/target/test-classes</testOutputDirectory>
+
         <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-            </testResource>
+          <testResource>
+              <directory>../mapreduce-customwrapper-5.0/src/test/resources</directory>
+          </testResource>
         </testResources>
+
         <plugins>
+
+            <!-- ========================================================== -->
+            <!-- Compiler plugin -->
+            <!--  * Set the Java version (source and bytecode) to J2SE 6 -->
+            <!--  * Other possible values if required: "1.4" | "1.5" -->
+            <!-- ========================================================== -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
                 <configuration>
-                    <!-- org.apache.hadoop.* requires 1.6 -->
                     <source>1.6</source>
                     <target>1.6</target>
                     <encoding>US-ASCII</encoding>
@@ -76,7 +84,7 @@
                     </execution>
                 </executions>
             </plugin>
-
+            
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-jar-plugin</artifactId>
@@ -92,15 +100,16 @@
                         <Extension-Description>${project.name}</Extension-Description>
                         <Extension-Version>${project.version}</Extension-Version>
                         <Extension-Target-Version>5.0</Extension-Target-Version>
-                        <Extension-Target-Update>20130103</Extension-Target-Update>
+                        <!-- Uncomment when an update of VDP 5.5 is required -->
+                       <!-- <Extension-Target-Update>20140826</Extension-Target-Update> -->
                         <Extension-Website>http://support.denodo.com</Extension-Website>
                       </manifestEntries>
                     </manifestSection>
                   </manifestSections>
                 </archive>
               </configuration>
-            </plugin>            
-        
+            </plugin>                        
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -114,7 +123,7 @@
                           <exclude>META-INF/maven/**/*</exclude>
                         </excludes>
                       </filter>
-                    </filters>                     
+                    </filters>                                          
                 </configuration>
                 <executions>
                     <execution>
@@ -182,52 +191,12 @@
             <scope>provided</scope>
         </dependency>
 
-        <!--Custom Wrapper required libraries -->
-        <dependency>
-            <groupId>com.denodo.commons</groupId>
-            <artifactId>denodo-util</artifactId>
-            <version>2.72</version>
-            <scope>provided</scope>
-        </dependency>
-
+        <!-- Custom Wrapper necessary libraries  -->
         <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server-base</artifactId>
             <version>5.0.0_2</version>
             <scope>provided</scope>
-        </dependency>
-        <!-- *** -->
-
-        <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro</artifactId>
-            <version>${avro.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.netty</groupId>
-                    <artifactId>netty</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>jetty</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>jetty-util</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -301,62 +270,18 @@
                 </exclusion>
             </exclusions>                        
         </dependency>
-        
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-hdfs</artifactId>
-            <version>${hadoop.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-cli</groupId>
-                    <artifactId>commons-cli</artifactId>
-                </exclusion>
-                <exclusion>
-                  <groupId>commons-daemon</groupId>
-                  <artifactId>commons-daemon</artifactId>
-                </exclusion>                
-                <exclusion>
-                    <groupId>tomcat</groupId>
-                    <artifactId>jasper-runtime</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.servlet.jsp</groupId>
-                    <artifactId>jsp-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>jetty</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>jetty-util</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>hsqldb</groupId>
-                    <artifactId>hsqldb</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        
-        
 
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.2.1</version>
-            <scope>compile</scope>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.hadoop.gplcompression</groupId>
-            <artifactId>hadoop-lzo</artifactId>
-            <version>0.4.16</version>
-            <scope>compile</scope>
-        </dependency>
+	  	<dependency>
+	    	<groupId>commons-lang</groupId>
+	    	<artifactId>commons-lang</artifactId>
+	    	<version>2.6</version>
+	  	</dependency>
+
+	  	<dependency>
+			<groupId>com.jcraft</groupId>
+			<artifactId>jsch</artifactId>
+			<version>0.1.50</version>
+		</dependency>
 
         <dependency>
             <groupId>com.denodo.connect.hadoop</groupId>
@@ -364,13 +289,20 @@
             <version>20140822</version>
             <scope>compile</scope>
         </dependency>
-
+        
         <dependency>
-            <groupId>net.java.dev.jets3t</groupId>
-            <artifactId>jets3t</artifactId>
-            <version>0.9.0</version>
-            <scope>compile</scope>
-        </dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.9.9-RC1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>dom4j</groupId>
+                    <artifactId>dom4j</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>        
 
     </dependencies>
+
+
 </project>

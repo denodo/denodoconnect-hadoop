@@ -16,10 +16,10 @@
             <directory>${basedir}/target/</directory>
             <outputDirectory>/dist</outputDirectory>
             <includes>
-                <include>denodo-hdfs-customwrapper-5.0-${project.version}.jar</include>
-                <include>denodo-hdfs-customwrapper-5.0-${project.version}-javadoc.jar</include>
-                <include>denodo-hdfs-customwrapper-5.0-${project.version}-sources.jar</include>
-                <include>denodo-hdfs-customwrapper-5.0-${project.version}-jar-with-dependencies.jar</include>
+                <include>${project.artifactId}-${project.version}.jar</include>
+                <include>${project.artifactId}-${project.version}-javadoc.jar</include>
+                <include>${project.artifactId}-${project.version}-sources.jar</include>
+                <include>${project.artifactId}-${project.version}-jar-with-dependencies.jar</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -29,6 +29,7 @@
                 <include>README.txt</include>
                 <include>LICENSE.txt</include>
                 <include>NOTICE.txt</include>
+                <include>RELEASE_NOTES.txt</include>                
             </includes>
         </fileSet>
         <fileSet>
@@ -47,7 +48,7 @@
             <unpack>false</unpack>
             <scope>runtime</scope>
 		    <excludes>
-        		<exclude>com.denodo.connect.hadoop:denodo-hdfs-customwrapper-5.0</exclude>
+        		<exclude>${project.groupId}:${project.artifactId}</exclude>
       		</excludes>
         </dependencySet>
     </dependencySets>
