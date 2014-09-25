@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-mapreduce-customwrapper-5.5</artifactId>
-    <version>20140905</version>
+    <version>20140925</version>
     <packaging>jar</packaging>
     <name>denodo-mapreduce-customwrapper</name>
 
@@ -99,7 +99,7 @@
                         <Extension-Name>${project.artifactId}</Extension-Name>
                         <Extension-Description>${project.name}</Extension-Description>
                         <Extension-Version>${project.version}</Extension-Version>
-                        <Extension-Target-Version>5.0</Extension-Target-Version>
+                        <Extension-Target-Version>5.5</Extension-Target-Version>
                         <!-- Uncomment when an update of VDP 5.5 is required -->
                        <!-- <Extension-Target-Update>20140826</Extension-Target-Update> -->
                         <Extension-Website>http://support.denodo.com</Extension-Website>
@@ -195,7 +195,7 @@
         <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server-base</artifactId>
-            <version>5.0.0_2</version>
+            <version>5.5.0</version>
             <scope>provided</scope>
         </dependency>
 
