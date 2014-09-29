@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hbase-customwrapper-5.5</artifactId>
-    <version>20140925</version>
+    <version>20140929</version>
     <packaging>jar</packaging>
     <name>denodo-hbase-customwrapper</name>
 
