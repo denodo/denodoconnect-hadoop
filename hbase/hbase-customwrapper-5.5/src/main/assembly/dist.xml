@@ -23,7 +23,7 @@
             </includes>
         </fileSet>
         <fileSet>
-	      <directory>src/main/resources/</directory>
+	      <directory>${basedir}/../hbase-customwrapper-5.0/src/main/resources/</directory>
 	      <outputDirectory>/conf</outputDirectory>
 	      <includes>
 	        <include>hbase-site.xml</include>
