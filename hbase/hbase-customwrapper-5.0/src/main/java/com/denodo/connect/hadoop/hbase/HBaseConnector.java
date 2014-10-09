@@ -325,13 +325,13 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         }
 
         if (isSecurityEnabled()) {
-            setSecureProperties(config, hbaseIP);
+            setSecureProperties(config);
         }
         
         return config;
     }
 
-    private void setSecureProperties(final Configuration config, final String hbaseIP) {
+    private void setSecureProperties(final Configuration config) {
 
         config.set("hbase.security.authentication", "Kerberos");
 
@@ -344,16 +344,18 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
             config.set("hbase.master.kerberos.principal", "hbase/_HOST@EXAMPLE.COM");
             config.set("hbase.regionserver.kerberos.principal", "hbase/_HOST@EXAMPLE.COM");
         } else {
-            final String serverPrincipal = getHBasePrincipal(hbaseIP);
+            final String serverPrincipal = getHBasePrincipal();
             config.set("hbase.master.kerberos.principal", serverPrincipal);
             config.set("hbase.regionserver.kerberos.principal", serverPrincipal);
         }
     }
     
-    private String getHBasePrincipal(final String hbaseIP) {
+    private String getHBasePrincipal() {
 
         final String realm = KerberosUtils.getRealm(getUserPrincipal());
-        return "hbase/" + hbaseIP + "@" + realm;
+        // If "_HOST" is used as the hostname portion, 
+        // it will be replaced with the actual hostname of the running instance. 
+        return "hbase/_HOST@" + realm;
     }
     
     private static boolean isSingleRowResult(CustomWrapperCondition condition) {

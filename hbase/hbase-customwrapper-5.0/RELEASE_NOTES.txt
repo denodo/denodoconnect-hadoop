@@ -1,3 +1,7 @@
+20141008
+========
+ - Fix HBase principal generation in Windows.
+
 20140904
 ========
 
