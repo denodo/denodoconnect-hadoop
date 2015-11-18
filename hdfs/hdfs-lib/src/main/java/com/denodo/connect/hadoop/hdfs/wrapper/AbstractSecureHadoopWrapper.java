@@ -47,6 +47,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
 
     private boolean securityEnabled;
     private String userPrincipal;
+    private boolean stopRequested;
 
     private static final CustomWrapperInputParameter[] SECURE_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
@@ -70,6 +71,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
     public AbstractSecureHadoopWrapper() {
         this.securityEnabled = false;
         this.userPrincipal = null;
+        this.stopRequested = false;
     }
 
     @Override
@@ -200,6 +202,16 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
 
     public String getUserPrincipal() {
         return this.userPrincipal;
+    }
+    
+    public boolean isStopRequested() {
+        return this.stopRequested;
+    }
+    
+    @Override
+    public boolean stop() {
+        this.stopRequested = true;
+        return true;
     }
 
     public abstract void doRun(CustomWrapperConditionHolder condition,

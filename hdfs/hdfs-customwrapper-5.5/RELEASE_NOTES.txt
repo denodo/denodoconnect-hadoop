@@ -1,3 +1,8 @@
+CURRENT
+-------
+- #24247 - Add STOP capabilites to the HDFSFileWrapper.
+- #24285 - WebHDFSFileWrapper should handle key/value as HDFSDelimitedTextFileWrapper
+
 20140922
 --------
 - Created first version of this component for Denodo 5.5

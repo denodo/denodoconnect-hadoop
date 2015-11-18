@@ -45,7 +45,7 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
                 "Delete the file/s after reading? ", true,
                 CustomWrapperInputParameterTypeFactory.booleanType(false))
     };
-
+    
 
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
@@ -88,7 +88,7 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
 
             reader = getHDFSFileReader(inputValues);
             Object data = reader.read();
-            while (data != null) {
+            while (data != null && !isStopRequested()) {
                 result.addRow((Object[]) data, projectedFields);
 
                 data = reader.read();

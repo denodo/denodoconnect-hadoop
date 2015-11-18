@@ -144,7 +144,7 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
             Object[] rowData = new Object[2];
             rowData[0] = avroFilePath;
             Object avroData = reader.read();
-            while (avroData != null) {
+            while (avroData != null && !isStopRequested()) {
                 rowData[1] = avroData;
                 result.addRow(rowData, projectedFields);
 
@@ -170,7 +170,7 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
 
         }
     }
-
+    
     private static String getAvroFilePath(CustomWrapperConditionHolder condition) {
 
         String avroFilePath = null;

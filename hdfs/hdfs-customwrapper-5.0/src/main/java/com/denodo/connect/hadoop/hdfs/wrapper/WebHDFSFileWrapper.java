@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
@@ -60,6 +61,8 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
 public class WebHDFSFileWrapper extends AbstractCustomWrapper {
 
     private static Logger logger = Logger.getLogger(WebHDFSFileWrapper.class);
+    
+    private boolean stopRequested = false;
 
 
     @Override
@@ -130,15 +133,21 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
             URI openURI = URIUtils.getWebHDFSOpenURI(host, port, user, filePath);
             InputStream is = HTTPUtils.requestGet(openURI, httpClient);
             br = new BufferedReader(new InputStreamReader(is));
-            String line = null;
-            String[] asArray = null;
-            while ((line = br.readLine()) != null) {
-                asArray = line.split(separator);
-                if (asArray.length != 2) {
+            String line = br.readLine();
+            String[] data = new String[2];
+            while (line != null && !this.stopRequested) {
+                
+                if (!line.contains(separator)) {
                     throw new IOException("Error reading file: line '" + line
                         + "' does not contain the separator '" + separator + "'");
                 }
-                result.addRow(asArray, projectedFields);
+                
+                data[0] = StringUtils.substringBefore(line, separator);
+                data[1] = StringUtils.substringAfter(line, separator);
+                
+                result.addRow(data, projectedFields);
+                
+                line = br.readLine();
             }
 
             if (delete) {
@@ -159,6 +168,12 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
             httpClient.getConnectionManager().shutdown();
 
         }
+    }
+    
+    @Override
+    public boolean stop() {
+        this.stopRequested = true;
+        return true;
     }
 
     private static String normalizePath(String filePath) {
