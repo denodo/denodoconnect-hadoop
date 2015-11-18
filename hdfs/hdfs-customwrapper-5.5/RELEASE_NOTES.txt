@@ -1,7 +1,8 @@
 CURRENT
 -------
 - #24247 - Add STOP capabilites to the HDFSFileWrapper.
-- #24285 - WebHDFSFileWrapper should handle key/value as HDFSDelimitedTextFileWrapper
+- #24285 - WebHDFSFileWrapper should handle key/value pairs as HDFSDelimitedTextFileWrapper
+- #24284 - Update to Hadoop 2.6.0 and Avro 1.7.7
 
 20140922
 --------
