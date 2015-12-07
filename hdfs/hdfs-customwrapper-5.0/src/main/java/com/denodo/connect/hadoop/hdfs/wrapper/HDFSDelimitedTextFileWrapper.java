@@ -134,6 +134,9 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         }
     }
 
+    /*
+     * Tune configuration values for non skipping header, because we are interested in the header.
+     */
     private Map<String, String> tuneInput(Map<String, String> inputValues) {
         
         Map<String, String> values = new HashMap<String, String>(inputValues);
