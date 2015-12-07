@@ -22,20 +22,22 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
+import com.denodo.connect.hadoop.hdfs.util.csv.CSVConfig;
+import com.denodo.connect.hadoop.hdfs.util.csv.CSVReader;
 import com.denodo.connect.hadoop.hdfs.wrapper.util.http.HTTPUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.util.http.URIUtils;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
@@ -56,7 +58,7 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * <li>OPEN</li>
  * <li>DELETE</li>
  * </ul>
- * Key/value pairs contained in the file will be returned by the wrapper.
+ * CSV records contained in the file will be returned by the wrapper.
  */
 public class WebHDFSFileWrapper extends AbstractCustomWrapper {
 
@@ -76,8 +78,19 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
                 false, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.FILE_PATH, "Absolute file path ",
                 true, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.SEPARATOR, "Separator of the delimited file ",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),
+            
+            new CustomWrapperInputParameter(Parameter.SEPARATOR, "Separator of the delimited file. Default is ',' ",
+                false, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.QUOTE, "Character used to encapsulate values containing special characters. Default is '\"' ", false,
+                CustomWrapperInputParameterTypeFactory.stringType()),                
+            new CustomWrapperInputParameter(Parameter.COMMENT_MARKER, "Character marking the start of a line comment. Default is: comments not supported ", false,
+                CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.ESCAPE, "Escape character. Default is: escapes not supported  ", false,
+                CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.IGNORE_SPACES, "Spaces around values are ignored. ", true,
+                CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(Parameter.HEADER, "The file has header ", true,
+                CustomWrapperInputParameterTypeFactory.booleanType(true)),                
             new CustomWrapperInputParameter(Parameter.DELETE_AFTER_READING, "Delete the file after reading it? ",
                 true, CustomWrapperInputParameterTypeFactory.booleanType(false))
         };
@@ -100,15 +113,22 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
         boolean isUpdateable = true;
         boolean isNullable = true;
         boolean isMandatory = true;
+        
+        boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
+        List<String> headerNames = readHeader(inputValues);
+        if (!header) {
+            headerNames = buildSyntheticHeader(headerNames.size());
+        }
 
-        return new CustomWrapperSchemaParameter[] {
-            new CustomWrapperSchemaParameter(Parameter.KEY, Types.VARCHAR,
-                null, !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
-                !isUpdateable, isNullable, !isMandatory),
-            new CustomWrapperSchemaParameter(Parameter.VALUE, Types.VARCHAR,
-                null, !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
-                !isUpdateable, isNullable, !isMandatory)
-        };
+        CustomWrapperSchemaParameter[] headerSchema =  new CustomWrapperSchemaParameter[headerNames.size()];
+        int i = 0;
+        for (String item : headerNames) {
+            headerSchema[i++] = new CustomWrapperSchemaParameter(item, Types.VARCHAR, null, !isSearchable,
+                    CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, isNullable, !isMandatory);
+
+        }
+        
+        return headerSchema;
     }
 
     @Override
@@ -123,31 +143,26 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
         String user = inputValues.get(Parameter.USER);
         String filePath = inputValues.get(Parameter.FILE_PATH);
         filePath = normalizePath(filePath);
-        String separator = inputValues.get(Parameter.SEPARATOR);
+        CSVConfig csvConfig = getConfig(inputValues);
+        boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
         boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
 
         DefaultHttpClient httpClient = new DefaultHttpClient();
         BufferedReader br = null;
+        CSVReader csvReader = null;
         try {
 
             URI openURI = URIUtils.getWebHDFSOpenURI(host, port, user, filePath);
             InputStream is = HTTPUtils.requestGet(openURI, httpClient);
             br = new BufferedReader(new InputStreamReader(is));
-            String line = br.readLine();
-            String[] data = new String[2];
-            while (line != null && !this.stopRequested) {
+            csvReader = new CSVReader(br, csvConfig);
+            if (header && csvReader.hasNext()) {
+                csvReader.next(); // skip header
+            }
+            while (csvReader.hasNext() && !this.stopRequested) {
                 
-                if (!line.contains(separator)) {
-                    throw new IOException("Error reading file: line '" + line
-                        + "' does not contain the separator '" + separator + "'");
-                }
-                
-                data[0] = StringUtils.substringBefore(line, separator);
-                data[1] = StringUtils.substringAfter(line, separator);
-                
-                result.addRow(data, projectedFields);
-                
-                line = br.readLine();
+                List<String> data = csvReader.next();
+                result.addRow(data.toArray(), projectedFields);
             }
 
             if (delete) {
@@ -163,11 +178,72 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
             logger.error("Error accessing WebHDFS", e);
             throw new CustomWrapperException("Error accessing WebHDFS: " + e.getMessage(), e);
         } finally {
+            if (csvReader != null) {
+                csvReader.close();
+            }
+            
             IOUtils.closeQuietly(br);
-
             httpClient.getConnectionManager().shutdown();
 
         }
+    }
+
+    private static List<String> readHeader(Map<String, String> inputValues) throws CustomWrapperException {
+
+        String host = inputValues.get(Parameter.HOST_IP);
+        int port = Integer.parseInt(inputValues.get(Parameter.HOST_PORT));
+        String user = inputValues.get(Parameter.USER);
+        String filePath = inputValues.get(Parameter.FILE_PATH);
+        filePath = normalizePath(filePath);
+        CSVConfig csvConfig = getConfig(inputValues);
+
+        DefaultHttpClient httpClient = new DefaultHttpClient();
+        BufferedReader br = null;
+        CSVReader csvReader = null;
+        try {
+
+            URI openURI = URIUtils.getWebHDFSOpenURI(host, port, user, filePath);
+            InputStream is = HTTPUtils.requestGet(openURI, httpClient);
+            br = new BufferedReader(new InputStreamReader(is));
+            csvReader = new CSVReader(br, csvConfig);
+
+            if (csvReader.hasNext()) {
+                return csvReader.next();
+            }
+            
+            return Collections.emptyList();
+
+        } catch (Exception e) {
+            logger.error("Error accessing WebHDFS", e);
+            throw new CustomWrapperException("Error accessing WebHDFS: " + e.getMessage(), e);
+        } finally {
+            if (csvReader != null) {
+                csvReader.close();
+            }
+
+            IOUtils.closeQuietly(br);
+            httpClient.getConnectionManager().shutdown();
+
+        }
+    }
+    
+    private static CSVConfig getConfig(Map<String, String> inputValues) {
+        return new CSVConfig(inputValues.get(Parameter.SEPARATOR),
+                inputValues.get(Parameter.QUOTE),
+                inputValues.get(Parameter.COMMENT_MARKER),
+                inputValues.get(Parameter.ESCAPE),
+                Boolean.parseBoolean(inputValues.get(Parameter.IGNORE_SPACES)),
+                Boolean.parseBoolean(inputValues.get(Parameter.HEADER)));
+    }
+    
+    private static List<String> buildSyntheticHeader(int size) {
+        
+        List<String> header = new ArrayList<String>();
+        for (int i = 0; i < size; i++) {
+            header.add("column" + i);
+        }
+        
+        return header;
     }
     
     @Override

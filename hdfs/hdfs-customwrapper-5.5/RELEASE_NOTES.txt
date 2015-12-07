@@ -1,5 +1,9 @@
 CURRENT
 -------
+- #24093 - Add support for delimited files.
+
+20151118
+--------
 - #24247 - Add STOP capabilites to the HDFSFileWrapper.
 - #24285 - WebHDFSFileWrapper should handle key/value pairs as HDFSDelimitedTextFileWrapper
 - #24284 - Update to Hadoop 2.6.0 and Avro 1.7.7

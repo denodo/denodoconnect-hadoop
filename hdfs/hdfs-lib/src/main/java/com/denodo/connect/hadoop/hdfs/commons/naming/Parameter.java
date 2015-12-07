@@ -51,6 +51,11 @@ public final class Parameter {
     public static final String HADOOP_VALUE_CLASS = "Value class";
 
     public static final String SEPARATOR = "Separator";
+    public static final String QUOTE = "Quote";
+    public static final String COMMENT_MARKER = "Comment marker";
+    public static final String ESCAPE = "Escape";
+    public static final String IGNORE_SPACES = "Ignore spaces";
+    public static final String HEADER = "Header";
     public static final String FILE_PATH = "Path";
 
     public static final String DELETE_AFTER_READING = "Delete after reading";

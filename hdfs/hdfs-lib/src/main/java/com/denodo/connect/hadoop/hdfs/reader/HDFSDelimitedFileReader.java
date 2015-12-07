@@ -19,71 +19,79 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.reader.keyvalue;
+package com.denodo.connect.hadoop.hdfs.reader;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.util.LineReader;
+
+import com.denodo.connect.hadoop.hdfs.util.csv.CSVConfig;
+import com.denodo.connect.hadoop.hdfs.util.csv.CSVReader;
 
 /**
  * Class to iterate over a Delimited Text File.
  *
  */
-public class HDFSDelimitedFileReader extends AbstractHDFSKeyValueFileReader {
+public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
 
-    private String separator;
-    private LineReader currentReader;
-    private Text currentLine;
+    private CSVConfig csvConfig;
+    private int linesToSkip;
+    private int linesSkipped;
+    private CSVReader reader;
 
 
-    public HDFSDelimitedFileReader(Configuration configuration, String separator,
+    public HDFSDelimitedFileReader(Configuration configuration, CSVConfig cvsConfig,
         Path outputPath, String user) throws IOException, InterruptedException {
 
-        super(configuration, Text.class.getName(), Text.class.getName(), outputPath, user);
-        this.separator = separator;
-        this.currentLine = new Text();
+        super(configuration, outputPath, user);
+        this.csvConfig = cvsConfig;
+        this.linesToSkip = cvsConfig.isHeader() ? 1 : 0;
+        this.linesSkipped = 0;
     }
-
+    
     @Override
     public void openReader(FileSystem fileSystem, Path path,
         Configuration configuration) throws IOException {
 
         if (isFile(path)) {
             FSDataInputStream is = fileSystem.open(path);
-            this.currentReader = new LineReader(is);
+            this.reader = new CSVReader(new InputStreamReader(is), this.csvConfig);
         } else {
             throw new IllegalArgumentException("'" + path + "' is not a file");
         }
     }
-
+    
     @Override
-    public <K extends Writable, V extends Writable> boolean doRead(K key, V value) throws IOException {
+    public Object doRead() {
 
-        if (this.currentReader.readLine(this.currentLine) > 0) {
-            String lineString = this.currentLine.toString();
-            if (lineString.contains(this.separator)) {
-                ((Text) key).set(StringUtils.substringBefore(lineString, this.separator));
-                ((Text) value).set(StringUtils.substringAfter(lineString, this.separator));
-                return true;
-            }
-            throw new IOException("Error reading line: line '" + lineString + "' does not contain the specified separator '"
-                + this.separator + "'");
+        skipLines();
+        if (this.reader.hasNext()) {
+            List<String> data = this.reader.next();
+            return data.toArray();
         }
 
-        return false;
+        this.linesSkipped = 0;
+        return null;
     }
+    
+    private void skipLines() {
+        
+        while (this.linesSkipped < this.linesToSkip && this.reader.hasNext()) {
+            this.reader.next();
+            this.linesSkipped ++;
+        }
+    }
+
 
     @Override
     public void closeReader() throws IOException {
-        if (this.currentReader != null) {
-            this.currentReader.close();
+        if (this.reader != null) {
+            this.reader.close();
         }
     }
 

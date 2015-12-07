@@ -8,13 +8,17 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-lib</artifactId>
-    <version>20151118</version>
+    <version>20151207</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-lib</name>
 
     <properties>
         <avro.version>1.7.7</avro.version>
+        <commons-csv.version>1.0</commons-csv.version>
         <hadoop.version>2.6.0</hadoop.version>
+        <jets3t.version>0.9.0</jets3t.version>
+        <log4j.version>1.2.15</log4j.version>
+        <vdp.version>5.0.0_2</vdp.version>
     </properties>
 
     <!-- *************************** -->
@@ -84,7 +88,7 @@
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>1.2.15</version>
+            <version>${log4j.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -151,6 +155,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${commons-csv.version}</version>
+            <scope>compile</scope>
+        </dependency>        
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -267,14 +278,14 @@
         <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server-base</artifactId>
-            <version>5.0.0_2</version>
+            <version>${vdp.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>net.java.dev.jets3t</groupId>
             <artifactId>jets3t</artifactId>
-            <version>0.9.0</version>
+            <version>${jets3t.version}</version>
             <scope>compile</scope>
         </dependency>
 
