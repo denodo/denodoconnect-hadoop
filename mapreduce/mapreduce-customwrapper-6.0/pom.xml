@@ -195,8 +195,8 @@
         <!-- Custom Wrapper necessary libraries  -->
         <dependency>
             <groupId>com.denodo.vdp</groupId>
-            <artifactId>denodo-vdp-server-base</artifactId>
-            <version>5.5.0</version>
+            <artifactId>denodo-vdp-server</artifactId>
+            <version>6.0.0</version>
             <scope>provided</scope>
         </dependency>
 
