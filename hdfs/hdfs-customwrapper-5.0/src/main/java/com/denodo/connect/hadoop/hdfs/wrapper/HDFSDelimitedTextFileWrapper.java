@@ -84,7 +84,7 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     }
     
     @Override
-    public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues)
+    public CustomWrapperSchemaParameter[] doGetSchemaParameters(Map<String, String> inputValues)
         throws CustomWrapperException {
 
         boolean isSearchable = true;

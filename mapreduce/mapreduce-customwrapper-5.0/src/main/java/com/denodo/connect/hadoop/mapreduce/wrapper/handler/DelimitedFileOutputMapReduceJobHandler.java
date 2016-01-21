@@ -30,8 +30,9 @@ import org.apache.hadoop.conf.Configuration;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
+import com.denodo.connect.hadoop.hdfs.reader.HDFSDelimitedFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.keyvalue.AbstractHDFSKeyValueFileReader;
-import com.denodo.connect.hadoop.hdfs.reader.keyvalue.HDFSDelimitedFileReader;
+import com.denodo.connect.hadoop.hdfs.util.csv.CSVConfig;
 import com.denodo.connect.hadoop.mapreduce.wrapper.output.MapReduceJobFileReader;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
@@ -66,7 +67,7 @@ public class DelimitedFileOutputMapReduceJobHandler extends
         String separator = inputParameters.get(Parameter.SEPARATOR);
         String user = inputParameters.get(Parameter.USER);
 
-        return new MapReduceJobFileReader(new HDFSDelimitedFileReader(conf, separator, getOutputPath(), user));
+        return new MapReduceJobFileReader(new HDFSDelimitedFileReader(conf, new CSVConfig(separator, null, null, null, true, false), getOutputPath(), user));
     }
 
     @Override

@@ -8,12 +8,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hbase-customwrapper-5.5</artifactId>
-    <version>20141008</version>
+    <version>20160121</version>
     <packaging>jar</packaging>
     <name>denodo-hbase-customwrapper</name>
 
     <properties>
-        <hadoop.version>2.4.0</hadoop.version>
+        <hadoop.version>2.6.0</hadoop.version>
         <hbase.version>0.96.2-hadoop2</hbase.version>
         <zookeeper.version>3.4.5</zookeeper.version>
     </properties>
@@ -331,8 +331,8 @@
         
         <dependency>
             <groupId>com.denodo.connect.hadoop</groupId>
-            <artifactId>denodo-hdfs-lib</artifactId>
-            <version>20140822</version>
+            <artifactId>denodo-hadoop-commons-5.5</artifactId>
+            <version>${project.version}</version>
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
@@ -344,14 +344,7 @@
                     <artifactId>hadoop-hdfs</artifactId>
                 </exclusion>            
             </exclusions>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.denodo.connect.hadoop</groupId>
-            <artifactId>denodo-hbase-customwrapper-5.0</artifactId>
-            <version>20140904</version>
-            <scope>test</scope>
-        </dependency>        
+        </dependency>      
         
     </dependencies>
 </project>
