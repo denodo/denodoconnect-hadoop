@@ -155,7 +155,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                     true, CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false));
             rows.add(new CustomWrapperSchemaParameter(ParameterNaming.COL_STOPROW, java.sql.Types.VARCHAR, null,
                     true, CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false));
-            
+            log(LOG_INFO, "End getSchemaParameters hbase");
             return rows.toArray(new CustomWrapperSchemaParameter[] {});
 
         } catch (final Exception e) {
@@ -192,6 +192,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
             
             final CustomWrapperCondition complexCondition = condition.getComplexCondition();
             if (isSingleRowResult(complexCondition)) {
+                log(LOG_TRACE, "The query returns a single row. Using the methos GET");
                 CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) complexCondition;                
                 
                 final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) simpleCondition.getRightExpression()[0];
@@ -201,11 +202,12 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
 
                 final Result resultRow = table.get(get);
                 if (!resultRow.isEmpty()) {
+                    log(LOG_TRACE, "The query of hbase has returned "+resultRow.size()+" rows");
                     final Object[] rowArray = processRow(resultRow, mappingMap, projectedFields);
                     result.addRow(rowArray, projectedFields);
                 }
             } else {
-                
+                log(LOG_TRACE, "The query could be return several rows. Using the methos SCAN");
                 Scan scan = new Scan();
                 if (inputValues.containsKey(ParameterNaming.CONF_CACHING_SIZE)) {
                     Integer cacheSize = (Integer) getInputParameterValue(ParameterNaming.CONF_CACHING_SIZE).getValue();
@@ -245,6 +247,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                 
                 long startTime = System.nanoTime();
                 final ResultScanner scanner = table.getScanner(scan);
+              
                 long elapsedTime = System.nanoTime() - startTime;
                 double milliseconds = elapsedTime / 1000000.0;
                 log(LOG_TRACE, "Scanning has taken " + milliseconds  + " milliseconds.");
@@ -252,7 +255,9 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                 try {
 
                     startTime = System.nanoTime();
+                    long countRows=0;
                     for (final Result resultRow : scanner) {
+                        countRows++;
                         if (this.stopRequested) {
                             break;
                         }
@@ -260,6 +265,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                         final Object[] rowArray = processRow(resultRow, mappingMap, projectedFields);
                         result.addRow(rowArray, projectedFields);
                     }
+                    log(LOG_TRACE, "The query of hbase has returned "+countRows+" rows");
                     elapsedTime = System.nanoTime() - startTime;
                     milliseconds = elapsedTime / 1000000.0;
                     log(LOG_TRACE, "Retrieving has taken " + milliseconds  + " milliseconds.");
