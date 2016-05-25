@@ -1,3 +1,6 @@
+20160524
+========
+ - Added logs in level trace.
 20160121
 --------
 - Created first version of this component for Denodo 6.0

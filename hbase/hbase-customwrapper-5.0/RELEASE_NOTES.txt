@@ -1,3 +1,7 @@
+20160524
+========
+ - Added logs in level trace.
+ 
 20141008
 ========
  - Fix HBase principal generation in Windows.
