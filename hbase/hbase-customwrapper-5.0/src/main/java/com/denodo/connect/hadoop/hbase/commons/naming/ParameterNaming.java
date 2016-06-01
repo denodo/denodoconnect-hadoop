@@ -27,11 +27,13 @@ public final class ParameterNaming {
     public static final String CONF_HBASE_PORT = "hbasePort";
     public static final String CONF_TABLE_NAME = "tableName";
     public static final String CONF_TABLE_MAPPING = "tableMapping";
+    public static final String CONF_PATH_CONF = "HBase configuration file";
 
     public static final String CONF_ZOOKEEPER_QUORUM = "hbase.zookeeper.quorum";
     public static final String CONF_ZOOKEEPER_CLIENTPORT = "hbase.zookeeper.property.clientPort";
     public static final String CONF_CACHING_SIZE = "cachingSize";
 
+    
     public static final String TYPE_TEXT = "text";
     public static final String TYPE_INTEGER = "int";
     public static final String TYPE_LONG = "long";

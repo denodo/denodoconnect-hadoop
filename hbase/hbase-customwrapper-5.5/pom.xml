@@ -8,14 +8,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hbase-customwrapper-5.5</artifactId>
-    <version>20160524</version>
+    <version>20160601</version>
     <packaging>jar</packaging>
     <name>denodo-hbase-customwrapper</name>
 
     <properties>
-        <hadoop.version>2.6.0</hadoop.version>
-        <hbase.version>0.96.2-hadoop2</hbase.version>
-        <zookeeper.version>3.4.5</zookeeper.version>
+        <hadoop.version>2.7.1</hadoop.version>
+        <hbase.version>1.2.1</hbase.version>
+        <zookeeper.version>3.4.8</zookeeper.version>
     </properties>
 
     <!-- *************************** -->

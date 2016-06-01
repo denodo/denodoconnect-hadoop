@@ -32,14 +32,18 @@ import java.util.Set;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotFoundException;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.filter.BinaryComparator;
 import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
 import org.apache.hadoop.hbase.filter.Filter;
@@ -70,6 +74,8 @@ import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
+import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterLocalRouteValue;
 
 public class HBaseConnector extends AbstractSecureHadoopWrapper {
 
@@ -92,7 +98,10 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                         true, CustomWrapperInputParameterTypeFactory.longStringType()),
                 new CustomWrapperInputParameter(ParameterNaming.CONF_CACHING_SIZE,
                         "Number of rows for caching that will be passed to scanners",
-                        false, CustomWrapperInputParameterTypeFactory.integerType())
+                        false, CustomWrapperInputParameterTypeFactory.integerType()),
+                new CustomWrapperInputParameter(ParameterNaming.CONF_PATH_CONF,
+                                "Local route of hbase configuration file (hbase-site.xml)",
+                                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL}))
 
         };
 
@@ -170,20 +179,58 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
             final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
         log(LOG_INFO, "Start run hbase-customwrapper");
-
-        final Configuration hbaseConfig = getHBaseConfig(inputValues);
-        try {
-            HBaseAdmin.checkHBaseAvailable(hbaseConfig);
-        } catch (Exception e) {
-            log(LOG_ERROR, "Error connecting HBase: " + ExceptionUtils.getStackTrace(e));
-            throw new CustomWrapperException("Error connecting HBase: " + e.getMessage(), e);
+        String configurationPath = null;
+        if (inputValues.get(ParameterNaming.CONF_PATH_CONF) != null) {
+            configurationPath = ((CustomWrapperInputParameterLocalRouteValue) getInputParameterValue(ParameterNaming.CONF_PATH_CONF)).getPath();
         }
+        final Configuration hbaseConfig = getHBaseConfig(inputValues, configurationPath);
         
-        HTable table = null;
+      
+        /** Connection to the cluster. A single connection shared by all application threads. */
+        Connection connection = null;
+        /** A lightweight handle to a specific table. Used from a single thread. */
+        Table table = null;
         try {
+           
+            final TableName tableName =  TableName.valueOf(inputValues.get(ParameterNaming.CONF_TABLE_NAME));
+            connection = ConnectionFactory.createConnection(hbaseConfig);
             
-            final String tableName = inputValues.get(ParameterNaming.CONF_TABLE_NAME);
-            table = new HTable(hbaseConfig, tableName);
+         
+            Admin admin = connection.getAdmin();
+            try{
+                if (!admin.tableExists(tableName)) {
+                    try{
+                        log(LOG_ERROR, "Error connecting HBase: The table does not exist or there is a problem in the connection. " );
+                        throw new CustomWrapperException("Error connecting HBase: The table does not exist or there is a problem in the connection. ");
+                    }finally{
+                        admin.close();
+                        connection.close();
+                    }
+                } 
+
+            }catch(RuntimeException e){
+                //TODO this handler of this execption is because in the version 1.x of habse the exeception that is thown is a NPE, that is not very descriptive,
+                //before hbase trew other kind of execption more descriptive. When hbase fix this bug, we can delete this handler 
+                StackTraceElement[] traceStack = e.getStackTrace();
+                if(e.getCause().toString().contains("NullPointerException")){
+                    for (int i = 0; i < traceStack.length; i++) {
+
+                        if(traceStack[i].toString().contains("t.RpcRetryingCaller.callWithoutRetries")){
+                            log(LOG_ERROR, "Error accessing HBase: This error could mean that there is an error in the authentication,though this might not be the only possible cause. Check the value configured in 'zookeeper.znode.parent'. There could be a mismatch with the one configured in the master.   " + ExceptionUtils.getStackTrace(e));
+                            throw new CustomWrapperException( e.getMessage()+"\n  This exception could mean that there is a error in the authentication, though this might not be the only possible cause. Check the value configured in 'zookeeper.znode.parent'. There could be a mismatch with the one configured in the master.   " , e);
+                        }
+
+                    }
+                }else{
+                    log(LOG_ERROR, "Error accessing HBase: " + ExceptionUtils.getStackTrace(e));
+                    throw new CustomWrapperException("Error accessing HBase: " + e.getMessage(), e);
+                }
+            }finally{
+                admin.close();
+            }
+
+            // retrieve a handle to the target table.
+            table = connection.getTable(tableName);
             log(LOG_TRACE, "Connection was successfully established with HBase");
             
             final String mapping = inputValues.get(ParameterNaming.CONF_TABLE_MAPPING);
@@ -198,7 +245,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                 final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) simpleCondition.getRightExpression()[0];
                 final String value = simpleExpression.getValue().toString();
                 final Get get = new Get(getBytesFromExpresion(simpleExpression));
-                recordShellGetCommand(tableName, mappingMap, value);
+                recordShellGetCommand(tableName.getNameAsString(), mappingMap, value);
 
                 final Result resultRow = table.get(get);
                 if (!resultRow.isEmpty()) {
@@ -225,12 +272,12 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                 
                 Filter rowKeyFilter = null;
                 if (mappingMap.isEmpty()) {
-                    rowKeyFilter = buildRowKeyFilter(tableName);
+                    rowKeyFilter = buildRowKeyFilter(tableName.getNameAsString());
                 }
                 
                 Filter conditionFilter = null;
                 if ((complexCondition != null)) {
-                    conditionFilter = buildFilterFromCondition(complexCondition, false, scan, tableName, mappingMap);                    
+                    conditionFilter = buildFilterFromCondition(complexCondition, false, scan, tableName.getNameAsString(), mappingMap);                    
                     if (complexCondition.isAndCondition() || complexCondition.isOrCondition()) {
                         log(LOG_TRACE, "This query has more than one condition. The commands listed, each one by separate, would be the equivalent "
                                 + "in HBase shell.");
@@ -239,7 +286,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                     }
 
                 } else if (!mappingMap.isEmpty()) {
-                    recordShellScanCommand(tableName, mappingMap, null, null);
+                    recordShellScanCommand(tableName.getNameAsString(), mappingMap, null, null);
                 }
                 
                 Filter filter = buildFilter(rowKeyFilter, conditionFilter);
@@ -291,10 +338,17 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                 try {
                     table.close();
                 } catch (IOException e) {
-                    log(LOG_ERROR, "Error releasing HBase table: " + ExceptionUtils.getStackTrace(e));
+                    log(LOG_ERROR, "Error closing HBase table: " + ExceptionUtils.getStackTrace(e));
                 }
             }
-                    
+
+            if (connection != null)
+                try {
+                    connection.close();
+                } catch (IOException e) {
+                    log(LOG_ERROR, "Error closing connection HBase table: " + ExceptionUtils.getStackTrace(e));
+                }
+
         }
 
     }
@@ -318,10 +372,12 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         return projectionMap;
     }
 
-    private Configuration getHBaseConfig(final Map<String, String> inputValues) {
+    private Configuration getHBaseConfig(final Map<String, String> inputValues, String configurationPath) {
         
         final Configuration config = HBaseConfiguration.create();
-
+        if(configurationPath!=null){
+            config.addResource(new Path("C:\\Users\\pleira\\hbase-site.xml"));        
+        }
         final String hbaseIP = inputValues.get(ParameterNaming.CONF_HBASE_IP);
         config.set(ParameterNaming.CONF_ZOOKEEPER_QUORUM, hbaseIP);
 
