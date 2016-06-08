@@ -1,3 +1,7 @@
+20160607
+========
+-Updated bersion habse to 1.2.1 and hadoop to 2.7.1
+
 20160524
 ========
  - Added logs in level trace.

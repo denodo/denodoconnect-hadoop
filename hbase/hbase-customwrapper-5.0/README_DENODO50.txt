@@ -1,0 +1,1 @@
+It is not compatible with VDP 5.0 because there are several libraries from hadoop and hbase that require java 7
