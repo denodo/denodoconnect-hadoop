@@ -209,7 +209,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                 } 
 
             }catch(RuntimeException e){
-                //TODO this handler of this execption is because in the version 1.x of habse the exeception that is thown is a NPE, that is not very descriptive,
+                //TODO this handler of this execption is because in the version 1.x of hbase the exeception that is thown is a NPE, that is not very descriptive,
                 //before hbase trew other kind of execption more descriptive. When hbase fix this bug, we can delete this handler 
                 StackTraceElement[] traceStack = e.getStackTrace();
                 if(e.getCause().toString().contains("NullPointerException")){
