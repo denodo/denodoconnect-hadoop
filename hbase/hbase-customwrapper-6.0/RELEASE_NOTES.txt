@@ -1,10 +1,13 @@
-20160607
+20160608
 ========
--Updated bersion habse to 1.2.1 and hadoop to 2.7.1
+ - Updated version of the HBase client libraries to 1.2.1 and hadoop general
+   client libraries to 2.7.1. Adopted new HBase-1.0 interfaces: Table, 
+   Connection, etc.
 
 20160524
 ========
  - Added logs in level trace.
+
 20160121
 --------
 - Created first version of this component for Denodo 6.0
