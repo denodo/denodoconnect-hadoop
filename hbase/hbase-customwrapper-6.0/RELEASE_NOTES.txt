@@ -1,3 +1,7 @@
+20160627
+========
+ - Fixed path configuration file
+
 20160608
 ========
  - Updated version of the HBase client libraries to 1.2.1 and hadoop general

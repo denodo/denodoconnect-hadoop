@@ -376,7 +376,8 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         
         final Configuration config = HBaseConfiguration.create();
         if(configurationPath!=null){
-            config.addResource(new Path("C:\\Users\\pleira\\hbase-site.xml"));        
+            String path= inputValues.get(ParameterNaming.CONF_PATH_CONF);
+            config.addResource(new Path(path));        
         }
         final String hbaseIP = inputValues.get(ParameterNaming.CONF_HBASE_IP);
         config.set(ParameterNaming.CONF_ZOOKEEPER_QUORUM, hbaseIP);
