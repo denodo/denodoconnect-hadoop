@@ -23,6 +23,11 @@ package com.denodo.connect.hadoop.hdfs.util.krb5;
 
 import java.io.IOException;
 
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
@@ -32,7 +37,6 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 
 import com.denodo.connect.hadoop.hdfs.commons.auth.LoginConfig;
-import com.denodo.connect.hadoop.hdfs.commons.auth.PasswordCallbackHandler;
 
 
 public final class KerberosUtils {
@@ -47,28 +51,52 @@ public final class KerberosUtils {
         
         Configuration conf = new Configuration();
         conf.set("hadoop.security.authentication", "Kerberos");
-        conf.set("hadoop.security.auth_to_local",  "RULE:[1:$1] RULE:[2:$1]"); // just extract the simple user name
+ //       conf.set("hadoop.security.auth_to_local",  "RULE:[1:$1] RULE:[2:$1]"); // just extract the simple user name
         UserGroupInformation.setConfiguration(conf);
     }
 
-    public static void loginFromKeytab(String principal, String kdc, String keytabPath) throws IOException {
+    public static UserGroupInformation loginFromTicketCache() throws IOException {
 
-            setupCommonLoginProperties(principal, kdc);
-            UserGroupInformation.loginUserFromKeytab(principal, keytabPath);
+        setupCommonLoginProperties(null, null);
+        UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+        return ugi;
+    }
+    
+    public static UserGroupInformation loginFromKeytab(String principal, String kdc, String keytabPath) throws IOException {
+
+        setupCommonLoginProperties(principal, kdc);
+        UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(principal, keytabPath);
+        return ugi;
     }
 
-    public static void loginFromPassword(String principal, String kdc, String password) throws IOException {
+    public static UserGroupInformation loginFromPassword(final String principal, String kdc, final String password) throws IOException {
 
         try {
 
-            setupCommonLoginProperties(principal, kdc);
-            System.setProperty("sun.security.krb5.principal", principal);
-
-            LoginContext loginContext = new LoginContext("", null,
-                new PasswordCallbackHandler(password), new LoginConfig());
+//            setupCommonLoginProperties(principal, kdc);
+//            System.setProperty("sun.security.krb5.principal", principal);
+//
+//            LoginContext loginContext = new LoginContext("", null,
+//                new PasswordCallbackHandler(password), new LoginConfig());
+            
+            LoginContext loginContext = new LoginContext("", null, new CallbackHandler() {
+                @Override
+                public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+                  for(Callback c : callbacks){
+                    if(c instanceof NameCallback) {
+                        ((NameCallback) c).setName(principal);
+                    }
+                    if(c instanceof PasswordCallback) {
+                        ((PasswordCallback) c).setPassword(password.toCharArray());
+                    }
+                  }
+               }}, new LoginConfig());
+            
             loginContext.login();
 
             UserGroupInformation.loginUserFromSubject(loginContext.getSubject());
+            
+            return UserGroupInformation.getLoginUser();
 
         } catch (LoginException e) {
             logger.debug("Login error", e);
@@ -78,9 +106,9 @@ public final class KerberosUtils {
     
     private static void setupCommonLoginProperties(String principal, String kdc) {
 
-         System.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
-         System.setProperty("java.security.krb5.realm", getRealm(principal));
-         System.setProperty("java.security.krb5.kdc", kdc);
+//         System.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
+//         System.setProperty("java.security.krb5.realm", getRealm(principal));
+//         System.setProperty("java.security.krb5.kdc", kdc);
          
          enableKerberos();
 
@@ -107,18 +135,18 @@ public final class KerberosUtils {
      * Clears the information cached after the login.
      * When switching Kerberos configurations, the logout is REQUIRED because Hadoop caches some information between logins.
      */
-    public static void logout() {
-        
-        System.clearProperty("java.security.krb5.realm");
-        System.clearProperty("java.security.krb5.kdc");
-        System.clearProperty("sun.security.krb5.principal");
-                
-        Configuration conf = new Configuration();
-        conf.set("hadoop.security.authentication", "simple");
-        UserGroupInformation.setConfiguration(conf);
-        
-        UserGroupInformation.setLoginUser(null);
-
-    }
+//    public static void logout() {
+//        
+//        System.clearProperty("java.security.krb5.realm");
+//        System.clearProperty("java.security.krb5.kdc");
+//        System.clearProperty("sun.security.krb5.principal");
+//                
+//        Configuration conf = new Configuration();
+//        conf.set("hadoop.security.authentication", "simple");
+//        UserGroupInformation.setConfiguration(conf);
+//        
+//        UserGroupInformation.setLoginUser(null);
+//
+//    }
 
 }
