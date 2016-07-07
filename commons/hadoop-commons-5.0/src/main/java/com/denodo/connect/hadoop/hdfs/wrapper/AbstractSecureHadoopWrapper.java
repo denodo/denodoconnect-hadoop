@@ -89,6 +89,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
             setSecurityEnabled(inputValues);
             checkConfig(inputValues);
             UserGroupInformation ugi = login(inputValues);
+            if(ugi!=null){
             return ugi.doAs(new PrivilegedExceptionAction<CustomWrapperSchemaParameter[]>() {
                 @Override
                 public CustomWrapperSchemaParameter[] run() throws Exception {
@@ -96,6 +97,9 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
                     return doGetSchemaParameters(inputValues);
                 }
             });
+            }else{
+                return doGetSchemaParameters(inputValues);
+            }
         } catch (Exception e) {
             throw new CustomWrapperException(e.getLocalizedMessage());
         }
