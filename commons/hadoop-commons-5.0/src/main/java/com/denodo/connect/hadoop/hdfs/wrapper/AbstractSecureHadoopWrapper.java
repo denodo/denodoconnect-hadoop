@@ -21,6 +21,7 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
+import java.lang.reflect.UndeclaredThrowableException;
 import java.security.PrivilegedExceptionAction;
 import java.util.List;
 import java.util.Map;
@@ -89,23 +90,19 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
             setSecurityEnabled(inputValues);
             checkConfig(inputValues);
             UserGroupInformation ugi = login(inputValues);
-            if(ugi!=null){
+            if (ugi == null) {
+                return doGetSchemaParameters(inputValues);
+            }
+            
             return ugi.doAs(new PrivilegedExceptionAction<CustomWrapperSchemaParameter[]>() {
                 @Override
                 public CustomWrapperSchemaParameter[] run() throws Exception {
-
                     return doGetSchemaParameters(inputValues);
                 }
             });
-            }else{
-                return doGetSchemaParameters(inputValues);
-            }
         } catch (Exception e) {
-            throw new CustomWrapperException(e.getLocalizedMessage());
+            throw new CustomWrapperException(e.getLocalizedMessage(), e);
         }
-        //        } finally {
-//            logout();
-//        }
 
     }
 
@@ -119,19 +116,25 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
 
             setSecurityEnabled(inputValues);
             UserGroupInformation ugi = login(inputValues);
-            ugi.doAs( new PrivilegedExceptionAction() {
-                @Override
-                public Void run() throws Exception {
-                    doRun(condition, projectedFields, result, inputValues);
-                    return null;
-                }
-            } );
+            if (ugi == null) {
+                doRun(condition, projectedFields, result, inputValues);
+            } else {
+                ugi.doAs(new PrivilegedExceptionAction<Void>() {
+                    @Override
+                    public Void run() throws Exception {
+                        doRun(condition, projectedFields, result, inputValues);
+                        return null;
+                    }
+                } );
+            }
+        } catch (UndeclaredThrowableException e) {
+            logger.error("Error running the wrapper ", e);
+            Exception ex = (Exception) e.getCause();
+            throw new CustomWrapperException(ex.getLocalizedMessage(), ex);
         } catch(Exception e) {
-            throw new CustomWrapperException(e.getLocalizedMessage());
+            logger.error("Error running the wrapper ", e);
+            throw new CustomWrapperException(e.getLocalizedMessage(), e);
         }
-//        } finally {
-//            logout();
-//        }
 
     }
 
@@ -139,19 +142,13 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         
         if (inputValues.get(Parameter.PRINCIPAL) != null) {
 
-            StringBuilder errorSB = new StringBuilder();
-            String kdc = inputValues.get(Parameter.KDC);
-            if (StringUtils.isBlank(kdc)) {
-                errorSB.append(Parameter.KDC).append(" is required\n");
-            }
+            String errorMsg = null;
             String keytab = inputValues.get(Parameter.KEYTAB);
             String password = inputValues.get(Parameter.KERBEROS_PASWORD);
             if (StringUtils.isBlank(keytab) && StringUtils.isBlank(password)) {
-                errorSB.append("One of these parameters: '"
-                        + Parameter.KEYTAB + "' or '" + Parameter.KERBEROS_PASWORD + "' must be specified");
+                errorMsg = "One of these parameters: '" + Parameter.KEYTAB + "' or '" + Parameter.KERBEROS_PASWORD + "' must be specified";
             }
 
-            String errorMsg = errorSB.toString();
             if (StringUtils.isNotBlank(errorMsg)) {
                 throw new IllegalArgumentException(errorMsg);
             }
@@ -201,16 +198,6 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
     public boolean loginWithKerberosTicket() {
         return this.userPrincipal == null;
     }
-    
-    /* 
-     * When switching Kerberos configurations, the logout is REQUIRED because Hadoop caches some information between logins.
-     */
-//    private void logout() {
-//       
-//        if (isSecurityEnabled()) {
-//            KerberosUtils.logout();
-//        }
-//    }
 
     private void setSecurityEnabled(Map<String, String> inputValues) {
 

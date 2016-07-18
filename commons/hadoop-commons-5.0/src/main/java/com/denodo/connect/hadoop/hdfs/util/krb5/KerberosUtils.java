@@ -51,7 +51,7 @@ public final class KerberosUtils {
         
         Configuration conf = new Configuration();
         conf.set("hadoop.security.authentication", "Kerberos");
- //       conf.set("hadoop.security.auth_to_local",  "RULE:[1:$1] RULE:[2:$1]"); // just extract the simple user name
+        conf.set("hadoop.security.auth_to_local",  "RULE:[1:$1] RULE:[2:$1]"); // just extract the simple user name (for quickstart.cloudera)
         UserGroupInformation.setConfiguration(conf);
     }
 
@@ -64,7 +64,7 @@ public final class KerberosUtils {
     
     public static UserGroupInformation loginFromKeytab(String principal, String kdc, String keytabPath) throws IOException {
 
-        setupCommonLoginProperties(principal, kdc);
+        setupCommonLoginProperties(kdc, principal);
         UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(principal, keytabPath);
         return ugi;
     }
@@ -73,11 +73,7 @@ public final class KerberosUtils {
 
         try {
 
-//            setupCommonLoginProperties(principal, kdc);
-//            System.setProperty("sun.security.krb5.principal", principal);
-//
-//            LoginContext loginContext = new LoginContext("", null,
-//                new PasswordCallbackHandler(password), new LoginConfig());
+            setupCommonLoginProperties(kdc, principal);
             
             LoginContext loginContext = new LoginContext("", null, new CallbackHandler() {
                 @Override
@@ -93,10 +89,10 @@ public final class KerberosUtils {
                }}, new LoginConfig());
             
             loginContext.login();
-
-            UserGroupInformation.loginUserFromSubject(loginContext.getSubject());
-            
-            return UserGroupInformation.getLoginUser();
+            return UserGroupInformation.getUGIFromSubject(loginContext.getSubject());
+//            UserGroupInformation.loginUserFromSubject(loginContext.getSubject());
+//            
+//            return UserGroupInformation.getLoginUser();
 
         } catch (LoginException e) {
             logger.debug("Login error", e);
@@ -104,13 +100,16 @@ public final class KerberosUtils {
         }
     }
     
-    private static void setupCommonLoginProperties(String principal, String kdc) {
+    private static void setupCommonLoginProperties(String kdc, String principal) {
 
-//         System.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
-//         System.setProperty("java.security.krb5.realm", getRealm(principal));
-//         System.setProperty("java.security.krb5.kdc", kdc);
-         
-         enableKerberos();
+        if (StringUtils.isNotBlank(kdc)) {
+            System.setProperty("java.security.krb5.kdc", kdc);
+            System.setProperty("java.security.krb5.realm", getRealm(principal));
+        }
+
+   //     System.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
+
+        enableKerberos();
 
      }
 
@@ -135,8 +134,8 @@ public final class KerberosUtils {
      * Clears the information cached after the login.
      * When switching Kerberos configurations, the logout is REQUIRED because Hadoop caches some information between logins.
      */
-//    public static void logout() {
-//        
+    public static void logout() {
+        
 //        System.clearProperty("java.security.krb5.realm");
 //        System.clearProperty("java.security.krb5.kdc");
 //        System.clearProperty("sun.security.krb5.principal");
@@ -144,9 +143,9 @@ public final class KerberosUtils {
 //        Configuration conf = new Configuration();
 //        conf.set("hadoop.security.authentication", "simple");
 //        UserGroupInformation.setConfiguration(conf);
-//        
-//        UserGroupInformation.setLoginUser(null);
-//
-//    }
+        
+ //       UserGroupInformation.setLoginUser(null);
+
+    }
 
 }
