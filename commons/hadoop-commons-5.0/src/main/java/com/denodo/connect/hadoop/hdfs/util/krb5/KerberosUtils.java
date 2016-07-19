@@ -89,10 +89,8 @@ public final class KerberosUtils {
                }}, new LoginConfig());
             
             loginContext.login();
+            
             return UserGroupInformation.getUGIFromSubject(loginContext.getSubject());
-//            UserGroupInformation.loginUserFromSubject(loginContext.getSubject());
-//            
-//            return UserGroupInformation.getLoginUser();
 
         } catch (LoginException e) {
             logger.debug("Login error", e);
@@ -106,8 +104,6 @@ public final class KerberosUtils {
             System.setProperty("java.security.krb5.kdc", kdc);
             System.setProperty("java.security.krb5.realm", getRealm(principal));
         }
-
-   //     System.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
 
         enableKerberos();
 
@@ -130,21 +126,9 @@ public final class KerberosUtils {
 
     }
 
-    /**
-     * Clears the information cached after the login.
-     * When switching Kerberos configurations, the logout is REQUIRED because Hadoop caches some information between logins.
-     */
     public static void logout() {
-        
-//        System.clearProperty("java.security.krb5.realm");
-//        System.clearProperty("java.security.krb5.kdc");
-//        System.clearProperty("sun.security.krb5.principal");
-//                
-//        Configuration conf = new Configuration();
-//        conf.set("hadoop.security.authentication", "simple");
-//        UserGroupInformation.setConfiguration(conf);
-        
- //       UserGroupInformation.setLoginUser(null);
+        // Previously it cleared Kerberos credentials information but for safety reasons in concurrent environments
+        // now it does nothing. See redmine #28268.
 
     }
 
