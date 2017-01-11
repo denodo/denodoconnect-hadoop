@@ -1,0 +1,50 @@
+
+                               HDFS CustomWrapper
+                           Version 20170111, January 2017
+                           
+   ACCESSING KERBERIZED HADOOP CLUSTER
+                              
+   hdfs-customwrapper provides THREE WAYS for accessing a kerberized Hadoop
+   cluster:
+
+   1. The client has a valid Kerberos ticket in the TICKET CACHE obtained,
+      for example, using the "kinit" command in the Kerberos Client.
+
+      In this case only the "Kerberos enabled" parameter should be checked.
+      The HDFS wrapper would use the Kerberos ticket to authenticate itself
+      against the Hadoop cluster.
+
+   2. The client does not have a valid Kerberos ticket in the ticket cache.
+      In this case you should provide the "Kerberos principal name parameter"
+      and:
+      
+      2.1. "Kerberos keytab file" parameter or
+      2.2. "Kerberos password" parameter
+
+   In all these THREE SCENARIOS the krb5.conf file SHOULD BE PRESENT IN THE
+   FILE SYSTEM.
+
+   The algorithm to locate the krb5.conf file is the following:
+   
+   (a) If the system property java.security.krb5.conf is set, its value
+       is assumed to specify the path and file name.
+   
+   (b) If that system property value is not set, then the configuration
+       file is looked for in the directory
+       
+           - <java-home>\lib\security (Windows)
+           - <java-home>/lib/security (Solaris and Linux)
+
+   c) If the file is still not found, then an attempt is made to locate
+      it as follows:
+           - /etc/krb5/krb5.conf (Solaris)
+           - c:\winnt\krb5.ini (Windows)
+           - /etc/krb5.conf (Linux)
+           
+           
+    There is an EXCEPTION. If you are planning to create HDFS views that
+    use the SAME Key Distribution Center and the SAME REALM the
+    "Kerberos Distribution Center" parameter can be provided instead of having
+    the krb5.conf file in the file system.
+
+

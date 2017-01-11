@@ -1,10 +1,10 @@
 
                                HDFS CustomWrapper
-                           Version 20170901, January 2017
+                           Version 20170111, January 2017
                            
    ACCESSING KERBERIZED HADOOP CLUSTER
                               
-   hdfs-customwrapper provides THREE WAYS for accessing a kerberized Hadoop
+   mapreduce-customwrapper provides THREE WAYS for accessing a kerberized Hadoop
    cluster:
 
    1. The client has a valid Kerberos ticket in the TICKET CACHE obtained,
@@ -42,7 +42,7 @@
            - /etc/krb5.conf (Linux)
            
            
-    There is an EXCEPTION. If you are planning to create HDFS views that
+    There is an EXCEPTION. If you are planning to create MapReduce views that
     use the SAME Key Distribution Center and the SAME REALM the
     "Kerberos Distribution Center" parameter can be provided instead of having
     the krb5.conf file in the file system.

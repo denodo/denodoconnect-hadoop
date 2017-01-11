@@ -7,12 +7,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-mapreduce-customwrapper-6.0</artifactId>
-    <version>20160121</version>
+    <version>20170111</version>
     <packaging>jar</packaging>
     <name>denodo-mapreduce-customwrapper</name>
 
   <properties>
-        <hadoop.version>2.6.0</hadoop.version>
+        <hadoop.version>2.7.3</hadoop.version>
   </properties>
 
 

@@ -1,3 +1,8 @@
+20170111
+--------
+- #30670 - Apply fixes on Kerberos authentication mechanism.
+- #28382 - Update Hadoop client libraries.
+
 20160121
 --------
 - Created first version of this component for Denodo 6.0

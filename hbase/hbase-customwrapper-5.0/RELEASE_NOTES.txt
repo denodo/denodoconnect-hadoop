@@ -1,3 +1,7 @@
+20170111
+========
+- Added #30685 - Upgrade versions of client libraries.
+
 20160719
 ========
 - Fixed #28268 - Kerberos authentication issue in nested parallel join
