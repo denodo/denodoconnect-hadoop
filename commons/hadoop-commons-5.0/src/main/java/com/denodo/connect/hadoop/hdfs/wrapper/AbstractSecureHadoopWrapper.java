@@ -97,9 +97,14 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
             return ugi.doAs(new PrivilegedExceptionAction<CustomWrapperSchemaParameter[]>() {
                 @Override
                 public CustomWrapperSchemaParameter[] run() throws Exception {
-                    return doGetSchemaParameters(inputValues);
+                    
+                        return doGetSchemaParameters(inputValues);
                 }
             });
+        } catch (UndeclaredThrowableException e) {
+            logger.error("Error running the wrapper ", e);
+            Exception ex = (Exception) e.getCause();
+            throw new CustomWrapperException(ex.getLocalizedMessage(), ex);            
         } catch (Exception e) {
             throw new CustomWrapperException(e.getLocalizedMessage(), e);
         }
