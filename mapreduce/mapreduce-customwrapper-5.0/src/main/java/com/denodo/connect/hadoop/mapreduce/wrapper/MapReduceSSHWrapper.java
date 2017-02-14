@@ -79,7 +79,13 @@ public class MapReduceSSHWrapper extends AbstractSecureHadoopWrapper {
             true, CustomWrapperInputParameterTypeFactory.enumStringType(MapReduceJobHandlerRegister.getHandlerNames().toArray(new String[0]))),
         new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
             "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\@<bucket> ", true,
-            CustomWrapperInputParameterTypeFactory.stringType())
+            CustomWrapperInputParameterTypeFactory.stringType()),
+        new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
+            "Local route of core-site.xml configuration file ",
+             false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL})),
+        new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
+            "Local route of hdfs-site.xml configuration file ",
+            false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL}))               
     };
 
     @Override

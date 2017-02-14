@@ -59,6 +59,9 @@ public final class Parameter {
     public static final String FILE_PATH = "Path";
 
     public static final String DELETE_AFTER_READING = "Delete after reading";
+    
+    public static final String CORE_SITE_PATH = "Custom core-site.xml file";
+    public static final String HDFS_SITE_PATH = "Custom hdfs-site.xml file";
 
     /**
      * The path to the .avsc file containing the Avro schema.

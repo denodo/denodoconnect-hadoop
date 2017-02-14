@@ -22,6 +22,7 @@ import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
+import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
 
 
 /**
@@ -43,7 +44,13 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
                 CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.DELETE_AFTER_READING,
                 "Delete the file/s after reading? ", true,
-                CustomWrapperInputParameterTypeFactory.booleanType(false))
+                CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
+                "Local route of core-site.xml configuration file ",
+                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL})),
+            new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
+                "Local route of hdfs-site.xml configuration file ",
+                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL}))                     
     };
     
 

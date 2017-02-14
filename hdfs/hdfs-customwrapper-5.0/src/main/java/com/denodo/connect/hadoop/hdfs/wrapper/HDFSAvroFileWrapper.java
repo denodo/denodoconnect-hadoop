@@ -48,6 +48,7 @@ import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
+import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
 
 /**
  * HDFS file custom wrapper for reading Avro files stored in HDFS (Hadoop
@@ -77,7 +78,13 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
                     false, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.DELETE_AFTER_READING,
                 "Delete the file after reading it? ", true,
-                CustomWrapperInputParameterTypeFactory.booleanType(false))
+                CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
+                "Local route of core-site.xml configuration file ",
+                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL})),
+            new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
+                "Local route of hdfs-site.xml configuration file ",
+                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL}))                   
         };
 
     @Override
@@ -111,7 +118,10 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
                     !isUpdateable, !isNullable, isMandatory);
 
             String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-            Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
+            String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+            String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+            
+            Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
             Schema avroSchema = AvroSchemaUtils.buildSchema(inputValues, conf);
             SchemaElement javaSchema = HDFSAvroFileReader.getSchema(avroSchema);
 
@@ -131,8 +141,10 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
 
         String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
         boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
-
-        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
+        String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+        String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+        
+        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
         String avroFilePath = getAvroFilePath(condition);
         Path path = new Path(avroFilePath);
 

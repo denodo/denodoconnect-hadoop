@@ -73,7 +73,9 @@ public class HDFSSequenceFileWrapper extends AbstractHDFSKeyValueFileWrapper {
     public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException, InterruptedException {
 
         String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
+        String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+        String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
 
         String hadoopKeyClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
         String hadoopValueClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));

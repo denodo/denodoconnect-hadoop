@@ -58,7 +58,9 @@ public abstract class AbstractFileOutputMapReduceJobHandler
     protected static Configuration getConfiguration(Map<String, String> inputParameters) {
 
         String fileSystemURI = inputParameters.get(Parameter.FILESYSTEM_URI);
-        return HadoopConfigurationUtils.getConfiguration(fileSystemURI);
+        String coreSitePath = inputParameters.get(Parameter.CORE_SITE_PATH);
+        String hdfsSitePath = inputParameters.get(Parameter.HDFS_SITE_PATH);
+        return HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
     }
 
     /**

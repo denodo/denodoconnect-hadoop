@@ -22,6 +22,7 @@
 package com.denodo.connect.hadoop.hdfs.util.configuration;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
 public final class HadoopConfigurationUtils {
@@ -43,7 +44,7 @@ public final class HadoopConfigurationUtils {
      *             by replacing each slash / with the string %2F.)
      * @return the basic hadoop configuration
      */
-    public static Configuration getConfiguration(final String fileSystemURI) {
+    public static Configuration getConfiguration(final String fileSystemURI, final String... customFilePathNames) {
 
         Configuration conf = new Configuration();
         conf.set("fs.default.name", fileSystemURI);
@@ -53,6 +54,14 @@ public final class HadoopConfigurationUtils {
 
         logger.debug("Returning configuration: " + conf
             + " - value of 'fs.default.name' -> " + conf.get("fs.default.name"));
+        
+        for (String customFilePathName: customFilePathNames) {
+            if (customFilePathName != null) {
+                conf.addResource(new Path(customFilePathName));
+            }
+        }
+        
+        
         return conf;
     }
 

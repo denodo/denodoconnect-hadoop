@@ -168,7 +168,10 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException, InterruptedException {
 
         String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI);
+        String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+        String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+        
+        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
         String inputFilePath = inputValues.get(Parameter.FILE_PATH);
         Path path = new Path(inputFilePath);
 

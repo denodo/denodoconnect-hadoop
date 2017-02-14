@@ -1,3 +1,7 @@
+20170214
+--------
+- #31224 - Specify custom core-site.xml and/or hdfs-site.xml in the wrapper view configuration.
+
 20170111
 --------
 - #30670 - Apply fixes on Kerberos authentication mechanism.

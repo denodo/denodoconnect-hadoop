@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-6.0</artifactId>
-    <version>20170111</version>
+    <version>20170214</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
@@ -340,6 +340,10 @@
                     <groupId>hsqldb</groupId>
                     <artifactId>hsqldb</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>xerces</groupId>
+                    <artifactId>xercesImpl</artifactId>
+                </exclusion>        
             </exclusions>
         </dependency>    
 
@@ -370,6 +374,7 @@
             <version>0.9.0</version>
             <scope>compile</scope>
         </dependency>
+     
 
     </dependencies>
 </project>
