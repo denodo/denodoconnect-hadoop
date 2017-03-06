@@ -46,6 +46,25 @@ public final class VDPSchemaUtils {
             !isUpdateable, isNullable, !isMandatory);
     }
 
+    public static CustomWrapperSchemaParameter[] buildSchemaParameter(Collection<SchemaElement> elements) {
 
+        boolean isSearchable = true;
+        boolean isUpdateable = true;
+        boolean isNullable = true;
+        boolean isMandatory = true;
+
+
+        CustomWrapperSchemaParameter[] params = new CustomWrapperSchemaParameter[elements.size()];
+        int i = 0;
+        for (SchemaElement e : elements) {
+            params[i++] = new CustomWrapperSchemaParameter(e.getName(),TypeUtils.toSQL(e.getType()),
+                    (params.length == 0) ? null : params,
+                            !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
+                            !isUpdateable, isNullable, !isMandatory);
+        }
+
+        
+        return params;
+    }
 
 }

@@ -80,6 +80,7 @@ public final class Parameter {
 
     public static final String AVRO_FILE_PATH = "avroFilepath";
 
+    public static final String PARQUET_FILE_PATH = "Parquet File path";
 
     private Parameter() {
 
