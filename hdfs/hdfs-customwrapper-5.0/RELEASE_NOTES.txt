@@ -1,3 +1,7 @@
+20170307
+--------
+-Added - #30738 - Add support for Parquet files
+
 20170214
 --------
 - #31223 - Specify custom core-site.xml and/or hdfs-site.xml in the wrapper view configuration.

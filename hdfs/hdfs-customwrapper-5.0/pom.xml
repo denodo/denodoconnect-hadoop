@@ -8,14 +8,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-5.0</artifactId>
-    <version>20170214</version>
+    <version>20170307</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
     <properties>
         <avro.version>1.8.1</avro.version>
         <hadoop.version>2.7.3</hadoop.version>
-        <parquet.version>1.9.0</parquet.version>
     </properties>
 
     <!-- *************************** -->
@@ -232,18 +231,7 @@
             </exclusions>
         </dependency>
         
-        <dependency>
-            <groupId>org.apache.parquet</groupId>
-            <artifactId>parquet-hadoop</artifactId>
-            <version>${parquet.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.parquet</groupId>
-            <artifactId>parquet-avro</artifactId>
-            <version>${parquet.version}</version>
-            <scope>provided</scope>
-        </dependency>
+       
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>

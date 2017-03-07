@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hadoop-commons-5.5</artifactId>
-    <version>20170214</version>
+    <version>20170307</version>
     <packaging>jar</packaging>
     <name>${project.artifactId}</name>
 
@@ -19,6 +19,7 @@
         <jets3t.version>0.9.0</jets3t.version>
         <log4j.version>1.2.15</log4j.version>
         <vdp.version>5.5.0_5</vdp.version>
+        <parquet.version>1.9.0</parquet.version>
     </properties>
 
     <!-- *************************** -->
@@ -156,6 +157,12 @@
                     <artifactId>slf4j-api</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.parquet</groupId>
+            <artifactId>parquet-hadoop</artifactId>
+            <version>${parquet.version}</version>
         </dependency>
         
         <dependency>
