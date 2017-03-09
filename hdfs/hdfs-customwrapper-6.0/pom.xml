@@ -203,7 +203,6 @@
             <groupId>org.apache.avro</groupId>
             <artifactId>avro</artifactId>
             <version>${avro.version}</version>
-              <scope>provided</scope>
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
@@ -239,7 +238,6 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop.version}</version>
-              <scope>provided</scope>
             <exclusions>
                 <exclusion>
                     <groupId>commons-cli</groupId>
@@ -312,7 +310,6 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
             <version>${hadoop.version}</version>
-              <scope>provided</scope>
             <exclusions>
                 <exclusion>
                     <groupId>commons-cli</groupId>
@@ -357,14 +354,14 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.2.1</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
         
         <dependency>
             <groupId>com.hadoop.gplcompression</groupId>
             <artifactId>hadoop-lzo</artifactId>
             <version>0.4.16</version>
-              <scope>provided</scope>
+              <scope>compile</scope>
         </dependency>
 
         <dependency>
