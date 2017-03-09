@@ -1,5 +1,8 @@
 20170214
 --------
+
+20170214
+--------
 - #31224 - Specify custom core-site.xml and/or hdfs-site.xml in the wrapper view configuration.
 
 20170111

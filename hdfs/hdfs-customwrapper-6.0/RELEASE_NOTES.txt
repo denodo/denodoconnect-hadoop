@@ -1,6 +1,10 @@
+20170309
+--------
+- #31548 - Fixed wrong set of dependencies being added to the uberjar
+
 20170307
 --------
--Added - #30738 - Add support for Parquet files
+- #30738 - Added support for Parquet files
 
 20170214
 --------
