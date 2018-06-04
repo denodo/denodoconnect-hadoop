@@ -1,3 +1,7 @@
+CURRENT
+-------
+- #37872 - Parquet files: add suport for DATE and DECIMAL types
+
 20170309
 --------
 - #31548 - Fixed wrong set of dependencies being added to the uberjar

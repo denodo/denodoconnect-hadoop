@@ -21,6 +21,7 @@
  */
 package com.denodo.connect.hadoop.hdfs.util.type;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public final class TypeUtils {
 
     }
 
-    public static Class<?> toJava(String hadoopClass) {
+    public static Class<?> toJava(final String hadoopClass) {
 
         if (NullWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Void.class;
@@ -82,7 +83,7 @@ public final class TypeUtils {
         return String.class;
     }
 
-    public static int toSQL(Class<?> javaClass) {
+    public static int toSQL(final Class<?> javaClass) {
 
         if (Void.class.equals(javaClass)) {
             return Types.NULL;
@@ -117,6 +118,12 @@ public final class TypeUtils {
         if (Object.class.equals(javaClass)) {
             return Types.STRUCT;
         }
+        if (BigDecimal.class.equals(javaClass)) {
+            return Types.DECIMAL;
+        }
+        if (java.util.Date.class.equals(javaClass)) {
+            return Types.DATE;
+        }
 
         logger.warn("Class '" + javaClass + "' is not supported. Returning Types.VARCHAR");
         return Types.VARCHAR;
@@ -128,7 +135,7 @@ public final class TypeUtils {
      * return an Object[] with the values converted (based on the value of
      * hadoopClass).
      */
-    public static Object getValue(String hadoopClass, Writable value) {
+    public static Object getValue(final String hadoopClass, final Writable value) {
 
         if (value instanceof NullWritable) {
             return null;
@@ -153,9 +160,9 @@ public final class TypeUtils {
         }
         // If it ends with [] -> It's an array
         if (StringUtils.endsWith(hadoopClass, "[]")) {
-            ArrayWritable aw = (ArrayWritable) value;
-            List<Object> data = new ArrayList<Object>();
-            for (Writable item : aw.get()) {
+            final ArrayWritable aw = (ArrayWritable) value;
+            final List<Object> data = new ArrayList<Object>();
+            for (final Writable item : aw.get()) {
                 data.add(getValue(StringUtils.substringBeforeLast(hadoopClass, "[]"), item));
             }
             return data.toArray(new Object[data.size()]);
@@ -169,7 +176,7 @@ public final class TypeUtils {
      *
      * Default Hadoop class is org.apache.hadoop.io.Text
      */
-    public static String getHadoopClass(String hadoopClass) {
+    public static String getHadoopClass(final String hadoopClass) {
         return (hadoopClass != null) ? hadoopClass : Text.class.getName();
     }
 

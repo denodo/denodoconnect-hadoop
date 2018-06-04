@@ -38,11 +38,11 @@ public final class ParquetTypeUtils {
 
     }
 
-    public static Class<?> toJava(Type type) throws CustomWrapperException {
+    public static Class<?> toJava(final Type type) throws CustomWrapperException {
         //We only manage primitiveTypes(BINARY,BOOLEAN; DOUBLE, FLOAT, INT32, INT64, INT96, FIXED_LEN_BYTE_ARRAY)
         //If it were necessary to manage other type to differentiate among the originalTypes(DATE, MAP....), an ad hoc development would be required 
         if(type.isPrimitive()){
-            PrimitiveTypeName primitiveTypeName= type.asPrimitiveType().getPrimitiveTypeName();
+            final PrimitiveTypeName primitiveTypeName= type.asPrimitiveType().getPrimitiveTypeName();
             if(primitiveTypeName.equals(PrimitiveTypeName.BINARY)) {
                 if(type.getOriginalType()!=null){
                     if(type.getOriginalType().equals(OriginalType.UTF8)){
@@ -63,6 +63,11 @@ public final class ParquetTypeUtils {
             }else if(primitiveTypeName.equals(PrimitiveTypeName.FLOAT)) {
                 return Float.class;
             }else if(primitiveTypeName.equals(PrimitiveTypeName.INT32)) {
+                if (OriginalType.DECIMAL.equals(type.getOriginalType())) {
+                    return java.math.BigDecimal.class;
+                } else if (OriginalType.DATE.equals(type.getOriginalType())) {
+                    return java.util.Date.class;
+                }
                 return Integer.class;
             }else if(primitiveTypeName.equals(PrimitiveTypeName.INT64)) {
                 //we dont differentiate INT64 from TIMESTAMP_MILLIS original types

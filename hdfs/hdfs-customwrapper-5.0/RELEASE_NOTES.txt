@@ -1,3 +1,8 @@
+CURRENT
+-------
+- #37872 - Parquet files: add suport for DATE and DECIMAL types
+
+
 20170307
 --------
 -Added - #30738 - Add support for Parquet files
