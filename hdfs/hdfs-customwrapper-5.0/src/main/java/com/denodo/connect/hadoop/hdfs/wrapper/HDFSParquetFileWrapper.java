@@ -108,7 +108,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
             SchemaElement javaSchema =((HDFSParquetFileReader) reader).getSchema( null, path, conf);
 
-            return  VDPSchemaUtils.buildSchemaParameter(javaSchema.getElements());
+            return  VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
 
         } catch (Exception e) {
             logger.error("Error building wrapper schema", e);

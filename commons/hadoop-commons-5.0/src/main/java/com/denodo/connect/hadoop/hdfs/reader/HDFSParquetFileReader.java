@@ -74,10 +74,11 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
 
         openReader(fileSystem, path, configuration);
         final Group group =  this.dataFileReader.read();
-        final SchemaElement schemaElement = ParquetSchemaUtils.buildSchema(group, group.getType().getName());
+        SchemaElement schemaElement = new SchemaElement(group.getType().getName(), Object.class); 
+        final SchemaElement finalSchemaElement = ParquetSchemaUtils.buildSchema(group.getType(), schemaElement);
         closeReader();
 
-        return schemaElement;
+        return finalSchemaElement;
     }
 
     @Override
@@ -85,7 +86,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
 
         final Group data = this.dataFileReader.read();
         if (data!=null) {
-            return read( data, this.projectedFields);
+            return readParquetLogicalTypes( data, this.projectedFields);
         }
 
         return null;
@@ -181,7 +182,150 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         }
         return vdpRecord;
     }
+    
+    /**
+     * Read method for parquet nested and primitive types
+     * @param datum 
+     * @param projectedFields
+     * @return Record with the fields
+     * @throws IOException
+     */
+    private static Object[] readParquetLogicalTypes( final Group datum, final List<CustomWrapperFieldExpression> projectedFields) throws IOException {
 
+        final List<Type> fields = datum.getType().getFields();
+        final Object[] vdpRecord = new Object[fields.size()];
 
+        int i= 0;
+            for(final Type field:  fields){
+                vdpRecord[i] = null;
+                if(field.isPrimitive()){
+                    readPrimitive(datum, vdpRecord, i, field);
+                } else if (field.asGroupType().getFields().size() > 0 && field.getOriginalType() == null) {
+                    vdpRecord[i] = readGroup(datum, projectedFields, vdpRecord, i, field);
+                } else if (field.asGroupType().getFields().size() > 0 && field.getOriginalType() != null
+                        && field.getOriginalType().equals(OriginalType.LIST)) {
+                    vdpRecord[i] = readList(datum, projectedFields, vdpRecord, i, field);
+                } else {
+                    logger.error("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
+                    throw new IOException("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
+                }
+                i++;
+            }
+        return vdpRecord;
+    }
+
+    /**
+     * Read method for parquet primitive types
+     * @param datum
+     * @param vdpRecord
+     * @param i
+     * @param field
+     * @throws IOException
+     */
+    private static void readPrimitive(final Group datum, final Object[] vdpRecord, int i, final Type field) throws IOException {
+        if (datum.getFieldRepetitionCount(field.getName()) > 0) {
+            final PrimitiveTypeName   primitiveTypeName = field.asPrimitiveType().getPrimitiveTypeName();
+            try{
+                if(primitiveTypeName.equals(PrimitiveTypeName.BINARY)) {
+                    if(field.getOriginalType()!=null){
+                        if(field.getOriginalType().equals(OriginalType.UTF8)){
+                            vdpRecord[i] = datum.getString(field.getName(), 0);
+                        } else if(field.getOriginalType().equals(OriginalType.JSON)){
+                            vdpRecord[i] = datum.getString(field.getName(), 0);
+                        } else if(field.getOriginalType().equals(OriginalType.BSON)){
+                            vdpRecord[i] = datum.getString(field.getName(), 0);
+                        } else{
+                            vdpRecord[i] = datum.getBinary(field.getName(), 0).getBytes(); 
+                        }
+                    }else{
+                        vdpRecord[i] = datum.getBinary(field.getName(), 0).getBytes();   
+                    }
+                    
+                }else if(primitiveTypeName.equals(PrimitiveTypeName.BOOLEAN)) {
+                    vdpRecord[i] =  datum.getBoolean(field.getName(), 0);
+                    
+                }else if(primitiveTypeName.equals(PrimitiveTypeName.DOUBLE)) {
+                    vdpRecord[i] = datum.getDouble(field.getName(), 0);
+                    
+                }else if(primitiveTypeName.equals(PrimitiveTypeName.FLOAT)) {
+                    vdpRecord[i] = datum.getFloat(field.getName(), 0);
+                    
+                }else if(primitiveTypeName.equals(PrimitiveTypeName.INT32)) {
+                    if (OriginalType.DECIMAL.equals(field.getOriginalType())) {
+                        final int scale = field.asPrimitiveType().getDecimalMetadata().getScale();
+                        vdpRecord[i] = new BigDecimal(BigInteger.valueOf(datum.getInteger(field.getName(), 0)), scale);
+                    } else if (OriginalType.DATE.equals(field.getOriginalType())) {
+                        //   DATE fields really holds the number of days since 1970-01-01
+                        final int days = datum.getInteger(field.getName(),0);
+                        final long daysMillis = TimeUnit.DAYS.toMillis(days); 
+                        vdpRecord[i] = new Date(daysMillis);
+                    } else {
+                        vdpRecord[i] = datum.getInteger(field.getName(), 0);
+                    }
+                    
+                }else if(primitiveTypeName.equals(PrimitiveTypeName.INT64)) {
+                    //we dont differentiate INT64 from TIMESTAMP_MILLIS original types
+                    vdpRecord[i] = datum.getLong(field.getName(), 0);
+                    
+                }else if(primitiveTypeName.equals(PrimitiveTypeName.INT96)) {
+                    vdpRecord[i] = datum.getInt96(field.getName(), 0);
+                    
+                }else if(primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
+                    
+                    vdpRecord[i] =datum.getBinary(field.getName(), 0).getBytes();
+                }else{
+                    logger.error("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
+                    throw new IOException("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
+                }
+            }catch(final RuntimeException e){
+                logger.warn("It was a error reading data", e);
+            }
+        }
+    }
+    
+    /**
+     * Read method for parquet group types
+     * @param datum
+     * @param projectedFields
+     * @param vdpRecord
+     * @param i
+     * @param field
+     * @return Record with the fields
+     * @throws IOException
+     */
+    private static Object readGroup(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Object[] vdpRecord,
+            int i, final Type field) throws IOException {
+        if (datum.getFieldRepetitionCount(field.getName()) > 0) {
+            Object[] vdpGroupRecord = new Object[field.asGroupType().getFields().size()];
+            vdpGroupRecord = readParquetLogicalTypes(datum.getGroup(field.getName(), 0), projectedFields);
+            return vdpGroupRecord;
+        }
+        logger.trace("The group " + field.getName() + " doesn't exist in the data");
+        return null;
+    }
+    
+    /**
+     * Read method for parquet list types
+     * @param datum
+     * @param projectedFields
+     * @param vdpRecord
+     * @param i
+     * @param field
+     * @return Record with the fields
+     * @throws IOException
+     */
+    private static Object readList(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Object[] vdpRecord,
+            int i, final Type field) throws IOException {
+        //This only works with the last parquet version 1.5.0 Previous versions maybe don't have a valid format.
+        if (datum.getFieldRepetitionCount(field.getName()) > 0) {
+            Object[][] vdpArrayRecord = new Object[datum.getGroup(field.getName(), 0).getFieldRepetitionCount(0)][1];
+            for (int j = 0; j < datum.getGroup(field.getName(), 0).getFieldRepetitionCount(0); j++) {
+                vdpArrayRecord[j][0] = readParquetLogicalTypes(datum.getGroup(field.getName(), 0).getGroup(0, j).getGroup(0, 0), projectedFields);
+            }
+            return vdpArrayRecord;
+        }
+        logger.trace("The list " + field.getName() + " doesn't exist in the data");
+        return null;
+    }
 
 }
