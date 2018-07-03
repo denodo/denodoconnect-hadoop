@@ -39,8 +39,6 @@ public final class ParquetTypeUtils {
     }
 
     public static Class<?> toJava(final Type type) throws CustomWrapperException {
-        //We only manage primitiveTypes(BINARY,BOOLEAN; DOUBLE, FLOAT, INT32, INT64, INT96, FIXED_LEN_BYTE_ARRAY)
-        //If it were necessary to manage other type to differentiate among the originalTypes(DATE, MAP....), an ad hoc development would be required 
         if(type.isPrimitive()){
             final PrimitiveTypeName primitiveTypeName= type.asPrimitiveType().getPrimitiveTypeName();
             if(primitiveTypeName.equals(PrimitiveTypeName.BINARY)) {
@@ -83,6 +81,47 @@ public final class ParquetTypeUtils {
             throw new CustomWrapperException("Type of the field "+ type.toString()+", does not supported by the custom warpper ");
         }
 
+    }
+    
+    /**
+     * This method check if the field is a group
+     * @param field
+     * @return
+     */
+    public static boolean isGroup(final Type field) throws CustomWrapperException {
+        try {
+            return field.asGroupType().getFields().size() > 0 && field.getOriginalType() == null;
+        } catch (ClassCastException e) {
+            throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
+        }
+    }
+    
+    /**
+     * This method check if the field is a Map
+     * @param valueMap
+     * @return
+     */
+    public static boolean isMap(final Type field) throws CustomWrapperException {
+        try {
+            return field.asGroupType().getFields().size() > 0 && field.getOriginalType() != null
+                    && field.getOriginalType().equals(OriginalType.MAP);
+        } catch (ClassCastException e) {
+            throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
+        }
+    }
+
+    /**
+     * This method check if the field is a List
+     * @param valueMap
+     * @return
+     */
+    public static boolean isList(final Type field) throws CustomWrapperException {
+        try {
+            return field.asGroupType().getFields().size() > 0 && field.getOriginalType() != null
+                    && field.getOriginalType().equals(OriginalType.LIST);
+        } catch (ClassCastException e) {
+            throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
+        }
     }
 }
 

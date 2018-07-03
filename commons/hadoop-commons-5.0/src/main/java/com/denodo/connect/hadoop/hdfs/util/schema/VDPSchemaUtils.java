@@ -62,7 +62,6 @@ public final class VDPSchemaUtils {
                             !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
                             !isUpdateable, isNullable, !isMandatory);
         }
-
         
         return params;
     }
@@ -81,7 +80,6 @@ public final class VDPSchemaUtils {
 
         boolean isSearchable = true;
         boolean isUpdateable = true;
-        boolean isNullable = true;
         boolean isMandatory = true;
 
         CustomWrapperSchemaParameter[] params = new CustomWrapperSchemaParameter[element.getElements().size()];
@@ -94,7 +92,7 @@ public final class VDPSchemaUtils {
         return new CustomWrapperSchemaParameter(element.getName(), type,
             (params.length == 0) ? null : params,
             !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
-            !isUpdateable, isNullable, !isMandatory);
+            !isUpdateable, element.isNullable(), !isMandatory);
     }
     
     
