@@ -34,14 +34,15 @@ import javax.security.auth.login.LoginException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.auth.LoginConfig;
 
 
 public final class KerberosUtils {
 
-    private static final Logger logger = Logger.getLogger(KerberosUtils.class);
+    private static final  Logger LOG = LoggerFactory.getLogger(KerberosUtils.class);
 
     private KerberosUtils() {
 
@@ -49,7 +50,7 @@ public final class KerberosUtils {
 
     public static void enableKerberos() {
         
-        Configuration conf = new Configuration();
+        final Configuration conf = new Configuration();
         conf.set("hadoop.security.authentication", "Kerberos");
         conf.set("hadoop.security.auth_to_local",  "RULE:[1:$1] RULE:[2:$1]"); // just extract the simple user name (for quickstart.cloudera)
         UserGroupInformation.setConfiguration(conf);
@@ -58,27 +59,27 @@ public final class KerberosUtils {
     public static UserGroupInformation loginFromTicketCache() throws IOException {
 
         setupCommonLoginProperties(null, null);
-        UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+        final UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
         return ugi;
     }
     
-    public static UserGroupInformation loginFromKeytab(String principal, String kdc, String keytabPath) throws IOException {
+    public static UserGroupInformation loginFromKeytab(final String principal, final String kdc, final String keytabPath) throws IOException {
 
         setupCommonLoginProperties(kdc, principal);
-        UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(principal, keytabPath);
+        final UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(principal, keytabPath);
         return ugi;
     }
 
-    public static UserGroupInformation loginFromPassword(final String principal, String kdc, final String password) throws IOException {
+    public static UserGroupInformation loginFromPassword(final String principal, final String kdc, final String password) throws IOException {
 
         try {
 
             setupCommonLoginProperties(kdc, principal);
             
-            LoginContext loginContext = new LoginContext("", null, new CallbackHandler() {
+            final LoginContext loginContext = new LoginContext("", null, new CallbackHandler() {
                 @Override
-                public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-                  for(Callback c : callbacks){
+                public void handle(final Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+                  for(final Callback c : callbacks){
                     if(c instanceof NameCallback) {
                         ((NameCallback) c).setName(principal);
                     }
@@ -92,13 +93,13 @@ public final class KerberosUtils {
             
             return UserGroupInformation.getUGIFromSubject(loginContext.getSubject());
 
-        } catch (LoginException e) {
-            logger.debug("Login error", e);
+        } catch (final LoginException e) {
+            LOG.debug("Login error", e);
             throw new IOException("Login error", e);
         }
     }
     
-    private static void setupCommonLoginProperties(String kdc, String principal) {
+    private static void setupCommonLoginProperties(final String kdc, final String principal) {
 
         if (StringUtils.isNotBlank(kdc)) {
             System.setProperty("java.security.krb5.kdc", kdc);
@@ -111,13 +112,13 @@ public final class KerberosUtils {
 
 
     /* Principal is of the form 'primary/instance@realm', being optional the 'instance' component. */
-    public static String getRealm(String principal) {
+    public static String getRealm(final String principal) {
 
-        String[] components = principal.split("@");
+        final String[] components = principal.split("@");
         if (components.length == 1) {
             throw new IllegalArgumentException("Kerberos v5 Principal name is of the form primary/instance@realm: primary and realm are mandatory.");
         }
-        String realm = components[components.length - 1];
+        final String realm = components[components.length - 1];
         if (StringUtils.isBlank(realm)) {
             throw new IllegalArgumentException("Kerberos v5 Principal name is of the form primary/instance@realm: realm is mandatory.");
         }

@@ -28,7 +28,8 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.util.krb5.KerberosUtils;
@@ -46,7 +47,7 @@ import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParamet
 
 public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper {
 
-    private static final Logger logger = Logger.getLogger(AbstractSecureHadoopWrapper.class);
+    private static final  Logger LOG = LoggerFactory.getLogger(AbstractSecureHadoopWrapper.class); 
 
     private boolean securityEnabled;
     private String userPrincipal;
@@ -89,7 +90,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         try {
             setSecurityEnabled(inputValues);
             checkConfig(inputValues);
-            UserGroupInformation ugi = login(inputValues);
+            final UserGroupInformation ugi = login(inputValues);
             if (ugi == null) {
                 return doGetSchemaParameters(inputValues);
             }
@@ -101,11 +102,11 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
                         return doGetSchemaParameters(inputValues);
                 }
             });
-        } catch (UndeclaredThrowableException e) {
-            logger.error("Error running the wrapper ", e);
-            Exception ex = (Exception) e.getCause();
+        } catch (final UndeclaredThrowableException e) {
+            LOG.error("Error running the wrapper ", e);
+            final Exception ex = (Exception) e.getCause();
             throw new CustomWrapperException(ex.getLocalizedMessage(), ex);            
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new CustomWrapperException(e.getLocalizedMessage(), e);
         }
 
@@ -120,7 +121,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         try {
 
             setSecurityEnabled(inputValues);
-            UserGroupInformation ugi = login(inputValues);
+            final UserGroupInformation ugi = login(inputValues);
             if (ugi == null) {
                 doRun(condition, projectedFields, result, inputValues);
             } else {
@@ -132,24 +133,24 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
                     }
                 } );
             }
-        } catch (UndeclaredThrowableException e) {
-            logger.error("Error running the wrapper ", e);
-            Exception ex = (Exception) e.getCause();
+        } catch (final UndeclaredThrowableException e) {
+            LOG.error("Error running the wrapper ", e);
+            final Exception ex = (Exception) e.getCause();
             throw new CustomWrapperException(ex.getLocalizedMessage(), ex);
-        } catch(Exception e) {
-            logger.error("Error running the wrapper ", e);
+        } catch(final Exception e) {
+            LOG.error("Error running the wrapper ", e);
             throw new CustomWrapperException(e.getLocalizedMessage(), e);
         }
 
     }
 
-    private static void checkConfig(Map<String, String> inputValues) {
+    private static void checkConfig(final Map<String, String> inputValues) {
         
         if (inputValues.get(Parameter.PRINCIPAL) != null) {
 
             String errorMsg = null;
-            String keytab = inputValues.get(Parameter.KEYTAB);
-            String password = inputValues.get(Parameter.KERBEROS_PASWORD);
+            final String keytab = inputValues.get(Parameter.KEYTAB);
+            final String password = inputValues.get(Parameter.KERBEROS_PASWORD);
             if (StringUtils.isBlank(keytab) && StringUtils.isBlank(password)) {
                 errorMsg = "One of these parameters: '" + Parameter.KEYTAB + "' or '" + Parameter.KERBEROS_PASWORD + "' must be specified";
             }
@@ -166,7 +167,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
      * - Using a Kerberos ticket from the machine this wrapper is running on.
      * - Using the parameters provided by the user to login in Kerberos programmatically.
      */
-    private UserGroupInformation login(Map<String, String> inputValues) throws CustomWrapperException {
+    private UserGroupInformation login(final Map<String, String> inputValues) throws CustomWrapperException {
 
         try {
             UserGroupInformation ugi = null;
@@ -177,12 +178,12 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
                     ugi = KerberosUtils.loginFromTicketCache();
                 } else {
 
-                    String kdc = inputValues.get(Parameter.KDC);
+                    final String kdc = inputValues.get(Parameter.KDC);
                     if (inputValues.get(Parameter.KEYTAB) != null) {
-                        String keytabPath = ((CustomWrapperInputParameterLocalRouteValue) getInputParameterValue(Parameter.KEYTAB)).getPath();
+                        final String keytabPath = ((CustomWrapperInputParameterLocalRouteValue) getInputParameterValue(Parameter.KEYTAB)).getPath();
                         ugi = KerberosUtils.loginFromKeytab(this.userPrincipal, kdc, keytabPath);
                     } else if (inputValues.get(Parameter.KERBEROS_PASWORD) != null) {
-                        String password = inputValues.get(Parameter.KERBEROS_PASWORD);
+                        final String password = inputValues.get(Parameter.KERBEROS_PASWORD);
                         ugi = KerberosUtils.loginFromPassword(this.userPrincipal, kdc, password);
                     }
                 }
@@ -190,8 +191,8 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
             
             return ugi;
 
-        } catch (Exception e) {
-            logger.error("Hadoop security error", e);
+        } catch (final Exception e) {
+            LOG.error("Hadoop security error", e);
             String msg = "Hadoop security error: " + e.getMessage();
             if (e.getCause() != null) {
                 msg += " " + e.getCause().getMessage();
@@ -204,9 +205,9 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         return this.userPrincipal == null;
     }
 
-    private void setSecurityEnabled(Map<String, String> inputValues) {
+    private void setSecurityEnabled(final Map<String, String> inputValues) {
 
-        String kerberosEnabled = inputValues.get(Parameter.KERBEROS_ENABLED);
+        final String kerberosEnabled = inputValues.get(Parameter.KERBEROS_ENABLED);
         if (Boolean.parseBoolean(kerberosEnabled)) {
             this.securityEnabled = true;
         }

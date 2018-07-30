@@ -23,11 +23,12 @@ package com.denodo.connect.hadoop.hdfs.util.configuration;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class HadoopConfigurationUtils {
 
-    private static final Logger logger = Logger.getLogger(HadoopConfigurationUtils.class);
+    private static final  Logger LOG = LoggerFactory.getLogger(HadoopConfigurationUtils.class);
 
     private HadoopConfigurationUtils() {
 
@@ -46,16 +47,16 @@ public final class HadoopConfigurationUtils {
      */
     public static Configuration getConfiguration(final String fileSystemURI, final String... customFilePathNames) {
 
-        Configuration conf = new Configuration();
+        final Configuration conf = new Configuration();
         conf.set("fs.default.name", fileSystemURI);
 
         // General pattern that avoids having to specify the server's Kerberos principal name when using Kerberos authentication
         conf.set("dfs.namenode.kerberos.principal.pattern", "*");
 
-        logger.debug("Returning configuration: " + conf
+        LOG.debug("Returning configuration: " + conf
             + " - value of 'fs.default.name' -> " + conf.get("fs.default.name"));
         
-        for (String customFilePathName: customFilePathNames) {
+        for (final String customFilePathName: customFilePathNames) {
             if (customFilePathName != null) {
                 conf.addResource(new Path(customFilePathName));
             }

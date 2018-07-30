@@ -70,20 +70,22 @@ public class HDFSSequenceFileWrapper extends AbstractHDFSKeyValueFileWrapper {
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException, InterruptedException {
+    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues) throws IOException, InterruptedException {
 
-        String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-        String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-        String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
-        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
+        final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+        final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+        final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
 
-        String hadoopKeyClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
-        String hadoopValueClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
+        final String hadoopKeyClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
+        final String hadoopValueClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
 
-        String inputFilePath = inputValues.get(Parameter.FILE_PATH);
-        Path path = new Path(inputFilePath);
+        final String inputFilePath = inputValues.get(Parameter.FILE_PATH);
+        final Path path = new Path(inputFilePath);
+        
+        final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
-        return new HDFSSequenceFileReader(conf, hadoopKeyClass, hadoopValueClass, path, null);
+        return new HDFSSequenceFileReader(conf, hadoopKeyClass, hadoopValueClass, path, fileNamePattern, null);
     }
 
 }

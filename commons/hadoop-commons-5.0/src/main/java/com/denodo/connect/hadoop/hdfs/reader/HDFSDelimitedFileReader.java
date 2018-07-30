@@ -45,25 +45,21 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
     private CSVReader reader;
 
 
-    public HDFSDelimitedFileReader(Configuration configuration, CSVConfig cvsConfig,
-        Path outputPath, String user) throws IOException, InterruptedException {
+    public HDFSDelimitedFileReader(final Configuration configuration, final CSVConfig cvsConfig,
+        final Path outputPath, final String fileNamePattern, final String user) throws IOException, InterruptedException {
 
-        super(configuration, outputPath, user);
+        super(configuration, outputPath, fileNamePattern, user);
         this.csvConfig = cvsConfig;
         this.linesToSkip = cvsConfig.isHeader() ? 1 : 0;
         this.linesSkipped = 0;
     }
     
     @Override
-    public void openReader(FileSystem fileSystem, Path path,
-        Configuration configuration) throws IOException {
+    public void doOpenReader(final FileSystem fileSystem, final Path path,
+        final Configuration configuration) throws IOException {
 
-        if (isFile(path)) {
-            FSDataInputStream is = fileSystem.open(path);
-            this.reader = new CSVReader(new InputStreamReader(is), this.csvConfig);
-        } else {
-            throw new IllegalArgumentException("'" + path + "' is not a file");
-        }
+        final FSDataInputStream is = fileSystem.open(path);
+        this.reader = new CSVReader(new InputStreamReader(is), this.csvConfig);
     }
     
     @Override
@@ -71,7 +67,7 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
 
         skipLines();
         if (this.reader.hasNext()) {
-            List<String> data = this.reader.next();
+            final List<String> data = this.reader.next();
             return data.toArray();
         }
 

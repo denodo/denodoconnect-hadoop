@@ -27,9 +27,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSDelimitedFileReader;
@@ -55,7 +57,8 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  */
 public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrapper {
     
-    private static final Logger logger = Logger.getLogger(HDFSDelimitedTextFileWrapper.class);
+    private static final  Logger LOG = LoggerFactory.getLogger(HDFSDelimitedTextFileWrapper.class); 
+    
 
     private static final  CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
@@ -84,23 +87,23 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     }
     
     @Override
-    public CustomWrapperSchemaParameter[] doGetSchemaParameters(Map<String, String> inputValues)
+    public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
         throws CustomWrapperException {
 
-        boolean isSearchable = true;
-        boolean isUpdateable = true;
-        boolean isNullable = true;
-        boolean isMandatory = true;
+        final boolean isSearchable = true;
+        final boolean isUpdateable = true;
+        final boolean isNullable = true;
+        final boolean isMandatory = true;
         
-        boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
+        final boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
         Object[] headerNames = readHeader(inputValues);
         if (!header) {
             headerNames = buildSyntheticHeader(headerNames.length);
         }
 
-        CustomWrapperSchemaParameter[] headerSchema =  new CustomWrapperSchemaParameter[headerNames.length];
+        final CustomWrapperSchemaParameter[] headerSchema =  new CustomWrapperSchemaParameter[headerNames.length];
         int i = 0;
-        for (Object item : headerNames) {
+        for (final Object item : headerNames) {
             headerSchema[i++] = new CustomWrapperSchemaParameter(item.toString(), Types.VARCHAR, null, !isSearchable,
                     CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, isNullable, !isMandatory);
 
@@ -109,17 +112,26 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         return headerSchema;
     }
 
-    private Object[] readHeader(Map<String, String> inputValues) throws CustomWrapperException {
+    private Object[] readHeader(final Map<String, String> inputValues) throws CustomWrapperException {
 
         HDFSFileReader reader = null;
         try {
 
-            Map<String, String> values = tuneInput(inputValues);
+            final Map<String, String> values = tuneInput(inputValues);
             reader = getHDFSFileReader(values);
-            return (Object[]) reader.read();
+            final Object[] headerNames = (Object[]) reader.read();
 
-        } catch (Exception e) {
-            logger.error("Error accessing HDFS file", e);
+            if (headerNames == null) {
+                throw new CustomWrapperException("There are no files in " + inputValues.get(Parameter.FILE_PATH) 
+                    + (StringUtils.isNotBlank(inputValues.get(Parameter.FILE_NAME_PATTERN)) 
+                        ? " matching the provided file pattern: " + inputValues.get(Parameter.FILE_NAME_PATTERN)
+                        : ""));
+            }
+            
+            return headerNames;
+            
+        } catch (final Exception e) {
+            LOG.error("Error accessing HDFS file", e);
             throw new CustomWrapperException("Error accessing HDFS file: " + e.getMessage(), e);
         } finally {
 
@@ -127,8 +139,8 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
                 if (reader != null) {
                     reader.close();
                 }
-            } catch (IOException e) {
-                logger.error("Error releasing the reader", e);
+            } catch (final IOException e) {
+                LOG.error("Error releasing the reader", e);
             }
 
         }
@@ -137,17 +149,17 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     /*
      * Tune configuration values for non skipping header, because we are interested in the header.
      */
-    private Map<String, String> tuneInput(Map<String, String> inputValues) {
+    private Map<String, String> tuneInput(final Map<String, String> inputValues) {
         
-        Map<String, String> values = new HashMap<String, String>(inputValues);
+        final Map<String, String> values = new HashMap<String, String>(inputValues);
         values.put(Parameter.HEADER, Boolean.toString(false));
         
         return values;
     }   
     
-    private static String[] buildSyntheticHeader(int size) {
+    private static String[] buildSyntheticHeader(final int size) {
         
-        String[] header = new String[size];
+        final String[] header = new String[size];
         for (int i = 0; i < size; i++) {
             header[i] = "column" + i;
         }
@@ -155,7 +167,7 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         return header;
     }
     
-    private static CSVConfig getConfig(Map<String, String> inputValues) {
+    private static CSVConfig getConfig(final Map<String, String> inputValues) {
         return new CSVConfig(inputValues.get(Parameter.SEPARATOR),
                 inputValues.get(Parameter.QUOTE),
                 inputValues.get(Parameter.COMMENT_MARKER),
@@ -165,16 +177,18 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(Map<String, String> inputValues) throws IOException, InterruptedException {
+    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues) throws IOException, InterruptedException {
 
-        String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-        String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-        String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
+        final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+        final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
         
-        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
-        String inputFilePath = inputValues.get(Parameter.FILE_PATH);
-        Path path = new Path(inputFilePath);
+        final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+        final String inputFilePath = inputValues.get(Parameter.FILE_PATH);
+        final Path path = new Path(inputFilePath);
+        
+        final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
-        return new HDFSDelimitedFileReader(conf, getConfig(inputValues), path, null);
+        return new HDFSDelimitedFileReader(conf, getConfig(inputValues), path, fileNamePattern, null);
     }
 }

@@ -51,27 +51,24 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
     private Schema schema;
     private DataFileReader<Object> dataFileReader;
 
-    public HDFSAvroFileReader(Configuration conf, Path path, Schema schema,
-        String user) throws IOException, InterruptedException {
+    public HDFSAvroFileReader(final Configuration conf, final Path path, final String fileNamePattern, final Schema schema,
+        final String user) throws IOException, InterruptedException {
 
-        super(conf, path, user);
+        super(conf, path, fileNamePattern, user);
         this.schema = schema;
     }
 
     @Override
-    public void openReader(FileSystem fileSystem, Path path,
-        Configuration configuration) throws IOException {
+    public void doOpenReader(final FileSystem fileSystem, final Path path,
+        final Configuration configuration) throws IOException {
 
-        if (isFile(path)) {
-            FsInput inputFile = new FsInput(path, configuration);
-            DatumReader<Object> reader = new GenericDatumReader<Object>(this.schema);
-            this.dataFileReader = new DataFileReader<Object>(inputFile, reader);
-        } else {
-            throw new IllegalArgumentException("'" + path + "' is not a file");
-        }
+        final FsInput inputFile = new FsInput(path, configuration);
+        final DatumReader<Object> reader = new GenericDatumReader<Object>(this.schema);
+        this.dataFileReader = new DataFileReader<Object>(inputFile, reader);
+
     }
 
-    public static SchemaElement getSchema(Schema schema) {
+    public static SchemaElement getSchema(final Schema schema) {
         return AvroSchemaUtils.buildSchema(schema, schema.getName());
     }
 
@@ -79,11 +76,12 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
     public Object doRead() {
 
         if (this.dataFileReader.hasNext()) {
-            Object data = this.dataFileReader.next();
+            final Object data = this.dataFileReader.next();
             return read(this.schema, data);
         }
 
         return null;
+
     }
 
     @Override
@@ -93,11 +91,11 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
         }
     }
 
-    private static Object read(Schema schema, Object datum) {
+    private static Object read(final Schema schema, final Object datum) {
 
         Object result = null;
 
-        Type schemaType = schema.getType();
+        final Type schemaType = schema.getType();
         if (AvroTypeUtils.isSimple(schemaType)) {
             result = readSimple(schema, datum);
         } else if (AvroTypeUtils.isEnum(schemaType)) {
@@ -130,7 +128,7 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
      *  string          org.apache.avro.util.Utf8 or java.lang.String
      *
      */
-    private static Object readSimple(Schema schema, Object datum) {
+    private static Object readSimple(final Schema schema, final Object datum) {
 
         Object result = null;
         switch (schema.getType()) {
@@ -140,9 +138,9 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
 
             case BYTES:
 
-                ByteBuffer bb = (ByteBuffer) datum;
-                int size = bb.remaining();
-                byte[] buf = new byte[size];
+                final ByteBuffer bb = (ByteBuffer) datum;
+                final int size = bb.remaining();
+                final byte[] buf = new byte[size];
                 bb.get(buf, 0, size);
                 result = buf;
                 break;
@@ -160,7 +158,7 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
         return result;
     }
 
-    private static Object readString(Object datum) {
+    private static Object readString(final Object datum) {
 
         Object result;
         if (datum instanceof Utf8) {
@@ -172,25 +170,26 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
         return result;
     }
 
-    private static Object readRecord(Schema schema, Object datum) {
+    private static Object readRecord(final Schema schema, final Object datum) {
 
-        Record avroRecord = (Record) datum;
-        Object[] vdpRecord = new Object[schema.getFields().size()];
+        final Record avroRecord = (Record) datum;
+        final Object[] vdpRecord = new Object[schema.getFields().size()];
         int i = 0;
-        for (Field f : schema.getFields()) {
+        for (final Field f : schema.getFields()) {
             vdpRecord[i++] = read(f.schema(), avroRecord.get(f.name()));
         }
 
         return vdpRecord;
     }
 
-    private static Object readArray(Schema schema, Object datum) {
+    private static Object readArray(final Schema schema, final Object datum) {
 
         @SuppressWarnings("unchecked")
+        final
         Array<Object> avroArray = (Array<Object>) datum;
-        Object[][] vdpArray = new Object[avroArray.size()][1];
+        final Object[][] vdpArray = new Object[avroArray.size()][1];
         int i = 0;
-        for (Object element : avroArray) {
+        for (final Object element : avroArray) {
             vdpArray[i++][0] = read(schema.getElementType(), element);
         }
 
@@ -198,19 +197,20 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
 
     }
 
-    private static Object readUnion(Schema schema, Object datum) {
+    private static Object readUnion(final Schema schema, final Object datum) {
 
-        Schema nonNullSchema = AvroTypeUtils.getNotNull(schema.getTypes());
+        final Schema nonNullSchema = AvroTypeUtils.getNotNull(schema.getTypes());
         return read(nonNullSchema, datum);
     }
 
-    private static Object readMap(Schema schema, Object datum) {
+    private static Object readMap(final Schema schema, final Object datum) {
 
         @SuppressWarnings("unchecked")
+        final
         Map<String, Object> avroMap = (Map<String, Object>) datum;
-        Object[][] vdpMap = new Object[avroMap.size()][2]; // "key" and "value"
+        final Object[][] vdpMap = new Object[avroMap.size()][2]; // "key" and "value"
         int i = 0;
-        for (Entry<String, Object> entry : avroMap.entrySet()) {
+        for (final Entry<String, Object> entry : avroMap.entrySet()) {
             vdpMap[i][0] = readString(entry.getKey());
             vdpMap[i][1] = read(schema.getValueType(), entry.getValue());
             i++;
@@ -219,9 +219,9 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
         return vdpMap;
     }
 
-    private static Object readFixed(Object datum) {
+    private static Object readFixed(final Object datum) {
 
-        Fixed avroFixed = (Fixed) datum;
+        final Fixed avroFixed = (Fixed) datum;
         return avroFixed.bytes();
     }
 

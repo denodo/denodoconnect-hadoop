@@ -33,7 +33,8 @@ import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.util.csv.CSVConfig;
@@ -62,7 +63,8 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  */
 public class WebHDFSFileWrapper extends AbstractCustomWrapper {
 
-    private static Logger logger = Logger.getLogger(WebHDFSFileWrapper.class);
+    private static final  Logger logger = LoggerFactory.getLogger(WebHDFSFileWrapper.class); 
+
     
     private boolean stopRequested = false;
 
@@ -99,30 +101,30 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
     @Override
     public CustomWrapperConfiguration getConfiguration() {
 
-        CustomWrapperConfiguration conf = super.getConfiguration();
+        final CustomWrapperConfiguration conf = super.getConfiguration();
         conf.setDelegateProjections(false);
 
         return conf;
     }
 
     @Override
-    public CustomWrapperSchemaParameter[] getSchemaParameters(Map<String, String> inputValues)
+    public CustomWrapperSchemaParameter[] getSchemaParameters(final Map<String, String> inputValues)
         throws CustomWrapperException {
 
-        boolean isSearchable = true;
-        boolean isUpdateable = true;
-        boolean isNullable = true;
-        boolean isMandatory = true;
+        final boolean isSearchable = true;
+        final boolean isUpdateable = true;
+        final boolean isNullable = true;
+        final boolean isMandatory = true;
         
-        boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
+        final boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
         List<String> headerNames = readHeader(inputValues);
         if (!header) {
             headerNames = buildSyntheticHeader(headerNames.size());
         }
 
-        CustomWrapperSchemaParameter[] headerSchema =  new CustomWrapperSchemaParameter[headerNames.size()];
+        final CustomWrapperSchemaParameter[] headerSchema =  new CustomWrapperSchemaParameter[headerNames.size()];
         int i = 0;
-        for (String item : headerNames) {
+        for (final String item : headerNames) {
             headerSchema[i++] = new CustomWrapperSchemaParameter(item, Types.VARCHAR, null, !isSearchable,
                     CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, isNullable, !isMandatory);
 
@@ -132,28 +134,28 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
     }
 
     @Override
-    public void run(CustomWrapperConditionHolder condition,
-        List<CustomWrapperFieldExpression> projectedFields,
-        CustomWrapperResult result, Map<String, String> inputValues)
+    public void run(final CustomWrapperConditionHolder condition,
+        final List<CustomWrapperFieldExpression> projectedFields,
+        final CustomWrapperResult result, final Map<String, String> inputValues)
         throws CustomWrapperException {
 
 
-        String host = inputValues.get(Parameter.HOST_IP);
-        int port = Integer.parseInt(inputValues.get(Parameter.HOST_PORT));
-        String user = inputValues.get(Parameter.USER);
+        final String host = inputValues.get(Parameter.HOST_IP);
+        final int port = Integer.parseInt(inputValues.get(Parameter.HOST_PORT));
+        final String user = inputValues.get(Parameter.USER);
         String filePath = inputValues.get(Parameter.FILE_PATH);
         filePath = normalizePath(filePath);
-        CSVConfig csvConfig = getConfig(inputValues);
-        boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
-        boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
+        final CSVConfig csvConfig = getConfig(inputValues);
+        final boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
+        final boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
 
-        DefaultHttpClient httpClient = new DefaultHttpClient();
+        final DefaultHttpClient httpClient = new DefaultHttpClient();
         BufferedReader br = null;
         CSVReader csvReader = null;
         try {
 
-            URI openURI = URIUtils.getWebHDFSOpenURI(host, port, user, filePath);
-            InputStream is = HTTPUtils.requestGet(openURI, httpClient);
+            final URI openURI = URIUtils.getWebHDFSOpenURI(host, port, user, filePath);
+            final InputStream is = HTTPUtils.requestGet(openURI, httpClient);
             br = new BufferedReader(new InputStreamReader(is));
             csvReader = new CSVReader(br, csvConfig);
             if (header && csvReader.hasNext()) {
@@ -161,20 +163,20 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
             }
             while (csvReader.hasNext() && !this.stopRequested) {
                 
-                List<String> data = csvReader.next();
+                final List<String> data = csvReader.next();
                 result.addRow(data.toArray(), projectedFields);
             }
 
             if (delete) {
                 try {
-                    URI deleteURI = URIUtils.getWebHDFSDeleteURI(host, port, user, filePath);
+                    final URI deleteURI = URIUtils.getWebHDFSDeleteURI(host, port, user, filePath);
                     HTTPUtils.requestDelete(deleteURI, httpClient);
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     logger.error("Error deleting the file", e);
                 }
             }
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             logger.error("Error accessing WebHDFS", e);
             throw new CustomWrapperException("Error accessing WebHDFS: " + e.getMessage(), e);
         } finally {
@@ -188,22 +190,22 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
         }
     }
 
-    private static List<String> readHeader(Map<String, String> inputValues) throws CustomWrapperException {
+    private static List<String> readHeader(final Map<String, String> inputValues) throws CustomWrapperException {
 
-        String host = inputValues.get(Parameter.HOST_IP);
-        int port = Integer.parseInt(inputValues.get(Parameter.HOST_PORT));
-        String user = inputValues.get(Parameter.USER);
+        final String host = inputValues.get(Parameter.HOST_IP);
+        final int port = Integer.parseInt(inputValues.get(Parameter.HOST_PORT));
+        final String user = inputValues.get(Parameter.USER);
         String filePath = inputValues.get(Parameter.FILE_PATH);
         filePath = normalizePath(filePath);
-        CSVConfig csvConfig = getConfig(inputValues);
+        final CSVConfig csvConfig = getConfig(inputValues);
 
-        DefaultHttpClient httpClient = new DefaultHttpClient();
+        final DefaultHttpClient httpClient = new DefaultHttpClient();
         BufferedReader br = null;
         CSVReader csvReader = null;
         try {
 
-            URI openURI = URIUtils.getWebHDFSOpenURI(host, port, user, filePath);
-            InputStream is = HTTPUtils.requestGet(openURI, httpClient);
+            final URI openURI = URIUtils.getWebHDFSOpenURI(host, port, user, filePath);
+            final InputStream is = HTTPUtils.requestGet(openURI, httpClient);
             br = new BufferedReader(new InputStreamReader(is));
             csvReader = new CSVReader(br, csvConfig);
 
@@ -213,7 +215,7 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
             
             return Collections.emptyList();
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             logger.error("Error accessing WebHDFS", e);
             throw new CustomWrapperException("Error accessing WebHDFS: " + e.getMessage(), e);
         } finally {
@@ -227,7 +229,7 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
         }
     }
     
-    private static CSVConfig getConfig(Map<String, String> inputValues) {
+    private static CSVConfig getConfig(final Map<String, String> inputValues) {
         return new CSVConfig(inputValues.get(Parameter.SEPARATOR),
                 inputValues.get(Parameter.QUOTE),
                 inputValues.get(Parameter.COMMENT_MARKER),
@@ -236,9 +238,9 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
                 Boolean.parseBoolean(inputValues.get(Parameter.HEADER)));
     }
     
-    private static List<String> buildSyntheticHeader(int size) {
+    private static List<String> buildSyntheticHeader(final int size) {
         
-        List<String> header = new ArrayList<String>();
+        final List<String> header = new ArrayList<String>();
         for (int i = 0; i < size; i++) {
             header.add("column" + i);
         }
@@ -252,7 +254,7 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
         return true;
     }
 
-    private static String normalizePath(String filePath) {
+    private static String normalizePath(final String filePath) {
 
         if (!filePath.startsWith("/")) {
             return "/" + filePath;

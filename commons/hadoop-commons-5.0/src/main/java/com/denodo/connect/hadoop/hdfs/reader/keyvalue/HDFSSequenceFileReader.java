@@ -39,25 +39,22 @@ public class HDFSSequenceFileReader extends AbstractHDFSKeyValueFileReader {
 
     private SequenceFile.Reader currentReader;
 
-    public HDFSSequenceFileReader(Configuration configuration, String hadoopKeyClass,
-        String hadoopValueClass, Path outputPath, String user) throws IOException, InterruptedException {
+    public HDFSSequenceFileReader(final Configuration configuration, final String hadoopKeyClass,
+            final String hadoopValueClass, final Path outputPath, final String fileNamePattern, final String user)
+            throws IOException, InterruptedException {
 
-        super(configuration, hadoopKeyClass, hadoopValueClass, outputPath, user);
+        super(configuration, hadoopKeyClass, hadoopValueClass, outputPath, fileNamePattern, user);
     }
 
     @Override
-    public void openReader(FileSystem fileSystem, Path path,
-        Configuration configuration) throws IOException {
+    public void doOpenReader(final FileSystem fileSystem, final Path path,
+        final Configuration configuration) throws IOException {
 
-        if (isFile(path)) {
-            this.currentReader = new SequenceFile.Reader(fileSystem, path, configuration);
-        } else {
-            throw new IllegalArgumentException("'" + path + "' is not a file");
-        }
+        this.currentReader = new SequenceFile.Reader(fileSystem, path, configuration);
     }
 
     @Override
-    public <K extends Writable, V extends Writable> boolean doRead(K key, V value) throws IOException {
+    public <K extends Writable, V extends Writable> boolean doRead(final K key, final V value) throws IOException {
         return this.currentReader.next(key, value);
     }
 

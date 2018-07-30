@@ -31,7 +31,8 @@ import org.apache.avro.Schema;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
@@ -61,8 +62,9 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  */
 public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
 
-    private static final Logger logger = Logger.getLogger(HDFSAvroFileWrapper.class);
+    private static final  Logger LOG = LoggerFactory.getLogger(HDFSAvroFileWrapper.class); 
 
+    
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
@@ -76,6 +78,9 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
                 "JSON of the Avro schema. One of these parameters: '"
                     + Parameter.AVRO_SCHEMA_PATH + "' or '" + Parameter.AVRO_SCHEMA_JSON + "' must be specified",
                     false, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.FILE_NAME_PATTERN,
+                    "Regular expression to filter file names. Example: (.*)\\.avro ", false,
+                    CustomWrapperInputParameterTypeFactory.stringType()),               
             new CustomWrapperInputParameter(Parameter.DELETE_AFTER_READING,
                 "Delete the file after reading it? ", true,
                 CustomWrapperInputParameterTypeFactory.booleanType(false)),
@@ -95,40 +100,40 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
     @Override
     public CustomWrapperConfiguration getConfiguration() {
 
-        CustomWrapperConfiguration conf = super.getConfiguration();
+        final CustomWrapperConfiguration conf = super.getConfiguration();
         conf.setDelegateProjections(false);
 
         return conf;
     }
 
     @Override
-    public CustomWrapperSchemaParameter[] doGetSchemaParameters(Map<String, String> inputValues)
+    public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
         throws CustomWrapperException {
 
         try {
 
-            boolean isSearchable = true;
-            boolean isUpdateable = true;
-            boolean isNullable = true;
-            boolean isMandatory = true;
+            final boolean isSearchable = true;
+            final boolean isUpdateable = true;
+            final boolean isNullable = true;
+            final boolean isMandatory = true;
 
-            CustomWrapperSchemaParameter avroFilePathParameter =
+            final CustomWrapperSchemaParameter avroFilePathParameter =
                 new CustomWrapperSchemaParameter(Parameter.AVRO_FILE_PATH, Types.VARCHAR,
                     null, !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
                     !isUpdateable, !isNullable, isMandatory);
 
-            String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-            String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-            String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+            final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
+            final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+            final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
             
-            Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
-            Schema avroSchema = AvroSchemaUtils.buildSchema(inputValues, conf);
-            SchemaElement javaSchema = HDFSAvroFileReader.getSchema(avroSchema);
+            final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+            final Schema avroSchema = AvroSchemaUtils.buildSchema(inputValues, conf);
+            final SchemaElement javaSchema = HDFSAvroFileReader.getSchema(avroSchema);
 
             return new CustomWrapperSchemaParameter[] {avroFilePathParameter, VDPSchemaUtils.buildSchemaParameter(javaSchema)};
 
-        } catch (Exception e) {
-            logger.error("Error building wrapper schema", e);
+        } catch (final Exception e) {
+            LOG.error("Error building wrapper schema", e);
             throw new CustomWrapperException(e.getMessage(), e);
         }
 
@@ -136,24 +141,26 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
 
 
     @Override
-    public void doRun(CustomWrapperConditionHolder condition, List<CustomWrapperFieldExpression> projectedFields,
-        CustomWrapperResult result, Map<String, String> inputValues) throws CustomWrapperException {
+    public void doRun(final CustomWrapperConditionHolder condition, final List<CustomWrapperFieldExpression> projectedFields,
+        final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
-        String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-        boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
-        String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-        String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
+        final boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
+        final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+        final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
         
-        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
-        String avroFilePath = getAvroFilePath(condition);
-        Path path = new Path(avroFilePath);
+        final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+        final String avroFilePath = getAvroFilePath(condition);
+        final Path path = new Path(avroFilePath);
+        
+        final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
         HDFSFileReader reader = null;
         try {
 
-            Schema avroSchema = AvroSchemaUtils.buildSchema(inputValues, conf);
-            reader = new HDFSAvroFileReader(conf, path, avroSchema, null);
-            Object[] rowData = new Object[2];
+            final Schema avroSchema = AvroSchemaUtils.buildSchema(inputValues, conf);
+            reader = new HDFSAvroFileReader(conf, path, fileNamePattern, avroSchema, null);
+            final Object[] rowData = new Object[2];
             rowData[0] = avroFilePath;
             Object avroData = reader.read();
             while (avroData != null && !isStopRequested()) {
@@ -167,8 +174,8 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
                 reader.delete();
             }
 
-        } catch (Exception e) {
-            logger.error("Error accessing Avro file", e);
+        } catch (final Exception e) {
+            LOG.error("Error accessing Avro file", e);
             throw new CustomWrapperException("Error accessing Avro file: " + e.getMessage(), e);
 
         } finally {
@@ -176,22 +183,22 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
                 if (reader != null && !delete) {
                     reader.close();
                 }
-            } catch (IOException e) {
-                logger.error("Error releasing the reader", e);
+            } catch (final IOException e) {
+                LOG.error("Error releasing the reader", e);
             }
 
         }
     }
     
-    private static String getAvroFilePath(CustomWrapperConditionHolder condition) {
+    private static String getAvroFilePath(final CustomWrapperConditionHolder condition) {
 
         String avroFilePath = null;
 
-        Map<CustomWrapperFieldExpression, Object> conditionMap = condition.getConditionMap();
+        final Map<CustomWrapperFieldExpression, Object> conditionMap = condition.getConditionMap();
         if (conditionMap != null) {
-            for (Entry <CustomWrapperFieldExpression, Object> entry : conditionMap.entrySet()) {
-                CustomWrapperFieldExpression field = entry.getKey();
-                Object value = entry.getValue();
+            for (final Entry <CustomWrapperFieldExpression, Object> entry : conditionMap.entrySet()) {
+                final CustomWrapperFieldExpression field = entry.getKey();
+                final Object value = entry.getValue();
                 if (field.getName().equals(Parameter.AVRO_FILE_PATH)) {
                     avroFilePath = (String) value;
                 }

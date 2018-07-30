@@ -27,8 +27,6 @@ import org.apache.parquet.schema.OriginalType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 
-import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
-
 public final class ParquetTypeUtils {
 
 
@@ -38,7 +36,7 @@ public final class ParquetTypeUtils {
 
     }
 
-    public static Class<?> toJava(final Type type) throws CustomWrapperException {
+    public static Class<?> toJava(final Type type) {
         if(type.isPrimitive()){
             final PrimitiveTypeName primitiveTypeName= type.asPrimitiveType().getPrimitiveTypeName();
             if(primitiveTypeName.equals(PrimitiveTypeName.BINARY)) {
@@ -77,9 +75,8 @@ public final class ParquetTypeUtils {
             }else{
                 throw new IllegalArgumentException("Unknown type: " + type.getName());
             }
-        }else{
-            throw new CustomWrapperException("Type of the field "+ type.toString()+", does not supported by the custom warpper ");
         }
+        throw new IllegalArgumentException("Type of the field "+ type.toString()+", does not supported by the custom warpper ");
 
     }
     
@@ -88,12 +85,9 @@ public final class ParquetTypeUtils {
      * @param field
      * @return
      */
-    public static boolean isGroup(final Type field) throws CustomWrapperException {
-        try {
-            return field.asGroupType().getFields().size() > 0 && field.getOriginalType() == null;
-        } catch (ClassCastException e) {
-            throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
-        }
+    public static boolean isGroup(final Type field) {
+        return field.asGroupType().getFields().size() > 0 && field.getOriginalType() == null;
+
     }
     
     /**
@@ -101,13 +95,10 @@ public final class ParquetTypeUtils {
      * @param valueMap
      * @return
      */
-    public static boolean isMap(final Type field) throws CustomWrapperException {
-        try {
-            return field.asGroupType().getFields().size() > 0 && field.getOriginalType() != null
-                    && field.getOriginalType().equals(OriginalType.MAP);
-        } catch (ClassCastException e) {
-            throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
-        }
+    public static boolean isMap(final Type field) {
+        return field.asGroupType().getFields().size() > 0 && field.getOriginalType() != null
+                && field.getOriginalType().equals(OriginalType.MAP);
+
     }
 
     /**
@@ -115,13 +106,10 @@ public final class ParquetTypeUtils {
      * @param valueMap
      * @return
      */
-    public static boolean isList(final Type field) throws CustomWrapperException {
-        try {
-            return field.asGroupType().getFields().size() > 0 && field.getOriginalType() != null
-                    && field.getOriginalType().equals(OriginalType.LIST);
-        } catch (ClassCastException e) {
-            throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
-        }
+    public static boolean isList(final Type field) {
+        return field.asGroupType().getFields().size() > 0 && field.getOriginalType() != null
+                && field.getOriginalType().equals(OriginalType.LIST);
+
     }
 }
 

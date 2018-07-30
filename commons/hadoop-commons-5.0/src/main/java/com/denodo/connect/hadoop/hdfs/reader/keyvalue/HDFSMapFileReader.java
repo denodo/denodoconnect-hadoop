@@ -43,43 +43,39 @@ public class HDFSMapFileReader extends AbstractHDFSKeyValueFileReader {
 
     private MapFile.Reader currentReader;
 
-    public HDFSMapFileReader(Configuration configuration, String hadoopKeyClass,
-        String hadoopValueClass, Path outputPath, String user) throws IOException, InterruptedException {
+    public HDFSMapFileReader(final Configuration configuration, final String hadoopKeyClass, final String hadoopValueClass,
+            final Path outputPath, final String fileNamePattern, final String user) throws IOException, InterruptedException {
 
-        super(configuration, hadoopKeyClass, hadoopValueClass, outputPath, user);
+        super(configuration, hadoopKeyClass, hadoopValueClass, outputPath, fileNamePattern, user);
     }
 
     @Override
-    public void openReader(FileSystem fileSystem, Path path,
-        Configuration configuration) throws IOException {
+    public void doOpenReader(final FileSystem fileSystem, final Path path,
+        final Configuration configuration) throws IOException {
 
         Path dirPath = path;
-        if (isFile(path)) {
-            if (isMapFile(path)) {
-                dirPath = path.getParent();
-                // A MapFile is a directory with two files 'data' and 'index':
-                // if "path" refers to one of these files we have to skip next file.
-                nextFileIndex();
-            } else {
-                throw new IllegalArgumentException("'" + path + "' is not a data file or an index file");
-            }
+        if (isMapFile(path)) {
+            dirPath = path.getParent();
+            // A MapFile is a directory with two files 'data' and 'index':
+
+        } else {
+            throw new IllegalArgumentException("'" + path + "' is not a data file or an index file");
         }
-        String dirName = dirPath.toUri().getPath();
-        this.currentReader = new MapFile.Reader(fileSystem, dirName, configuration);
+        this.currentReader = new MapFile.Reader(dirPath, configuration);
     }
 
-    private static boolean isMapFile(Path path) {
+    private static boolean isMapFile(final Path path) {
         return MapFile.DATA_FILE_NAME.equals(path.getName()) || MapFile.INDEX_FILE_NAME.equals(path.getName());
     }
 
     @Override
-    public <K extends Writable, V extends Writable> boolean doRead(K key, V value) throws IOException {
+    public <K extends Writable, V extends Writable> boolean doRead(final K key, final V value) throws IOException {
 
         if (!(key instanceof WritableComparable)) {
             throw new UnsupportedOperationException("Key must be instance of WritableComparable to read from MapFile");
         }
 
-        WritableComparable<?> keyAsWC = (WritableComparable<?>) key;
+        final WritableComparable<?> keyAsWC = (WritableComparable<?>) key;
         return this.currentReader.next(keyAsWC, value);
     }
 

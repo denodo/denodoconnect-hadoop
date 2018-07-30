@@ -46,11 +46,11 @@ public abstract class AbstractHDFSKeyValueFileReader extends AbstractHDFSFileRea
     private Writable value;
 
 
-    public AbstractHDFSKeyValueFileReader(Configuration configuration,
-        String hadoopKeyClass, String hadoopValueClass, Path outputPath, String user)
-        throws IOException, InterruptedException {
+    public AbstractHDFSKeyValueFileReader(final Configuration configuration, final String hadoopKeyClass,
+            final String hadoopValueClass, final Path outputPath, final String fileNamePattern, final String user)
+            throws IOException, InterruptedException {
 
-        super(configuration, outputPath, user);
+        super(configuration, outputPath, fileNamePattern, user);
 
         this.hadoopKeyClass = hadoopKeyClass;
         this.hadoopValueClass = hadoopValueClass;
@@ -58,17 +58,17 @@ public abstract class AbstractHDFSKeyValueFileReader extends AbstractHDFSFileRea
         this.value = getInitValue(hadoopValueClass, configuration);
     }
 
-    public static Collection<SchemaElement> getSchema(String hadoopKeyClass, String hadoopValueClass) {
+    public static Collection<SchemaElement> getSchema(final String hadoopKeyClass, final String hadoopValueClass) {
 
-        Collection<SchemaElement> schema = new ArrayList<SchemaElement>();
+        final Collection<SchemaElement> schema = new ArrayList<SchemaElement>();
 
-        Class<?> keyJavaClass = TypeUtils.toJava(hadoopKeyClass);
-        SchemaElement keyElement = new SchemaElement(Parameter.KEY, keyJavaClass);
+        final Class<?> keyJavaClass = TypeUtils.toJava(hadoopKeyClass);
+        final SchemaElement keyElement = new SchemaElement(Parameter.KEY, keyJavaClass);
         schema.add(keyElement);
-        Class<?> valueJavaClass = TypeUtils.toJava(hadoopValueClass);
-        SchemaElement valueElement = new SchemaElement(Parameter.VALUE, valueJavaClass);
+        final Class<?> valueJavaClass = TypeUtils.toJava(hadoopValueClass);
+        final SchemaElement valueElement = new SchemaElement(Parameter.VALUE, valueJavaClass);
         if (valueJavaClass.equals(List.class)) {
-            Class<?> subValueJavaClass = TypeUtils.toJava(StringUtils.substringBeforeLast(hadoopValueClass, "[]"));
+            final Class<?> subValueJavaClass = TypeUtils.toJava(StringUtils.substringBeforeLast(hadoopValueClass, "[]"));
             valueElement.add(new SchemaElement(Parameter.VALUE, subValueJavaClass));
         }
         schema.add(valueElement);
@@ -95,7 +95,7 @@ public abstract class AbstractHDFSKeyValueFileReader extends AbstractHDFSFileRea
      * @return an instance of the key class initialized (necessary
      * to read output).
      */
-    private static Writable getInitKey(String hadoopKeyClass, Configuration configuration) {
+    private static Writable getInitKey(final String hadoopKeyClass, final Configuration configuration) {
         return InitUtils.getInitKey(hadoopKeyClass, configuration);
     }
 
@@ -103,13 +103,13 @@ public abstract class AbstractHDFSKeyValueFileReader extends AbstractHDFSFileRea
      * @return an instance of the value class initialized (necessary
      * to read output).
      */
-    private static Writable getInitValue(String hadoopValueClass, Configuration configuration) {
+    private static Writable getInitValue(final String hadoopValueClass, final Configuration configuration) {
         return InitUtils.getInitValue(hadoopValueClass, configuration);
     }
 
-    private Object getValue(Writable k, Writable v) {
+    private Object getValue(final Writable k, final Writable v) {
 
-        Object[] data = new Object[2];
+        final Object[] data = new Object[2];
         data[0] = TypeUtils.getValue(this.hadoopKeyClass, k);
         data[1] = TypeUtils.getValue(this.hadoopValueClass, v);
 

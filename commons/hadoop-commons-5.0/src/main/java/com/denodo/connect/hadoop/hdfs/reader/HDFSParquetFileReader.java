@@ -31,68 +31,93 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
 import org.apache.parquet.example.data.Group;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
+import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.ParquetReader;
+import org.apache.parquet.hadoop.api.ReadSupport;
 import org.apache.parquet.hadoop.example.GroupReadSupport;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Type.Repetition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.type.ParquetTypeUtils;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
 
 public class HDFSParquetFileReader extends AbstractHDFSFileReader {
 
+    private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileReader.class);
 
     private ParquetReader<Group> dataFileReader;
     private List<CustomWrapperFieldExpression> projectedFields;
-    private static final Logger logger = Logger.getLogger(HDFSParquetFileReader.class);
+    private MessageType parquetSchema;
+    
 
-    public HDFSParquetFileReader(final Configuration conf, final Path path, 
-            final String user, final List<CustomWrapperFieldExpression> projectedFields) throws IOException, InterruptedException {
+    public HDFSParquetFileReader(final Configuration conf, final Path path, final String finalNamePattern,
+            final String user, final List<CustomWrapperFieldExpression> projectedFields) 
+            throws IOException, InterruptedException {
 
-        super(conf, path, user);
+        super(conf, path, finalNamePattern, user);
         this.projectedFields = projectedFields;
     }
 
     @Override
-    public void openReader(final FileSystem fileSystem, final Path path,
+    public void doOpenReader(final FileSystem fileSystem, final Path path,
             final Configuration configuration) throws IOException {
-        final GroupReadSupport groupReadSupport=new GroupReadSupport();
-        this.dataFileReader=ParquetReader.builder(groupReadSupport,path).withConf(configuration).build();
-        if(this.dataFileReader==null){
-            throw new IllegalArgumentException("'" + path + "' is not a parquet file, or there is other problem in the connection"); 
+        
+        if (this.parquetSchema == null) {
+            this.parquetSchema = getParquetSchema(configuration, path);
         }
+        
+        // Sets the expected schema so Parquet could validate that all files (e.g. in a directory) follow this schema. 
+        // If the schema is not set Parquet will use the schema contained in each Parquet file 
+        configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.parquetSchema.toString());
+        
+        final GroupReadSupport groupReadSupport = new GroupReadSupport();
+        this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).build();
     }
 
-    public   SchemaElement getSchema(final FileSystem fileSystem, final Path path,
-            final Configuration configuration) throws IOException, CustomWrapperException  {
+    public SchemaElement getSchema(final Configuration configuration) throws IOException {
 
-        openReader(fileSystem, path, configuration);
-        final Group group =  this.dataFileReader.read();
-        boolean isMandatory = group.getType().getRepetition() == Repetition.REQUIRED  ? true : false;
-        SchemaElement schemaElement = new SchemaElement(group.getType().getName(), Object.class, isMandatory); 
-        final SchemaElement finalSchemaElement = ParquetSchemaUtils.buildSchema(group.getType(), schemaElement);
-        closeReader();
+        final Path filePath = nextFilePath();
+        this.parquetSchema = getParquetSchema(configuration, filePath);
+        
+        final boolean isMandatory = this.parquetSchema.getRepetition() == Repetition.REQUIRED  ? true : false;
+        final SchemaElement schemaElement = new SchemaElement(this.parquetSchema.getName(), Object.class, isMandatory); 
 
-        return finalSchemaElement;
+        return ParquetSchemaUtils.buildSchema(this.parquetSchema, schemaElement);
+
+    }
+
+    private MessageType getParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
+        
+        final ParquetMetadata readFooter = ParquetFileReader.readFooter(configuration, filePath, ParquetMetadataConverter.NO_FILTER);
+        
+        final MessageType schema = readFooter.getFileMetaData().getSchema();
+        
+        initFileIterator();
+        
+        return schema;
     }
 
     @Override
     public Object doRead() throws IOException {
-
+        
         final Group data = this.dataFileReader.read();
-        if (data!=null) {
-            return readParquetLogicalTypes( data, this.projectedFields);
+        if (data != null) {
+            return readParquetLogicalTypes(data, this.projectedFields);
         }
 
         return null;
+
     }
 
     @Override
@@ -104,10 +129,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
 
     /**
      * Method for read all the parquet types
-     * @param datum 
-     * @param projectedFields
      * @return Record with the fields
-     * @throws IOException
      */
     private static Object[] readParquetLogicalTypes(final Group datum, final List<CustomWrapperFieldExpression> projectedFields)
             throws IOException {
@@ -123,39 +145,28 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
 
     /**
      * Method for read parquet types. The method does the validation to know what type needs to be read.
-     * @param datum
-     * @param projectedFields
-     * @param valueList
-     * @return
-     * @throws IOException
      */
-    private static Object readTypes(Group datum, List<CustomWrapperFieldExpression> projectedFields, final Type valueList)
+    private static Object readTypes(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Type valueList)
             throws IOException {
+        
         if (valueList.isPrimitive()) {
             return readPrimitive(datum, valueList);
+        }
+        
+        if (ParquetTypeUtils.isGroup(valueList)) {
+            return readGroup(datum, projectedFields, valueList);
+        } else if (ParquetTypeUtils.isMap(valueList)) {
+            return readMap(datum, projectedFields, valueList);
+        } else if (ParquetTypeUtils.isList(valueList)) {
+            return readList(datum, projectedFields, valueList);
         } else {
-            try {
-                if (ParquetTypeUtils.isGroup(valueList)) {
-                    return readGroup(datum, projectedFields, valueList);
-                } else if (ParquetTypeUtils.isMap(valueList)) {
-                    return readMap(datum, projectedFields, valueList);
-                } else if (ParquetTypeUtils.isList(valueList)) {
-                    return readList(datum, projectedFields, valueList);
-                } else {
-                    logger.error("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
-                    throw new IOException("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
-                }
-            } catch (CustomWrapperException e) {
-                throw new IOException("ERROR When try to convert to GroupType", e);
-            }
+            LOG.error("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
+            throw new IOException("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
         }
     }
 
     /**
      * Read method for parquet primitive types
-     * @param datum
-     * @param field
-     * @throws IOException
      */
     private static Object readPrimitive(final Group datum, final Type field) throws IOException {
         if (datum.getFieldRepetitionCount(field.getName()) > 0) {
@@ -172,9 +183,8 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                         } else{
                             return datum.getBinary(field.getName(), 0).getBytes();
                         }
-                    }else{
-                        return datum.getBinary(field.getName(), 0).getBytes();   
                     }
+                    return datum.getBinary(field.getName(), 0).getBytes();
                     
                 }else if(primitiveTypeName.equals(PrimitiveTypeName.BOOLEAN)) {
                     return  datum.getBoolean(field.getName(), 0);
@@ -209,11 +219,11 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                     
                     return datum.getBinary(field.getName(), 0).getBytes();
                 }else{
-                    logger.error("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
+                    LOG.error("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
                     throw new IOException("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
                 }
             }catch(final RuntimeException e){
-                logger.warn("It was a error reading data", e);
+                LOG.warn("It was a error reading data", e);
             }
         } else if (field.getRepetition() == Repetition.REQUIRED) {
             //Is required tipe in schema
@@ -224,11 +234,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
     
     /**
      * Read method for parquet group types
-     * @param datum
-     * @param projectedFields
-     * @param field
      * @return Record with the fields
-     * @throws IOException
      */
     private static Object readGroup(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Type field) throws IOException {
         if (datum.getFieldRepetitionCount(field.getName()) > 0) {
@@ -239,17 +245,13 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
             //Is required tipe in schema
             throw new IOException("The field "+ field.toString()+" is Required");
         }
-        logger.trace("The group " + field.getName() + " doesn't exist in the data");
+        LOG.trace("The group " + field.getName() + " doesn't exist in the data");
         return null;
     }
     
     /**
      * Read method for parquet list types
-     * @param datum
-     * @param projectedFields
-     * @param field
      * @return Array with the fields
-     * @throws IOException
      */
     private static Object readList(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Type field) throws IOException {
         //This only works with the last parquet version 1.5.0 Previous versions maybe don't have a valid format.
@@ -257,7 +259,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
             try {
                 final Group datumGroup = datum.getGroup(field.getName(), 0);
                 if (datumGroup.getFieldRepetitionCount(0) > 0) {
-                    Object[][] vdpArrayRecord = new Object[datumGroup.getFieldRepetitionCount(0)][1];
+                    final Object[][] vdpArrayRecord = new Object[datumGroup.getFieldRepetitionCount(0)][1];
                     for (int j = 0; j < datumGroup.getFieldRepetitionCount(0); j++) {
                         final Group datumList = datumGroup.getGroup(0, j)!= null ? datumGroup.getGroup(0, j) : null;
                         if (datumList != null && datumList.getType().getFields().size() > 0) {
@@ -268,31 +270,27 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                     }
                     return vdpArrayRecord;
                 }
-            } catch (ClassCastException e) {
+            } catch (final ClassCastException e) {
                 throw new IOException("The list element " + field.getName() + " don't have a valid format",e);
             }
         } else if (field.getRepetition() == Repetition.REQUIRED) {
             //Is required tipe in schema
             throw new IOException("The field "+ field.toString()+" is Required");
         }
-        logger.trace("The list " + field.getName() + " doesn't exist in the data");
+        LOG.trace("The list " + field.getName() + " doesn't exist in the data");
         return null;
     }
     
     /**
      * Read method for parquet map types
-     * @param datum
-     * @param projectedFields
-     * @param field
      * @return Array with the fields
-     * @throws IOException
      */
-    private static Object readMap(Group datum, List<CustomWrapperFieldExpression> projectedFields, Type field) throws IOException {
+    private static Object readMap(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Type field) throws IOException {
         if (datum.getFieldRepetitionCount(field.getName()) > 0) {
             try {
                 final Group datumGroup = datum.getGroup(field.getName(), 0);
                 if (datumGroup.getFieldRepetitionCount(0) > 0) {
-                    Object[][] vdpArrayRecord = new Object[datumGroup.getFieldRepetitionCount(0)][2];
+                    final Object[][] vdpArrayRecord = new Object[datumGroup.getFieldRepetitionCount(0)][2];
                     for (int j = 0; j < datumGroup.getFieldRepetitionCount(0); j++) {
                         final Group datumMap = datumGroup.getGroup(0, j) != null ? datumGroup.getGroup(0, j) : null;
                         if (datumMap != null && datumMap.getType().getFields().size() > 1) {
@@ -304,14 +302,14 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                     }
                     return vdpArrayRecord;
                 }
-            } catch (ClassCastException e) {
+            } catch (final ClassCastException e) {
                 throw new IOException("The map element " + field.getName() + " don't have a valid format",e);
             }
         } else if (field.getRepetition() == Repetition.REQUIRED) {
             //Is required tipe in schema
             throw new IOException("The field "+ field.toString()+" is Required");
         }
-        logger.trace("The map " + field.getName() + " doesn't exist in the data");
+        LOG.trace("The map " + field.getName() + " doesn't exist in the data");
         return null;
     }
     

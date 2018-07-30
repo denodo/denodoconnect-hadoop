@@ -24,15 +24,17 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
-import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
@@ -57,8 +59,9 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  */
 public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
-    private static final Logger logger = Logger.getLogger(HDFSParquetFileWrapper.class);
+    private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileWrapper.class); 
 
+    
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
@@ -66,7 +69,10 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.PARQUET_FILE_PATH,
                 "Parquet File Path",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),          
+                true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.FILE_NAME_PATTERN,
+                    "Regular expression to filter file names. Example: (.*)\\.parquet ", false,
+                    CustomWrapperInputParameterTypeFactory.stringType()),               
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
                 false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL})),
@@ -83,35 +89,41 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     @Override
     public CustomWrapperConfiguration getConfiguration() {
 
-        CustomWrapperConfiguration conf = super.getConfiguration();
+        final CustomWrapperConfiguration conf = super.getConfiguration();
         conf.setDelegateProjections(false);
 
         return conf;
     }
 
     @Override
-    public CustomWrapperSchemaParameter[] doGetSchemaParameters(Map<String, String> inputValues)
+    public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
             throws CustomWrapperException {
 
         try {
 
-            String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-            String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-            String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
-            Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+            final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
+            final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+            final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+            final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
 
-            String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
-            Path path = new Path(parquetFilePath);
+            final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
+            final Path path = new Path(parquetFilePath);
+            
+            final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
-            HDFSFileReader reader = null;
-            reader= new HDFSParquetFileReader(conf, path, null, null);
+            final HDFSParquetFileReader reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null);
 
-            SchemaElement javaSchema =((HDFSParquetFileReader) reader).getSchema( null, path, conf);
+            final SchemaElement javaSchema = reader.getSchema(conf);
 
             return  VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
-
-        } catch (Exception e) {
-            logger.error("Error building wrapper schema", e);
+            
+        } catch (final NoSuchElementException e) {
+            throw new CustomWrapperException("There are no files in " + inputValues.get(Parameter.PARQUET_FILE_PATH) 
+            + (StringUtils.isNotBlank(inputValues.get(Parameter.FILE_NAME_PATTERN)) 
+                ? " matching the provided file pattern: " + inputValues.get(Parameter.FILE_NAME_PATTERN)
+                : ""));
+        } catch (final Exception e) {
+            LOG.error("Error building wrapper schema", e);
             throw new CustomWrapperException(e.getMessage(), e);
         }
 
@@ -119,25 +131,23 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
 
     @Override
-    public void doRun(CustomWrapperConditionHolder condition, List<CustomWrapperFieldExpression> projectedFields,
-            CustomWrapperResult result, Map<String, String> inputValues) throws CustomWrapperException {
+    public void doRun(final CustomWrapperConditionHolder condition, final List<CustomWrapperFieldExpression> projectedFields,
+            final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
-        String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-        String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
-      
-        String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-        String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
-        Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);      
+        final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
+        final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+        final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
 
+        final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
+        final Path path = new Path(parquetFilePath);
+        
+        final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
-        Path path = new Path(parquetFilePath);
-
-        HDFSFileReader reader = null;
+        HDFSParquetFileReader reader = null;
         try {
 
-
-            reader = new HDFSParquetFileReader(conf, path, null, projectedFields);
-            Object[] rowData = new Object[1];
+            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, projectedFields);
 
             Object parquetData = reader.read();
             while (parquetData != null && !isStopRequested()) {
@@ -148,8 +158,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
          
 
-        } catch (Exception e) {
-            logger.error("Error accessing Parquet file", e);
+        } catch (final Exception e) {
+            LOG.error("Error accessing Parquet file", e);
             throw new CustomWrapperException("Error accessing Parquet file: " + e.getMessage(), e);
 
         } finally {
@@ -157,8 +167,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 if (reader != null ) {
                     reader.close();
                 }
-            } catch (IOException e) {
-                logger.error("Error releasing the reader", e);
+            } catch (final IOException e) {
+                LOG.error("Error releasing the reader", e);
             }
 
         }

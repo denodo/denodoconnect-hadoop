@@ -54,11 +54,11 @@ public class ParquetSchemaUtils {
      * @return The SchemaElement
      * @throws CustomWrapperException
      */
-    public static  SchemaElement buildSchema(GroupType group, SchemaElement schemaElement) throws CustomWrapperException {
+    public static  SchemaElement buildSchema(final GroupType group, final SchemaElement schemaElement) {
 
-        for (Type field : group.getFields()) {
+        for (final Type field : group.getFields()) {
             try {
-                boolean isNullable = field.getRepetition() == Repetition.REQUIRED  ? false : true;
+                final boolean isNullable = field.getRepetition() == Repetition.REQUIRED  ? false : true;
                 if (field.isPrimitive()) {
                     addPrimitiveType(schemaElement, field, isNullable);
                 } else if (ParquetTypeUtils.isGroup(field)) {
@@ -68,8 +68,8 @@ public class ParquetSchemaUtils {
                 } else if (ParquetTypeUtils.isMap(field)) {
                     addMapType(schemaElement, field, isNullable);
                 }
-            } catch (ClassCastException e) {
-                throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
+            } catch (final ClassCastException e) {
+                throw new IllegalArgumentException("Unsupported type: " + field);
             }
         }
         return schemaElement;
@@ -82,10 +82,10 @@ public class ParquetSchemaUtils {
      * @param isNullable
      * @throws CustomWrapperException
      */
-    private static void addMapType(SchemaElement schemaElement, Type field, boolean isNullable) throws CustomWrapperException {
+    private static void addMapType(final SchemaElement schemaElement, final Type field, final boolean isNullable) {
         try {
             // This element have as OriginalType MAP. The standard MAPS in parquet should have repeated as next element
-            Type nextFieldMap = field.asGroupType().getFields() != null && field.asGroupType().getFields().size() > 0 ? field.asGroupType().getFields().get(0) : null;
+            final Type nextFieldMap = field.asGroupType().getFields() != null && field.asGroupType().getFields().size() > 0 ? field.asGroupType().getFields().get(0) : null;
             
             if (nextFieldMap != null
                     && MAP_VALUES.contains(nextFieldMap.getName()) 
@@ -96,19 +96,20 @@ public class ParquetSchemaUtils {
                     && nextFieldMap.asGroupType().getFields().get(0).getRepetition() == Repetition.REQUIRED) {
 
                 //Create the map schema 
-                SchemaElement schemaElementMap = new SchemaElement(field.getName(), Map.class, isNullable);
+                final SchemaElement schemaElementMap = new SchemaElement(field.getName(), Map.class, isNullable);
                 
                 //Take the key field 
-                Type nextFieldKey = nextFieldMap.asGroupType().getFields().get(0);
+                final Type nextFieldKey = nextFieldMap.asGroupType().getFields().get(0);
                 //Take the value field and if is nullable information
-                Type nextFieldValue = nextFieldMap.asGroupType().getFields().get(1);
-                boolean nextFieldIsNullable = nextFieldValue.getRepetition() == Repetition.REQUIRED  ? false : true;
+                final Type nextFieldValue = nextFieldMap.asGroupType().getFields().get(1);
+                final boolean nextFieldIsNullable = nextFieldValue.getRepetition() == Repetition.REQUIRED  ? false : true;
                 
                 //Add the key to the schema
                 if (nextFieldKey.isPrimitive()) {
                     addPrimitiveType(schemaElementMap, nextFieldKey, nextFieldIsNullable);
                 } else {
-                    throw new CustomWrapperException("ERROR When try to buildSchema. The list element " + field.getName() + " don't have a valid format. Key should be a primitive type");
+                    throw new IllegalArgumentException("ERROR when building the schema. The list element " + field.getName()
+                        + " doesn't have a valid format. Key should be a primitive type");
                 }
                 //Add the value to the schema
                 if (nextFieldValue.isPrimitive()) {
@@ -118,10 +119,10 @@ public class ParquetSchemaUtils {
                 }
                 schemaElement.add(schemaElementMap);
             } else {
-                throw new CustomWrapperException("ERROR When try to buildSchema. The list element " + field.getName() + " don't have a valid format");
+                throw new IllegalArgumentException("ERROR when building the schema. The list element " + field.getName() + " doesn't have a valid format");
             }
-        } catch (ClassCastException e) {
-            throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
+        } catch (final ClassCastException e) {
+            throw new IllegalArgumentException("ERROR when building the schema for type: " + field);
         }
     }
 
@@ -132,22 +133,22 @@ public class ParquetSchemaUtils {
      * @param isNullable
      * @throws CustomWrapperException
      */
-    private static void addListType(SchemaElement schemaElement, Type field, boolean isNullable) throws CustomWrapperException {
+    private static void addListType(final SchemaElement schemaElement, final Type field, final boolean isNullable) {
         try {
             //This element have as OriginalType LIST. The standard LISTS in parquet should have repeated as next element
-            Type nextFieldList = field.asGroupType().getFields() != null && field.asGroupType().getFields().size() > 0 ? field.asGroupType().getFields().get(0) : null;
+            final Type nextFieldList = field.asGroupType().getFields() != null && field.asGroupType().getFields().size() > 0 ? field.asGroupType().getFields().get(0) : null;
             
             if (nextFieldList != null && LIST_VALUES.contains(nextFieldList.getName()) && nextFieldList.getRepetition() != null
                     && nextFieldList.getRepetition() == Repetition.REPEATED && nextFieldList.asGroupType().getFields() != null) {
                 
-                SchemaElement schemaElementList = new SchemaElement(field.getName(), List.class, isNullable);
+                final SchemaElement schemaElementList = new SchemaElement(field.getName(), List.class, isNullable);
                 schemaElement.add(buildSchema(nextFieldList.asGroupType(), schemaElementList));
             } else {
                 //For Backward-compatibility is necessary to add code here. Two list elements is not necessary. 
-                throw new CustomWrapperException("ERROR When try to buildSchema. The list element " + field.getName() + " don't have a valid format");
+                throw new IllegalArgumentException("ERROR when building the schema. The list element " + field.getName() + " doesn't have a valid format");
             }
-        } catch (ClassCastException e) {
-            throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
+        } catch (final ClassCastException e) {
+            throw new IllegalArgumentException("ERROR when building the schema for type: " + field);
         }
     }
 
@@ -158,12 +159,12 @@ public class ParquetSchemaUtils {
      * @param isNullable
      * @throws CustomWrapperException
      */
-    private static void addGroupType(SchemaElement schemaElement, Type field, boolean isNullable) throws CustomWrapperException {
+    private static void addGroupType(final SchemaElement schemaElement, final Type field, final boolean isNullable) {
         try {
-            SchemaElement schemaElementGroup = new SchemaElement(field.getName(), Object.class, isNullable);
+            final SchemaElement schemaElementGroup = new SchemaElement(field.getName(), Object.class, isNullable);
             schemaElement.add(buildSchema(field.asGroupType(), schemaElementGroup));
-        }  catch (ClassCastException e) {
-            throw new CustomWrapperException("ERROR When try to convert to GroupType", e);
+        }  catch (final ClassCastException e) {
+            throw new IllegalArgumentException("ERROR when building the schema for type: " + field);
         }
     }
 
@@ -174,7 +175,7 @@ public class ParquetSchemaUtils {
      * @param isNullable 
      * @throws CustomWrapperException
      */
-    private static void addPrimitiveType(SchemaElement schemaElement, Type field, boolean isNullable) throws CustomWrapperException {
+    private static void addPrimitiveType(final SchemaElement schemaElement, final Type field, final boolean isNullable) {
         schemaElement.add(new SchemaElement(field.getName(), ParquetTypeUtils.toJava(field), isNullable));
     }
 

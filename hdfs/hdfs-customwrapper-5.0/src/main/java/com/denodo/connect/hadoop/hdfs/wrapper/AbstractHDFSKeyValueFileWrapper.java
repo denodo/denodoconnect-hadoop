@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
@@ -32,7 +33,8 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  */
 public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHadoopWrapper {
 
-    private static final Logger logger = Logger.getLogger(AbstractHDFSKeyValueFileWrapper.class);
+    private static final  Logger LOG = LoggerFactory.getLogger(AbstractHDFSKeyValueFileWrapper.class); 
+    
 
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
@@ -42,6 +44,9 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
             new CustomWrapperInputParameter(Parameter.FILE_PATH,
                 "Absolute path for the file or the directory containing the files ", true,
                 CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.FILE_NAME_PATTERN,
+                    "Regular expression to filter file names. Example: (.*)\\.csv ", false,
+                    CustomWrapperInputParameterTypeFactory.stringType()),            
             new CustomWrapperInputParameter(Parameter.DELETE_AFTER_READING,
                 "Delete the file/s after reading? ", true,
                 CustomWrapperInputParameterTypeFactory.booleanType(false)),
@@ -62,20 +67,20 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
     @Override
     public CustomWrapperConfiguration getConfiguration() {
 
-        CustomWrapperConfiguration conf = super.getConfiguration();
+        final CustomWrapperConfiguration conf = super.getConfiguration();
         conf.setDelegateProjections(false);
 
         return conf;
     }
 
     @Override
-    public CustomWrapperSchemaParameter[] doGetSchemaParameters(Map<String, String> inputValues)
+    public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
         throws CustomWrapperException {
 
-        String keyHadoopClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
-        String valueHadoopClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
+        final String keyHadoopClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
+        final String valueHadoopClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
 
-        Collection<SchemaElement> javaSchema =
+        final Collection<SchemaElement> javaSchema =
             AbstractHDFSKeyValueFileReader.getSchema(keyHadoopClass, valueHadoopClass);
 
         return VDPSchemaUtils.buildSchema(javaSchema);
@@ -83,12 +88,12 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
     }
 
     @Override
-    public void doRun(CustomWrapperConditionHolder condition,
-        List<CustomWrapperFieldExpression> projectedFields,
-        CustomWrapperResult result, Map<String, String> inputValues)
+    public void doRun(final CustomWrapperConditionHolder condition,
+        final List<CustomWrapperFieldExpression> projectedFields,
+        final CustomWrapperResult result, final Map<String, String> inputValues)
         throws CustomWrapperException {
 
-        boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
+        final boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
 
         HDFSFileReader reader = null;
         try {
@@ -96,7 +101,12 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
             reader = getHDFSFileReader(inputValues);
             Object data = reader.read();
             while (data != null && !isStopRequested()) {
-                result.addRow((Object[]) data, projectedFields);
+                
+                final Object[] row = (Object[]) data;
+                if (row.length != projectedFields.size()) {
+                    throw new IllegalArgumentException("Data does not match the schema: line with different number of columns");
+                }
+                result.addRow(row, projectedFields);
 
                 data = reader.read();
             }
@@ -104,8 +114,8 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
             if (delete) {
                 reader.delete();
             }
-        } catch (Exception e) {
-            logger.error("Error accessing HDFS file", e);
+        } catch (final Exception e) {
+            LOG.error("Error accessing HDFS file", e);
             throw new CustomWrapperException("Error accessing HDFS file: " + e.getMessage(), e);
         } finally {
 
@@ -113,8 +123,8 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
                 if (reader != null && !delete) {
                     reader.close();
                 }
-            } catch (IOException e) {
-                logger.error("Error releasing the reader", e);
+            } catch (final IOException e) {
+                LOG.error("Error releasing the reader", e);
             }
 
         }

@@ -22,108 +22,166 @@
 package com.denodo.connect.hadoop.hdfs.reader;
 
 import java.io.IOException;
+import java.util.NoSuchElementException;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.denodo.connect.hadoop.hdfs.reader.keyvalue.AbstractHDFSKeyValueFileReader;
+import com.denodo.connect.hadoop.hdfs.util.io.FileFilter;
 
 public abstract class AbstractHDFSFileReader implements HDFSFileReader {
 
-    private static final Logger logger = Logger.getLogger(AbstractHDFSKeyValueFileReader.class);
-    
-    /* A _SUCCESS empty file is created on the successful completion of a MapReduce job; we should ignore this kind of files. */
-    private static final String SUCCESS_FILE_NAME = "_SUCCESS";
+    private static final  Logger LOG = LoggerFactory.getLogger(AbstractHDFSFileReader.class);
+   
 
     private Configuration configuration;
     private Path outputPath;
 
     private FileSystem fileSystem;
-    private FileStatus[] fss;
-    private int currentFileIndex;
+    private RemoteIterator<LocatedFileStatus> fileIterator;
+    private PathFilter fileFilter;
+    private boolean firstReading;
+    private Path currentPath;
 
 
-    public AbstractHDFSFileReader(Configuration configuration, Path outputPath, String user)
+    public AbstractHDFSFileReader(final Configuration configuration, final Path outputPath, final String fileNamePattern, final String user)
         throws IOException, InterruptedException {
 
         this.configuration = configuration;
         this.outputPath = outputPath;
-        this.currentFileIndex = -1;
 
         if (!UserGroupInformation.isSecurityEnabled()) {
             this.fileSystem = FileSystem.get(FileSystem.getDefaultUri(this.configuration), this.configuration, user);
         } else {
             this.fileSystem = FileSystem.get(this.configuration);
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug("FileSystem is: " + this.fileSystem.getUri());
-            logger.debug("Path is: " + outputPath);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("FileSystem is: " + this.fileSystem.getUri());
+            LOG.debug("Path is: " + outputPath);
         }
 
-        PathFilter nonSuccess = new PathFilter() {
-            @Override
-            public boolean accept(Path file) {
-                return !SUCCESS_FILE_NAME.equals(file.getName());
-            }
-        };
-        this.fss = this.fileSystem.listStatus(outputPath, nonSuccess);
-        if (ArrayUtils.isEmpty(this.fss)) {
-            throw new IOException("'" + outputPath + "' does not exist or it denotes an empty directory");
-        }
+        this.fileFilter = new FileFilter(fileNamePattern);
+
+        initFileIterator();
+        
+        this.firstReading = true;
 
     }
+
+    public void initFileIterator() throws IOException {
+        
+        this.fileIterator = this.fileSystem.listFiles(this.outputPath, true);
+        if (!this.fileIterator.hasNext()) {
+            throw new IOException("'" + this.outputPath + "' does not exist or it denotes an empty directory");
+        }
+    }
+    
+    public Path nextFilePath() throws IOException {
+
+        Path path = null;
+        boolean found = false;
+        while (this.fileIterator.hasNext() && !found) {
+            
+            final FileStatus fileStatus = this.fileIterator.next();
+            
+            if (this.fileFilter.accept(fileStatus.getPath())) {
+                if (fileStatus.isFile()) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Path of the file to read is: " + fileStatus.getPath());
+                    }
+                    
+                    path = fileStatus.getPath();
+                } else if (fileStatus.isSymlink()) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Path of the symbolic link to read is: " + fileStatus.getSymlink());
+                    }
+                    
+                    path = fileStatus.getSymlink();
+                } else {
+                    throw new IllegalArgumentException(
+                            "'" + fileStatus.getPath() + "' is neither a file nor symbolic link");
+                }
+                found = true;
+            }
+        }
+        
+        if (path == null) {
+            throw new NoSuchElementException();
+        }
+
+        return path;
+    }
+    
+    public void openReader(final FileSystem fs, final Configuration conf) throws IOException {
+
+        try {
+            this.currentPath = nextFilePath();
+            doOpenReader(fs, this.currentPath, conf);
+        
+        } catch (final NoSuchElementException e) {
+            throw e;
+        } catch (final IOException e) {
+            throw new IOException("'" + this.currentPath + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        } catch (final RuntimeException e) {
+            throw new RuntimeException("'" + this.currentPath + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        }
+    }
+    
 
     @Override
     public Object read() throws IOException {
+        
+        try {
 
-        if (isFirstReading()) {
-            nextFileIndex();
-            openReader(this.fileSystem, this.fss[this.currentFileIndex].getPath(),
-                this.configuration);
-        }
-
-        Object data = doRead();
-        if (data != null) {
-            return data;
-        }
-
-        // This reader does not have anything read -> take next one
-        closeReader();
-
-        // Take next file status reader
-        nextFileIndex();
-        if (this.fss.length > this.currentFileIndex) {
-            openReader(this.fileSystem, this.fss[this.currentFileIndex].getPath(),
-                this.configuration);
-            data = doRead();
+            if (isFirstReading()) {
+                openReader(this.fileSystem, this.configuration);
+                this.firstReading = false;
+            }
+            
+            Object data = doRead();
             if (data != null) {
                 return data;
             }
-            return read();
+    
+            // This reader does not have anything read -> take next one
+            closeReader();
+    
+            // Take next file
+            if (this.fileIterator.hasNext()) {
+                openReader(this.fileSystem, this.configuration);
+                data = doRead();
+                if (data != null) {
+                    return data;
+                }
+                closeReader();
+                return read();
+            }
+    
+            close();
+            return null;
+
+        } catch (final NoSuchElementException e) {
+            return null;
+        } catch (final IOException e) {
+            throw new IOException("'" + this.currentPath + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        } catch (final RuntimeException e) {
+            throw new RuntimeException("'" + this.currentPath + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
         }
 
-        close();
-        return null;
-
     }
-
+    
     private boolean isFirstReading() {
-        return this.currentFileIndex < 0;
+        return this.firstReading;
     }
 
-    public void nextFileIndex() {
-        this.currentFileIndex++;
-    }
-
-    public boolean isFile(Path path) throws IOException {
-        return this.fileSystem.isFile(path);
-    }
 
     @Override
     public void close() throws IOException {
@@ -145,7 +203,7 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
         this.fileSystem = null;
     }
 
-    public abstract void openReader(FileSystem fs, Path path, Configuration conf) throws IOException;
+    public abstract void doOpenReader(FileSystem fs, Path path, Configuration conf) throws IOException;
 
     public abstract Object doRead() throws IOException;
 
