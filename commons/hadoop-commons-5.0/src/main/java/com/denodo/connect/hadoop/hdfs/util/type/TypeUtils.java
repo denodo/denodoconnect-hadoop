@@ -22,7 +22,6 @@
 package com.denodo.connect.hadoop.hdfs.util.type;
 
 import java.math.BigDecimal;
-import java.nio.ByteBuffer;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,18 +31,25 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.ByteWritable;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.ShortWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.VIntWritable;
+import org.apache.hadoop.io.VLongWritable;
 import org.apache.hadoop.io.Writable;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public final class TypeUtils {
+    
+    private static final  Logger LOG = LoggerFactory.getLogger(TypeUtils.class);    
 
-    private static final Logger logger = Logger.getLogger(TypeUtils.class);
 
     private TypeUtils() {
 
@@ -57,12 +63,21 @@ public final class TypeUtils {
         if (Text.class.getName().equalsIgnoreCase(hadoopClass)) {
             return String.class;
         }
+        if (ShortWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return Short.class;
+        }
         if (IntWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Integer.class;
         }
+        if (VIntWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return Integer.class;
+        }        
         if (LongWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Long.class;
         }
+        if (VLongWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return Long.class;
+        }        
         if (BooleanWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Boolean.class;
         }
@@ -73,13 +88,16 @@ public final class TypeUtils {
             return Float.class;
         }
         if (ByteWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
-            return ByteBuffer.class;
+            return Byte.class;
         }
+        if (BytesWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return byte[].class;
+        }        
         if (StringUtils.endsWith(hadoopClass, "[]")) {
             return List.class;
         }
 
-        logger.warn("Class '" + hadoopClass + "' is not supported. Returning String.class");
+        LOG.warn("Class '" + hadoopClass + "' is not supported. Returning String.class");
         return String.class;
     }
 
@@ -91,6 +109,9 @@ public final class TypeUtils {
         if (String.class.equals(javaClass)) {
             return Types.VARCHAR;
         }
+        if (Short.class.equals(javaClass)) {
+            return Types.SMALLINT;
+        }        
         if (Integer.class.equals(javaClass)) {
             return Types.INTEGER;
         }
@@ -106,7 +127,10 @@ public final class TypeUtils {
         if (Float.class.equals(javaClass)) {
             return Types.FLOAT;
         }
-        if (ByteBuffer.class.equals(javaClass)) {
+        if (Byte.class.equals(javaClass)) {
+            return Types.BIT;
+        }        
+        if (byte[].class.equals(javaClass)) {
             return Types.VARBINARY;
         }
         if (List.class.equals(javaClass)) {
@@ -125,7 +149,7 @@ public final class TypeUtils {
             return Types.DATE;
         }
 
-        logger.warn("Class '" + javaClass + "' is not supported. Returning Types.VARCHAR");
+        LOG.warn("Class '" + javaClass + "' is not supported. Returning Types.VARCHAR");
         return Types.VARCHAR;
     }
 
@@ -143,12 +167,21 @@ public final class TypeUtils {
         if (Text.class.getName().equalsIgnoreCase(hadoopClass)) {
             return ((Text) value).toString();
         }
+        if (ShortWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return Short.valueOf(((ShortWritable) value).get());
+        }        
         if (IntWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Integer.valueOf(((IntWritable) value).get());
         }
+        if (VIntWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return Integer.valueOf(((IntWritable) value).get());
+        }        
         if (LongWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Long.valueOf(((LongWritable) value).get());
         }
+        if (VLongWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return Long.valueOf(((LongWritable) value).get());
+        }        
         if (BooleanWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Boolean.valueOf(((BooleanWritable) value).get());
         }
@@ -158,6 +191,12 @@ public final class TypeUtils {
         if (FloatWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Float.valueOf(((FloatWritable) value).get());
         }
+        if (BytesWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return ((BytesWritable) value).getBytes();
+        }
+        if (ByteWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
+            return Byte.valueOf(((ByteWritable) value).get());
+        }        
         // If it ends with [] -> It's an array
         if (StringUtils.endsWith(hadoopClass, "[]")) {
             final ArrayWritable aw = (ArrayWritable) value;
@@ -168,7 +207,7 @@ public final class TypeUtils {
             return data.toArray(new Object[data.size()]);
         }
 
-        logger.warn("Class '" + hadoopClass + "' is not supported. Returning its writable.toString() value");
+        LOG.warn("Class '" + hadoopClass + "' is not supported. Returning its writable.toString() value");
         return value.toString();
     }
 

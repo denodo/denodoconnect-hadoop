@@ -2,6 +2,7 @@ CURRENT
 -------
 - #37872 - Parquet files: add suport for DATE and DECIMAL types
 - #37987 - Read files recursively in HDFS wrapper
+- #39404 - Complete the support for Key and Value classes of Sequence and Map Wrappers
 
 20170309
 --------
