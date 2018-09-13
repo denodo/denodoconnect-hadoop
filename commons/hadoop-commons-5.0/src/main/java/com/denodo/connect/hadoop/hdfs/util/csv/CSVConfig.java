@@ -22,8 +22,10 @@
 package com.denodo.connect.hadoop.hdfs.util.csv;
 
 import org.apache.commons.lang.CharUtils;
+import org.apache.commons.lang.StringUtils;
 
 public class CSVConfig {
+    
     
     private final Character separator;
     private final Character quote; 
@@ -31,18 +33,20 @@ public class CSVConfig {
     private final Character escape; 
     private final boolean ignoreSpaces;
     private final boolean header;
+    
+
 
     public CSVConfig(final String separator, final String quote, final String commentMarker, final String escape, final boolean ignoreSpaces,
             final boolean header) {
-        
-        this.separator = CharUtils.toCharacterObject(separator);
+
+        this.separator = handleInvisibleChars(separator);
         this.quote = CharUtils.toCharacterObject(quote);
         this.commentMarker = CharUtils.toCharacterObject(commentMarker);
         this.escape = CharUtils.toCharacterObject(escape);
         this.ignoreSpaces = ignoreSpaces;
         this.header = header;
     }
-    
+
     public boolean isSeparator() {
         return this.separator != null;
     }
@@ -83,5 +87,32 @@ public class CSVConfig {
         return this.header;
     }
     
+    private Character handleInvisibleChars(final String sep) {
+        
+        if (StringUtils.isEmpty(sep)) {
+            return null;
+        }
+        
+        char c;
+        switch (sep) {
+        case "\\t":
+            c = '\t';
+            break;
+        case "\\n":
+            c = '\n';
+            break;
+        case "\\r":
+            c = '\r';
+            break;
+        case "\\f":
+            c = '\f';
+            break;
+
+        default:
+            c = sep.charAt(0);
+        }
+        
+        return Character.valueOf(c);
+    }
     
 }
