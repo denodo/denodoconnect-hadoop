@@ -14,12 +14,13 @@
 
     <properties>
         <avro.version>1.8.2</avro.version>
+        <aws.sdk.version>1.11.199</aws.sdk.version>
         <commons-lang.version>2.6</commons-lang.version> 
         <commons-io.version>2.6</commons-io.version>        
         <hadoop.version>2.9.1</hadoop.version>
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version>
-        <httpclient.version>4.3.2</httpclient.version>
-        <httpcore.version>4.3.1</httpcore.version>          
+        <httpclient.version>4.5.2</httpclient.version> <!-- minimin required by aws-sdk  -->
+        <httpcore.version>4.4.4</httpcore.version>          
         <jets3t.version>0.9.4</jets3t.version>
         <log4j.version>1.2.15</log4j.version> 
         <slf4j.version>1.7.10</slf4j.version>       
@@ -299,6 +300,42 @@
                 </exclusion>
             </exclusions>             
         </dependency>
+        
+       <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>${aws.sdk.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>             
+        </dependency>        
+
+       <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-core</artifactId>
+            <version>${aws.sdk.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>             
+        </dependency> 
+        
+       <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-kms</artifactId>
+            <version>${aws.sdk.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>             
+        </dependency>          
         
         <dependency> 
             <groupId>org.apache.httpcomponents</groupId>
