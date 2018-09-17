@@ -60,7 +60,13 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  * <li>DELETE</li>
  * </ul>
  * CSV records contained in the file will be returned by the wrapper.
+ * 
+ * @deprecated  Since 2018 versions.
+ *    Use VDP standard data sources as XML, JSON or Delimited file or
+ *    HDFS Custom Wrappers with webhdfs scheme.
+ *    Both alternatives are more flexible and powerful.
  */
+@Deprecated
 public class WebHDFSFileWrapper extends AbstractCustomWrapper {
 
     private static final  Logger logger = LoggerFactory.getLogger(WebHDFSFileWrapper.class); 

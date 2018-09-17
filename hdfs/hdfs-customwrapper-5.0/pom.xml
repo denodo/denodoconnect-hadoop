@@ -15,7 +15,7 @@
     <properties>
         <avro.version>1.8.2</avro.version>
         <commons-lang.version>2.6</commons-lang.version> 
-        <commons-io.version>1.4</commons-io.version>        
+        <commons-io.version>2.6</commons-io.version>        
         <hadoop.version>2.9.1</hadoop.version>
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version>
         <httpclient.version>4.3.2</httpclient.version>

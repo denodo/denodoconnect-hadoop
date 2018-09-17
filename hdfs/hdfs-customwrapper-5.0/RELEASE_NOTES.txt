@@ -5,7 +5,8 @@ CURRENT
 - #39404 - Complete the support for Key and Value classes of Sequence and Map Wrappers
 - #31056 - Explain in the manual projection with avro files
 - #33125 - Create a Doc appendix explicitly explaining how to use the Hadoop vendor's own client libs
-- #37754 - Add support for '\t' as separator for TAB's instead of using the TAB space as value for separator.
+- #37754 - Add support for '\t' as separator for TAB's instead of using the TAB space as value for separator
+- #39559 - Deprecate WebHDFSFileWrapper
 
 
 20170307
