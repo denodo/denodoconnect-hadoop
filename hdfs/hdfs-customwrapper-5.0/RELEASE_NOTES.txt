@@ -1,4 +1,4 @@
-CURRENT
+20180918
 -------
 - #37872 - Parquet files: add suport for DATE and DECIMAL types
 - #37987 - Read files recursively in HDFS wrapper
@@ -8,6 +8,7 @@ CURRENT
 - #37754 - Add support for '\t' as separator for TAB's instead of using the TAB space as value for separator
 - #39559 - Deprecate WebHDFSFileWrapper
 - #38339 - Add support for S3A in the HDFS wrapper
+- #37988 - Support for Azure Data Lake Store and Azure Blob files
 
 20170307
 --------

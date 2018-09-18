@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-5.5</artifactId>
-    <version>20180712</version>
+    <version>20180918</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
@@ -21,9 +21,11 @@
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version> 
         <httpclient.version>4.5.2</httpclient.version>  <!-- minimin required by aws-sdk  -->
         <httpcore.version>4.4.4</httpcore.version>  
-        <log4j.version>1.2.15</log4j.version>        
+        <log4j.version>1.2.15</log4j.version>   
+        <jackson.version>2.9.4</jackson.version> 
+        <jets3t.version>0.9.4</jets3t.version>  
+        <jetty.version>6.1.26</jetty.version>              
         <slf4j.version>1.7.10</slf4j.version> 
-        <jets3t.version>0.9.4</jets3t.version>        
         <vdp.version>5.5.0</vdp.version>    
     </properties>
 
@@ -337,7 +339,39 @@
                 </exclusion>
             </exclusions>             
         </dependency>  
-                        
+
+         <!-- >An incorrect version of jackson causes: java.lang.NoClassDefFoundError: Could not initialize class com.amazonaws.ClientConfiguration -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>    
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency> 
+        
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-azure-datalake</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+                       
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-azure</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+
+     <!--   HADOOP-9471 hadoop-client wrongfully excludes jetty-util JAR               -->                               
+       <dependency>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>  
+        
         <dependency> 
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
