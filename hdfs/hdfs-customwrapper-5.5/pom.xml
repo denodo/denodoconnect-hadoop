@@ -21,8 +21,10 @@
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version> 
         <httpclient.version>4.5.2</httpclient.version>  <!-- minimin required by aws-sdk  -->
         <httpcore.version>4.4.4</httpcore.version>  
+        <jsr311.api.version>1.1.1</jsr311.api.version>
         <log4j.version>1.2.15</log4j.version>   
         <jackson.version>2.9.4</jackson.version> 
+        <jersey.bundle.version>1.15</jersey.bundle.version>
         <jets3t.version>0.9.4</jets3t.version>  
         <jetty.version>6.1.26</jetty.version>              
         <slf4j.version>1.7.10</slf4j.version> 
@@ -237,6 +239,20 @@
             <version>${log4j.version}</version>
             <scope>provided</scope>  <!--  by VDP -->                
         </dependency>        
+
+        <!--  Required by webhdfs protocol -->
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>jsr311-api</artifactId>
+            <version>${jsr311.api.version}</version>
+        </dependency>
+        
+        <!--  Required by webhdfs protocol -->
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-bundle</artifactId>
+            <version>${jersey.bundle.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.avro</groupId>
