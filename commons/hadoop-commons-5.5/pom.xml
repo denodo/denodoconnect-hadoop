@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hadoop-commons-5.5</artifactId>
-    <version>20180918</version>
+    <version>20181003</version>
     <packaging>jar</packaging>
     <name>${project.artifactId}</name>
 
@@ -187,18 +187,6 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs-client</artifactId>
-            <version>${hadoop.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>             
-        </dependency>
-
-       <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-aws</artifactId>
             <version>${hadoop.version}</version>
             <exclusions>
                 <exclusion>
