@@ -344,6 +344,12 @@
             </exclusions>             
         </dependency>
         
+     <!-- 
+        IMPORTANT:
+        In Hadoop 3.x S3A depends upon two JARs, alongside hadoop-common and its dependencies.
+         - hadoop-aws
+         - aws-java-sdk-bundle. As this jar is ~ 82MB we decided not to include it and inlcude only aws-java-sdk-* libraries that were required in our tests.
+        --> 
        <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
