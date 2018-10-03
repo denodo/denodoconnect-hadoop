@@ -33,6 +33,15 @@
                 <include>RELEASE_NOTES.txt</include>                
             </includes>
         </fileSet>
+        
+        <fileSet>
+          <directory>${basedir}/src/main/conf/</directory>
+          <outputDirectory>/conf</outputDirectory>
+          <includes>
+            <include>**/*.xml</include>
+          </includes>
+        </fileSet>   
+             
         <fileSet>
           <directory>${basedir}/doc/</directory>
           <outputDirectory>/doc</outputDirectory>

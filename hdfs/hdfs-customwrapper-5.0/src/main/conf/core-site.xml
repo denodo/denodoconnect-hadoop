@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+    <!-- S3 authentication properties -->
+    <!--
+    <property>
+        <name>fs.s3.awsAccessKeyId</name>
+        <description>AWS access key ID</description>
+        <value>YOUR ACCESS KEY ID</value>
+    </property>
+    <property>
+        <name>fs.s3.awsSecretAccessKey</name>
+        <description>AWS secret key</description>
+        <value>YOUR SECRET ACCESS KEY</value>
+    </property>
+    -->
+
+
+    <!-- S3N authentication properties -->
+    <!--
+    <property>
+        <name>fs.s3n.awsAccessKeyId</name>
+        <description>AWS access key ID</description>
+        <value>YOUR ACCESS KEY ID</value>
+    </property>
+    <property>
+        <name>fs.s3n.awsSecretAccessKey</name>
+        <description>AWS secret key</description>
+        <value>YOUR SECRET ACCESS KEY</value>
+    </property>
+    -->
+
+
+    <!-- S3A authentication properties -->
+    <!--
+    <property>
+        <name>fs.s3a.access.key</name>
+        <description>AWS access key ID.</description>
+        <value>YOUR ACCESS KEY ID</value>
+    </property>
+    <property>
+        <name>fs.s3a.secret.key</name>
+        <description>AWS secret key.</description>
+        <value>YOUR SECRET ACCESS KEY</value>
+    </property>
+    -->
+
+    <!-- S3A other properties -->
+    <!--
+    <property>
+        <name>fs.s3a.endpoint</name>
+        <description>AWS S3 endpoint to connect to. An up-to-date list is
+            provided in the AWS Documentation: regions and endpoints. Without this
+            property, the standard region (s3.amazonaws.com) is assumed.
+        </description>
+        <value>YOUR AWS S3 ENDPOINT</value>
+    </property>
+    -->
+
+
+    <!-- Azure Data Lake credentials -->
+    <!--
+    <property>
+        <name>fs.adl.oauth2.access.token.provider.type</name>
+        <value>ClientCredential</value>
+    </property>
+    <property>
+        <name>fs.adl.oauth2.refresh.url</name>
+        <value>YOUR TOKEN ENDPOINT</value>
+    </property>
+    <property>
+        <name>fs.adl.oauth2.client.id</name>
+        <value>YOUR CLIENT ID</value>
+    </property>
+    <property>
+        <name>fs.adl.oauth2.credential</name>
+        <value>YOUR CLIENT SECRET</value>
+    </property>
+    -->
+
+
+    <!-- Azure Blob Storage credentials -->
+    <!--
+    <property>
+        <name>fs.azure.account.key.YOURACCOUNT.blob.core.windows.net</name>
+        <value>YOUR ACCESS KEY</value>
+    </property>
+    -->
+
+</configuration>

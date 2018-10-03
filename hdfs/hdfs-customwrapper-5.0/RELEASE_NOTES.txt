@@ -9,6 +9,8 @@
 - #39559 - Deprecate WebHDFSFileWrapper
 - #38339 - Add support for S3A in the HDFS wrapper
 - #37988 - Support for Azure Data Lake Store and Azure Blob files
+- #39661 - Clearly state in doc that direct access to Avro and Parquet files is not a recommended scenario
+- #39845 - Distribute sample core-site.xml
 
 20170307
 --------

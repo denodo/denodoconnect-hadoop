@@ -33,6 +33,15 @@
                 <include>RELEASE_NOTES.txt</include>                
             </includes>
         </fileSet>
+        
+        <fileSet>
+          <directory>${basedir}/../hdfs-customwrapper-5.0/src/main/conf/</directory>
+          <outputDirectory>/conf</outputDirectory>
+          <includes>
+            <include>**/*.xml</include>
+          </includes>
+        </fileSet>   
+                
         <fileSet>
           <directory>${basedir}/../hdfs-customwrapper-5.0/doc/</directory>
           <outputDirectory>/doc</outputDirectory>
