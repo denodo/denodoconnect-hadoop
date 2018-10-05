@@ -55,24 +55,47 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
     public AbstractHDFSFileReader(final Configuration configuration, final Path outputPath, final String fileNamePattern, final String user)
         throws IOException, InterruptedException {
 
-        this.configuration = configuration;
-        this.outputPath = outputPath;
+        try {
+            this.configuration = configuration;
+            this.outputPath = outputPath;
 
-        if (!UserGroupInformation.isSecurityEnabled()) {
-            this.fileSystem = FileSystem.get(FileSystem.getDefaultUri(this.configuration), this.configuration, user);
-        } else {
-            this.fileSystem = FileSystem.get(this.configuration);
-        }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("FileSystem is: " + this.fileSystem.getUri());
-            LOG.debug("Path is: " + outputPath);
-        }
+            if (!UserGroupInformation.isSecurityEnabled()) {
+                this.fileSystem = FileSystem.get(FileSystem.getDefaultUri(this.configuration), this.configuration,
+                        user);
+            } else {
+                this.fileSystem = FileSystem.get(this.configuration);
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("FileSystem is: " + this.fileSystem.getUri());
+                LOG.debug("Path is: " + outputPath);
+            }
 
-        this.fileFilter = new FileFilter(fileNamePattern);
+            this.fileFilter = new FileFilter(fileNamePattern);
 
-        initFileIterator();
+            initFileIterator();
+
+            this.firstReading = true;
         
-        this.firstReading = true;
+            // When an error occurs, if the FileSystem is not closed, it will remain in the Hadoop cache until the JVM is restarted. Redmine #39931
+        } catch (final IOException e) {
+            if (this.fileSystem != null) {
+                this.fileSystem.close();
+            }
+            
+            throw e;
+        } catch (final InterruptedException e) {
+            if (this.fileSystem != null) {
+                this.fileSystem.close();
+            }
+            
+            throw e;
+        } catch (final RuntimeException e) {
+            if (this.fileSystem != null) {
+                this.fileSystem.close();
+            }
+            
+            throw e;
+        }
 
     }
 
