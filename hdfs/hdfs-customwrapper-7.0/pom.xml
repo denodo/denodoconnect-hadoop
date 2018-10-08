@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-7.0</artifactId>
-    <version>20181003</version>
+    <version>20181008</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
@@ -160,6 +160,12 @@
                 </executions>
             </plugin>
 
+            <!-- 
+             -Copy dependencies to /lib, then the assembly plugin retrieves jars from there, 
+              instead of using dependencySet element in dist.xml as the useTransitiveDependencies
+              property is an all/nothing option, and we want to include only the transitive dependencies
+               not excluded in this pom.
+             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>

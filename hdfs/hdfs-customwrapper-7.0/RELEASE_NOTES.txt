@@ -1,3 +1,8 @@
+20181008
+-------
+- #39744 - Rebranding of the HDFS wrapper
+- #39931 - Failed connections could require restarting VDP to refresh wrapper configuration files
+
 20181003
 --------
 - Created first version of this component for Denodo 7.0

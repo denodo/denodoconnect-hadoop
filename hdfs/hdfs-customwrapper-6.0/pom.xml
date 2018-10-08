@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-6.0</artifactId>
-    <version>20181003</version>
+    <version>20181008</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
@@ -22,7 +22,7 @@
         <httpclient.version>4.5.2</httpclient.version>  <!-- minimin required by aws-sdk  -->
         <httpcore.version>4.4.4</httpcore.version>  
         <jackson.version>2.9.4</jackson.version>      
-        <jets3t.version>0.9.4</jets3t.version>   
+        <jets3t.version>0.9.4</jets3t.version>    <!--  0.9.4 Fix S3 Service - Amazon signature version 4 -->    
         <log4j.version>1.2.15</log4j.version>    
         <jetty.version>6.1.26</jetty.version>    
         <slf4j.version>1.7.10</slf4j.version> 
@@ -160,6 +160,12 @@
                 </executions>
             </plugin>
 
+            <!-- 
+             -Copy dependencies to /lib, then the assembly plugin retrieves jars from there, 
+              instead of using dependencySet element in dist.xml as the useTransitiveDependencies
+              property is an all/nothing option, and we want to include only the transitive dependencies
+               not excluded in this pom.
+             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -398,6 +404,7 @@
             <scope>runtime</scope>             
         </dependency>
         
+        <!--  Overrides jets3t from hadoop-commons with v0.94 -> Fix S3 Service - Amazon signature version 4 -->        
         <dependency>
             <groupId>net.java.dev.jets3t</groupId>
             <artifactId>jets3t</artifactId>
