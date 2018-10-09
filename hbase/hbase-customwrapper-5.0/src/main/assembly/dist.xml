@@ -47,19 +47,15 @@
                 <include>MIGRATION_*.txt</include>
             </includes>
         </fileSet>
-    </fileSets>
 
-
-    <dependencySets>
-        <dependencySet>
+        <fileSet>
+            <directory>${project.build.directory}/lib</directory>
             <outputDirectory>/lib</outputDirectory>
-            <unpack>false</unpack>
-            <scope>runtime</scope>
-            <excludes>
-                <exclude>${project.groupId}:${project.artifactId}</exclude>
-            </excludes>
-        </dependencySet>
-    </dependencySets>
+            <includes>
+                <include>*.*</include>
+            </includes>
+        </fileSet>            
+    </fileSets>
 
 
 </assembly>

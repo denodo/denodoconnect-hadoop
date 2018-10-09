@@ -8,14 +8,15 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hbase-customwrapper-5.0</artifactId>
-    <version>20170111</version>
+    <version>20181008</version>
     <packaging>jar</packaging>
     <name>denodo-hbase-customwrapper</name>
 
     <properties>
-        <hadoop.version>2.7.3</hadoop.version>
-        <hbase.version>1.2.4</hbase.version>
-        <zookeeper.version>3.4.9</zookeeper.version>
+        <hadoop.version>2.7.4</hadoop.version>
+        <hbase.version>1.4.7</hbase.version>
+        <jets3t.version>0.9.4</jets3t.version>    <!--  0.9.4 Fix S3 Service - Amazon signature version 4 --> 
+        <htrace.version>4.1.0-incubating</htrace.version>
     </properties>
 
     <!-- *************************** -->
@@ -118,28 +119,54 @@
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-shade-plugin</artifactId>
-              <version>2.3</version>
+              <version>2.4</version>
+                <configuration>
+                    <finalName>${project.artifactId}-${project.version}-jar-with-dependencies</finalName>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>  <!--  Exclude signature files http://zhentao-li.blogspot.com/2012/06/maven-shade-plugin-invalid-signature.html -->
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>              
               <executions>
                 <execution>
                   <phase>package</phase>
                   <goals>
                     <goal>shade</goal>
                   </goals>
-                  <configuration>
-                    <outputFile>target/${project.artifactId}-${project.version}-jar-with-dependencies.jar</outputFile>
-                    <filters>
-                      <filter>
-                        <artifact>*:*</artifact>
-                        <excludes>
-                          <exclude>META-INF/maven/**/*</exclude>
-                        </excludes>
-                      </filter>
-                    </filters>
-                  </configuration>
                 </execution>
               </executions>
             </plugin>
 
+            <!-- 
+             -Copy dependencies to /lib, then the assembly plugin retrieves jars from there, 
+              instead of using dependencySet element in dist.xml as the useTransitiveDependencies
+              property is an all/nothing option, and we want to include only the transitive dependencies
+               not excluded in this pom.
+             -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <excludeScope>provided</excludeScope>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-assembly-plugin</artifactId>
@@ -187,98 +214,78 @@
         </dependency>
 
         <dependency>
-            <groupId>com.denodo.commons</groupId>
-            <artifactId>denodo-store</artifactId>
-            <version>1.4</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server-base</artifactId>
             <version>5.0.0_4</version>
             <scope>provided</scope>
         </dependency>
-
-        <dependency>
-            <groupId>com.denodo.vdp</groupId>
-            <artifactId>denodo-vdp-server-ext</artifactId>
-            <version>5.0.0_4</version>
-            <scope>provided</scope>
-        </dependency>
         <!-- *** -->
 
-        <dependency>
+     <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop.version}</version>
-            <exclusions>
+             <exclusions>
+                <exclusion>
+                    <groupId>org.apache.avro</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>              
                 <exclusion>
                     <groupId>commons-cli</groupId>
                     <artifactId>commons-cli</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>commons-httpclient</groupId>
-                    <artifactId>commons-httpclient</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-el</groupId>
-                    <artifactId>commons-el</artifactId>
-                </exclusion>
-                <exclusion>
-                  <groupId>commons-logging</groupId>
-                  <artifactId>commons-logging-api</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-math3</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>tomcat</groupId>
-                    <artifactId>jasper-compiler</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>tomcat</groupId>
-                    <artifactId>jasper-runtime</artifactId>
-                </exclusion>
+                </exclusion>                
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
-                </exclusion>
+                </exclusion>  
                 <exclusion>
-                    <groupId>javax.servlet.jsp</groupId>
-                    <artifactId>jsp-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>jetty</artifactId>
-                </exclusion>
+                    <groupId>org.apache.directory.server</groupId>
+                    <artifactId>apacheds-kerberos-codec</artifactId>
+               </exclusion>               
                 <exclusion>
                     <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>jetty-util</artifactId>
+                    <artifactId>*</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty</artifactId>
+                </exclusion> 
                 <exclusion>
                   <groupId>com.sun.jersey</groupId>
                   <artifactId>jersey-core</artifactId>
                 </exclusion>
                 <exclusion>
                   <groupId>com.sun.jersey</groupId>
-                  <artifactId>jersey-json</artifactId>
-                </exclusion>
-                <exclusion>
-                  <groupId>com.sun.jersey</groupId>
                   <artifactId>jersey-server</artifactId>
-                </exclusion>                
-                <exclusion>
-                  <groupId>org.aspectj</groupId>
-                  <artifactId>aspectjrt</artifactId>
                 </exclusion>
                 <exclusion>
-                  <groupId>net.java.dev.jets3t</groupId>
-                  <artifactId>jets3t</artifactId>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>jersey-json</artifactId>
                 </exclusion>
-            </exclusions>
+                 <exclusion>
+                    <groupId>com.jcraft</groupId>
+                    <artifactId>jsch</artifactId>
+                </exclusion>               
+            </exclusions> 
         </dependency>
+
+        
+        <!--  Overrides jets3t from hadoop-common with v0.94 -> Fix S3 Service - Amazon signature version 4 -->
+        <dependency>
+            <groupId>net.java.dev.jets3t</groupId>
+            <artifactId>jets3t</artifactId>
+            <version>${jets3t.version}</version>
+               <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>              
+        </dependency>          
 
         <dependency>
             <groupId>org.apache.hbase</groupId>
@@ -286,20 +293,41 @@
             <version>${hbase.version}</version>
             <exclusions>
                 <exclusion>
-                  <groupId>com.sun.jersey</groupId>
-                  <artifactId>jersey-core</artifactId>
+                    <groupId>org.apache.avro</groupId>
+                    <artifactId>avro</artifactId>
                 </exclusion>
                 <exclusion>
-                  <groupId>com.sun.jersey</groupId>
-                  <artifactId>jersey-json</artifactId>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-mapreduce-client-core</artifactId>
                 </exclusion>
                 <exclusion>
-                  <groupId>com.sun.jersey</groupId>
-                  <artifactId>jersey-server</artifactId>
+                    <groupId>com.github.stephenc.findbugs</groupId>
+                    <artifactId>findbugs-annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
-
+        
+        <!-- 
+        htrace-core is a dependency of hadoop-commons. Newer versions of hadoop-common
+        uses htrace-core4. We include this dependency for avoiding NoClassDefFoundError on htrace-core4
+        when using newer versions of hadoop or Hadoop vendor’s client libraries like Cloudera
+         -->
+        <dependency>
+            <groupId>org.apache.htrace</groupId>
+            <artifactId>htrace-core4</artifactId>
+            <version>${htrace.version}</version>
+            <exclusions>
+                <exclusion>
+                     <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>          
+            </exclusions>   
+        </dependency>  
+        
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -310,34 +338,12 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.6.1</version>
-        </dependency>
-
-        <dependency>
-        	<groupId>org.apache.zookeeper</groupId>
-        	<artifactId>zookeeper</artifactId>
-        	<version>${zookeeper.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.netty</groupId>
-                    <artifactId>netty</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-        	<groupId>org.apache.thrift</groupId>
-        	<artifactId>libfb303</artifactId>
-        	<version>0.9.0</version>
-        </dependency>        
+        </dependency>     
         
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20090211</version>
+            <version>20180813</version>
         </dependency>
         
         <dependency>
@@ -347,14 +353,10 @@
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
-                     <groupId>org.apache.avro</groupId>
-                    <artifactId>avro-mapred</artifactId>
-                </exclusion>               
-                <exclusion>
-                     <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-hdfs</artifactId>
-                </exclusion>            
-            </exclusions>
+                     <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>          
+            </exclusions>            
         </dependency>
         
     </dependencies>
