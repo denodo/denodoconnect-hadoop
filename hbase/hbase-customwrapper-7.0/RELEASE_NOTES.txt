@@ -1,0 +1,4 @@
+CURRENT
+=======
+
+- Created first version of this component for Denodo 7.0
