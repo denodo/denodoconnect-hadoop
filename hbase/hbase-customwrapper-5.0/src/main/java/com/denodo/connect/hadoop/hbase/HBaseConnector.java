@@ -183,7 +183,6 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         if (inputValues.get(ParameterNaming.CONF_PATH_CONF) != null) {
             configurationPath = ((CustomWrapperInputParameterLocalRouteValue) getInputParameterValue(ParameterNaming.CONF_PATH_CONF)).getPath();
         }
-        final Configuration hbaseConfig = getHBaseConfig(inputValues, configurationPath);
         
       
         /** Connection to the cluster. A single connection shared by all application threads. */
@@ -192,11 +191,12 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         Table table = null;
         try {
            
+            final Configuration hbaseConfig = getHBaseConfig(inputValues, configurationPath);
             final TableName tableName =  TableName.valueOf(inputValues.get(ParameterNaming.CONF_TABLE_NAME));
             connection = ConnectionFactory.createConnection(hbaseConfig);
             
          
-            Admin admin = connection.getAdmin();
+            final Admin admin = connection.getAdmin();
             try{
                 if (!admin.tableExists(tableName)) {
                     try{
@@ -208,10 +208,10 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                     }
                 } 
 
-            }catch(RuntimeException e){
+            }catch(final RuntimeException e){
                 //TODO this handler of this execption is because in the version 1.x of hbase the exeception that is thown is a NPE, that is not very descriptive,
                 //before hbase trew other kind of execption more descriptive. When hbase fix this bug, we can delete this handler 
-                StackTraceElement[] traceStack = e.getStackTrace();
+                final StackTraceElement[] traceStack = e.getStackTrace();
                 if(e.getCause().toString().contains("NullPointerException")){
                     for (int i = 0; i < traceStack.length; i++) {
 
@@ -240,7 +240,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
             final CustomWrapperCondition complexCondition = condition.getComplexCondition();
             if (isSingleRowResult(complexCondition)) {
                 log(LOG_TRACE, "The query returns a single row. Using the methos GET");
-                CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) complexCondition;                
+                final CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) complexCondition;                
                 
                 final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) simpleCondition.getRightExpression()[0];
                 final String value = simpleExpression.getValue().toString();
@@ -255,16 +255,16 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                 }
             } else {
                 log(LOG_TRACE, "The query could be return several rows. Using the methos SCAN");
-                Scan scan = new Scan();
+                final Scan scan = new Scan();
                 if (inputValues.containsKey(ParameterNaming.CONF_CACHING_SIZE)) {
-                    Integer cacheSize = (Integer) getInputParameterValue(ParameterNaming.CONF_CACHING_SIZE).getValue();
+                    final Integer cacheSize = (Integer) getInputParameterValue(ParameterNaming.CONF_CACHING_SIZE).getValue();
                     log(LOG_INFO, "Using cache size of " + cacheSize);
                     scan.setCaching(cacheSize.intValue());
                 }
                 
                 for (final Map.Entry<String, List<HBaseColumnDetails>> entry : mappingMap.entrySet()) {
-                    String family = entry.getKey();
-                    List<HBaseColumnDetails> columns = entry.getValue();
+                    final String family = entry.getKey();
+                    final List<HBaseColumnDetails> columns = entry.getValue();
                     for (final HBaseColumnDetails column : columns) {
                         scan.addColumn(family.getBytes(), column.getName().getBytes());
                     }
@@ -289,7 +289,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
                     recordShellScanCommand(tableName.getNameAsString(), mappingMap, null, null);
                 }
                 
-                Filter filter = buildFilter(rowKeyFilter, conditionFilter);
+                final Filter filter = buildFilter(rowKeyFilter, conditionFilter);
                 scan.setFilter(filter);
                 
                 long startTime = System.nanoTime();
@@ -330,14 +330,14 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         } catch (final TableNotFoundException e) {
             log(LOG_ERROR, "Table not found: " + ExceptionUtils.getStackTrace(e));
             throw new CustomWrapperException("Table not found: " + e.getMessage(), e);
-        } catch (final Exception e) {
+        } catch (final Throwable e) {
             log(LOG_ERROR, "Error accessing HBase: " + ExceptionUtils.getStackTrace(e));
             throw new CustomWrapperException("Error accessing HBase: " + e.getMessage(), e);
         } finally {
             if (table != null) {
                 try {
                     table.close();
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     log(LOG_ERROR, "Error closing HBase table: " + ExceptionUtils.getStackTrace(e));
                 }
             }
@@ -345,7 +345,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
             if (connection != null)
                 try {
                     connection.close();
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     log(LOG_ERROR, "Error closing connection HBase table: " + ExceptionUtils.getStackTrace(e));
                 }
 
@@ -358,12 +358,12 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
      * projectedFields will not contain subfields so this method only deals with families and not with their columns.
      * VDP will postfilter results while this bug is not fixed.
      */
-    private static Map<String, List<HBaseColumnDetails>> filterNonProjectedFields(Map<String, List<HBaseColumnDetails>> mappingMap,
-            List<CustomWrapperFieldExpression> projectedFields) {
+    private static Map<String, List<HBaseColumnDetails>> filterNonProjectedFields(final Map<String, List<HBaseColumnDetails>> mappingMap,
+            final List<CustomWrapperFieldExpression> projectedFields) {
 
-        Map<String, List<HBaseColumnDetails>> projectionMap = new LinkedHashMap<String, List<HBaseColumnDetails>>();
-        for (CustomWrapperFieldExpression projectedField : projectedFields) {
-            String projectedFieldName = projectedField.getName();
+        final Map<String, List<HBaseColumnDetails>> projectionMap = new LinkedHashMap<String, List<HBaseColumnDetails>>();
+        for (final CustomWrapperFieldExpression projectedField : projectedFields) {
+            final String projectedFieldName = projectedField.getName();
             if (mappingMap.containsKey(projectedFieldName)) {
                 projectionMap.put(projectedFieldName, mappingMap.get(projectedFieldName));
             }
@@ -372,11 +372,11 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         return projectionMap;
     }
 
-    private Configuration getHBaseConfig(final Map<String, String> inputValues, String configurationPath) {
+    private Configuration getHBaseConfig(final Map<String, String> inputValues, final String configurationPath) {
         
         final Configuration config = HBaseConfiguration.create();
         if(configurationPath!=null){
-            String path= inputValues.get(ParameterNaming.CONF_PATH_CONF);
+            final String path= inputValues.get(ParameterNaming.CONF_PATH_CONF);
             config.addResource(new Path(path));        
         }
         final String hbaseIP = inputValues.get(ParameterNaming.CONF_HBASE_IP);
@@ -421,10 +421,10 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         return "hbase/_HOST@" + realm;
     }
     
-    private static boolean isSingleRowResult(CustomWrapperCondition condition) {
+    private static boolean isSingleRowResult(final CustomWrapperCondition condition) {
         
         if (condition != null && condition.isSimpleCondition()) {
-            CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) condition;
+            final CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) condition;
 
             return ParameterNaming.COL_ROWKEY.equals(simpleCondition.getField().toString())
                 && (Operator.EQUALS_TO.equals(simpleCondition.getOperator()));
@@ -433,7 +433,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         return false;
     }
 
-    private Filter buildRowKeyFilter(String tableName) {
+    private Filter buildRowKeyFilter(final String tableName) {
         
         final String equivalentQuery = "Before executing this query in the shell you should import the following class:\n"
                 + "import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter \nscan '" + tableName
@@ -444,10 +444,10 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         return new FirstKeyOnlyFilter();
     }
     
-    private static Filter buildFilter(Filter rowKeyFilter, Filter conditionFilter) {
+    private static Filter buildFilter(final Filter rowKeyFilter, final Filter conditionFilter) {
         
         if (rowKeyFilter != null || conditionFilter != null) {
-            FilterList mergedFilter = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+            final FilterList mergedFilter = new FilterList(FilterList.Operator.MUST_PASS_ALL);
             if (rowKeyFilter != null) {
                 mergedFilter.addFilter(rowKeyFilter);
             }
@@ -491,7 +491,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
             final FilterList filterList = new FilterList(operator);
             final CustomWrapperOrCondition conditionOr = (CustomWrapperOrCondition) conditionComplex;
             for (final CustomWrapperCondition condition : conditionOr.getConditions()) {
-                Filter simpleFilter = buildFilterFromCondition(condition, not, scan, tableName, mappingMap);
+                final Filter simpleFilter = buildFilterFromCondition(condition, not, scan, tableName, mappingMap);
                 if (simpleFilter != null) {
                     filterList.addFilter(simpleFilter);
                 }
@@ -823,7 +823,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         }
     }
 
-    private static void checkConditionSyntax(final CustomWrapperSimpleCondition simpleCondition, final String familyColumn, boolean notCondition)
+    private static void checkConditionSyntax(final CustomWrapperSimpleCondition simpleCondition, final String familyColumn, final boolean notCondition)
             throws CustomWrapperException {
         
         if ((familyColumn.equals(ParameterNaming.COL_STARTROW) || familyColumn.equals(ParameterNaming.COL_STOPROW))
@@ -833,18 +833,18 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         }
     }
 
-    private static Object[] processRow(final Result resultSet, final Map<String, List<HBaseColumnDetails>> mappingMap, List<CustomWrapperFieldExpression> projectedFields) {
+    private static Object[] processRow(final Result resultSet, final Map<String, List<HBaseColumnDetails>> mappingMap, final List<CustomWrapperFieldExpression> projectedFields) {
 
         final Object[] row = new Object[projectedFields.size()];
 
         int i = 0;
-        for (CustomWrapperFieldExpression projectedField : projectedFields) {
+        for (final CustomWrapperFieldExpression projectedField : projectedFields) {
 
-            String projectedFieldName = projectedField.getName();
+            final String projectedFieldName = projectedField.getName();
             if (projectedFieldName.equals(ParameterNaming.COL_ROWKEY)) {
                 row[i] = Bytes.toString(resultSet.getRow());
             } else {
-                List<HBaseColumnDetails> mappingColumns = mappingMap.get(projectedFieldName);
+                final List<HBaseColumnDetails> mappingColumns = mappingMap.get(projectedFieldName);
                 
                 if (mappingColumns != null) {
                     final NavigableMap<byte[], byte[]> resultFamily = resultSet.getFamilyMap(projectedFieldName.getBytes());
@@ -915,8 +915,8 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         commandSb.append("get '").append(tableName).append("','").append(value).append("',{COLUMNS => [");
 
         for (final Map.Entry<String, List<HBaseColumnDetails>> entry : mappingMap.entrySet()) {
-            String mappingFamily = entry.getKey();
-            List<HBaseColumnDetails> mappingColumns = entry.getValue();
+            final String mappingFamily = entry.getKey();
+            final List<HBaseColumnDetails> mappingColumns = entry.getValue();
             for (final HBaseColumnDetails mappingColumn : mappingColumns) {
                 commandSb.append("'").append(mappingFamily).append(':').append(mappingColumn.getName()).append("',");
             }
@@ -927,20 +927,20 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         }
         commandSb.append("]}");
 
-        String command = commandSb.toString();
+        final String command = commandSb.toString();
         log(LOG_TRACE, "HBase shell command:" + command);
         getCustomWrapperPlan().addPlanEntry("HBase shell command " + this.filterNumber++, command);
     }
 
-    private void recordShellScanCommand(final String tableName, final Map<String, List<HBaseColumnDetails>> mappingMap, String startRow,
-            String stopRow) {
+    private void recordShellScanCommand(final String tableName, final Map<String, List<HBaseColumnDetails>> mappingMap, final String startRow,
+            final String stopRow) {
         
         final StringBuilder commandSb = new StringBuilder();
         commandSb.append("scan  '").append(tableName).append("',{COLUMNS => [");
 
         for (final Map.Entry<String, List<HBaseColumnDetails>> entry : mappingMap.entrySet()) {
-            String mappingFamily = entry.getKey();
-            List<HBaseColumnDetails> mappingColumns = entry.getValue();
+            final String mappingFamily = entry.getKey();
+            final List<HBaseColumnDetails> mappingColumns = entry.getValue();
             for (final HBaseColumnDetails mappingColumn : mappingColumns) {
                 commandSb.append("'").append(mappingFamily).append(':').append(mappingColumn.getName()).append("',");
             }
@@ -960,7 +960,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         }
         commandSb.append("}\n");
 
-        String command = commandSb.toString();
+        final String command = commandSb.toString();
         
         log(LOG_TRACE, "HBase shell command:" + command);
         getCustomWrapperPlan().addPlanEntry("HBase shell command " + this.filterNumber++, command);
@@ -1006,8 +1006,8 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         
         commandSb.append("'").append(tableName).append("',{ COLUMNS => [");
         for (final Map.Entry<String, List<HBaseColumnDetails>> entry : mappingMap.entrySet()) {
-            String mappingFamily = entry.getKey();
-            List<HBaseColumnDetails> mappingColumns = entry.getValue();
+            final String mappingFamily = entry.getKey();
+            final List<HBaseColumnDetails> mappingColumns = entry.getValue();
             for (final HBaseColumnDetails mappingColumn : mappingColumns) {
                 commandSb.append("'").append(mappingFamily).append(':').append(mappingColumn.getName()).append("',");
             }
@@ -1020,7 +1020,7 @@ public class HBaseConnector extends AbstractSecureHadoopWrapper {
         commandSb.append(",FILTER => filter ");
         commandSb.append("}\n");
 
-        String command = commandSb.toString();
+        final String command = commandSb.toString();
         
         log(LOG_TRACE, "HBase shell command:" + command);
         getCustomWrapperPlan().addPlanEntry("HBase shell command " + this.filterNumber++, command);
