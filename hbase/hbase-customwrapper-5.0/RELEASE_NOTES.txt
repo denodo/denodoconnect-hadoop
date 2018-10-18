@@ -1,3 +1,11 @@
+20181018
+========
+
+- #33126 - Create a Doc appendix explicitly explaining how to use the Hadoop vendor's own client libs
+- #39890 - Add a mention in the wrapper's user manual that access through an SQL abstraction layer is preferrable
+- #33127 - Create a doc appendix explicitly explaining MapR-DB connectivity
+
+
 20170111
 ========
 - Added #30685 - Upgrade versions of client libraries.

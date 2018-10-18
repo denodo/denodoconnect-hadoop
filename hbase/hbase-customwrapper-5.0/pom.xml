@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hbase-customwrapper-5.0</artifactId>
-    <version>20181008</version>
+    <version>20181018</version>
     <packaging>jar</packaging>
     <name>denodo-hbase-customwrapper</name>
 
@@ -200,20 +200,6 @@
     <dependencies>
         <!-- Custom Wrapper necessary libraries -->
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.15</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.denodo.commons</groupId>
-            <artifactId>denodo-util</artifactId>
-            <version>2.79</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server-base</artifactId>
             <version>5.0.0_4</version>
@@ -269,7 +255,11 @@
                  <exclusion>
                     <groupId>com.jcraft</groupId>
                     <artifactId>jsch</artifactId>
-                </exclusion>               
+                </exclusion>     
+                <exclusion>
+                    <groupId>jdk.tools</groupId>
+                    <artifactId>jdk.tools</artifactId>
+                </exclusion> 
             </exclusions> 
         </dependency>
 

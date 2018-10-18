@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hadoop-commons-5.0</artifactId>
-    <version>20181008</version>
+    <version>20181018</version>
     <packaging>jar</packaging>
     <name>${project.artifactId}</name>
 
