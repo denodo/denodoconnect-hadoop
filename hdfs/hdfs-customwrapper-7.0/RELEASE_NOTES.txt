@@ -1,6 +1,7 @@
-CURRENT
--------
+20181024
+--------
 - #40060 - File name pattern explanation is misleading
+- #40232 - ClassNotFoundException accesing Amazon S3 using IAM Assumed Roles
 
 20181008
 -------

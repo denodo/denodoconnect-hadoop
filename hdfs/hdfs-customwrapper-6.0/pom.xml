@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-6.0</artifactId>
-    <version>20181008</version>
+    <version>20181024</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
@@ -363,7 +363,19 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>             
-        </dependency>                 
+        </dependency>    
+                     
+       <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sts</artifactId>
+            <version>${aws.sdk.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>             
+        </dependency>                        
                 
          <!-- >An incorrect version of jackson causes: java.lang.NoClassDefFoundError: Could not initialize class com.amazonaws.ClientConfiguration -->
         <dependency>

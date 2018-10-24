@@ -59,6 +59,64 @@
     </property>
     -->
 
+    <!-- S3A IAM Assumed Roles properties -->
+    <!--  
+    <property>
+        <name>fs.s3a.aws.credentials.provider</name>
+        <value>org.apache.hadoop.fs.s3a.AssumedRoleCredentialProvider
+        </value>
+        <value>org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
+        </value>
+    </property>
+
+    <property>
+        <name>fs.s3a.assumed.role.arn</name>
+        <description>
+            AWS ARN for the role to be assumed.
+            Required if the
+            fs.s3a.aws.credentials.provider contains
+            org.apache.hadoop.fs.s3a.AssumedRoleCredentialProvider
+        </description>
+        <value>ARN OF THE ASSUMED ROLE</value>
+    </property>
+
+    <property>
+        <name>fs.s3a.assumed.role.credentials.provider</name>
+        <description>
+            List of credential providers to authenticate with the
+            STS endpoint and retrieve short-lived role credentials.
+            Only used if AssumedRoleCredentialProvider is the AWS credential
+            Provider. If unset, uses
+            "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider".
+        </description>
+        <value>org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+        </value>
+    </property>
+
+    <property>
+        <name>fs.s3a.assumed.role.session.duration</name>
+        <value>30m</value>
+        <description>
+            Duration of assumed roles before a refresh is attempted.
+            Only used if AssumedRoleCredentialProvider is the AWS credential
+            provider.
+            Range: 15m to 1h
+        </description>
+    </property>
+
+    <property>
+        <name>fs.s3a.access.key</name>
+        <description>AWS access key ID.</description>
+        <value>YOUR ACCESS KEY ID</value>
+    </property>
+
+    <property>
+        <name>fs.s3a.secret.key</name>
+        <description>AWS secret key.</description>
+        <value>YOUR SECRET ACCESS KEY</value>
+    </property>
+    -->
+
 
     <!-- Azure Data Lake credentials -->
     <!--
