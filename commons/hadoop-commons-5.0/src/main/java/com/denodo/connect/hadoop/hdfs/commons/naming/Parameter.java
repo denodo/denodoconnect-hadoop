@@ -82,6 +82,27 @@ public final class Parameter {
     public static final String AVRO_FILE_PATH = "avroFilepath";
 
     public static final String PARQUET_FILE_PATH = "Parquet File path";
+    
+    
+    public static final String RECURSIVE = "recursive";
+    
+    public static final String PARENT_FOLDER = "parentfolder";
+    public static final String RELATIVE_PATH = "relativepath";
+    public static final String FILE_NAME = "filename";
+    public static final String EXTENSION = "extension";
+    public static final String FULL_PATH = "fullpath";
+    public static final String PATH_WITHOUT_SCHEME = "pathwithoutscheme";
+    public static final String FILE_TYPE = "filetype";
+    public static final String ENCRYPTED = "encrypted";
+    public static final String DATE_MODIFIED = "datemodified";
+    public static final String OWNER = "owner";
+    public static final String GROUP = "group";
+    public static final String PERMISSIONS = "permissions";
+    public static final String SIZE = "size";
+    
+    public static final String TYPE_FILE = "file";
+    public static final String TYPE_DIR = "directory";
+    public static final String TYPE_SYMLINK = "symbolic link";
 
     private Parameter() {
 
