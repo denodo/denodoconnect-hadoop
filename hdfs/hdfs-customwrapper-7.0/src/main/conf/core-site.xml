@@ -116,5 +116,18 @@
         <value>YOUR ACCESS KEY</value>
     </property>
     -->
+    
+    <!-- Goolge Cloud Storage credentials -->
+    <!-- 
+    <property>
+        <name>google.cloud.auth.service.account.enable</name>
+        <value>true</value>
+    </property>
+
+    <property>
+        <name>google.cloud.auth.service.account.json.keyfile</name>
+        <value>/PATH/TO/KEYFILE</value>
+    </property>
+     -->
 
 </configuration>
