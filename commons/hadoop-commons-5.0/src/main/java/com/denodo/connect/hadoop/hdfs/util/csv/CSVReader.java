@@ -74,6 +74,7 @@ public class CSVReader implements Iterator<List<String>> {
         
         format = format.withIgnoreSurroundingSpaces(config.isIgnoreSpaces());
         format = format.withSkipHeaderRecord(!config.isHeader());
+        format = format.withNullString(config.getNullValue());
         
         return format;
     }
@@ -82,7 +83,7 @@ public class CSVReader implements Iterator<List<String>> {
     public boolean hasNext() {
         try {
             return this.iterator.hasNext();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             close();
             throw new InternalErrorException("Error accessing delimited data", e); 
         }
@@ -99,7 +100,7 @@ public class CSVReader implements Iterator<List<String>> {
         
         try {
             return toList(this.iterator.next());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             close();
             throw new InternalErrorException("Error accessing delimited data", e); 
         } finally {

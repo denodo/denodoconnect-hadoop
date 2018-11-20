@@ -56,6 +56,7 @@ public final class Parameter {
     public static final String ESCAPE = "Escape";
     public static final String IGNORE_SPACES = "Ignore spaces";
     public static final String HEADER = "Header";
+    public static final String NULL_VALUE = "Null value";
     public static final String FILE_PATH = "Path";
     public static final String FILE_NAME_PATTERN = "File name pattern";
 

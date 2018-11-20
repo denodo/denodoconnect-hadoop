@@ -33,11 +33,12 @@ public class CSVConfig {
     private final Character escape; 
     private final boolean ignoreSpaces;
     private final boolean header;
+    private final String nullValue;
     
 
 
     public CSVConfig(final String separator, final String quote, final String commentMarker, final String escape, final boolean ignoreSpaces,
-            final boolean header) {
+            final boolean header, final String nullValue) {
 
         this.separator = handleInvisibleChars(separator);
         this.quote = CharUtils.toCharacterObject(quote);
@@ -45,6 +46,7 @@ public class CSVConfig {
         this.escape = CharUtils.toCharacterObject(escape);
         this.ignoreSpaces = ignoreSpaces;
         this.header = header;
+        this.nullValue = nullValue;
     }
 
     public boolean isSeparator() {
@@ -85,6 +87,10 @@ public class CSVConfig {
 
     public boolean isHeader() {
         return this.header;
+    }
+    
+    public String getNullValue() {
+        return this.nullValue;
     }
     
     private Character handleInvisibleChars(final String sep) {

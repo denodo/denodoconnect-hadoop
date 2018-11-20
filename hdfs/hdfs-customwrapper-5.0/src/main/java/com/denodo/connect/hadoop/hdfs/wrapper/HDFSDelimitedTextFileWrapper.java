@@ -70,6 +70,8 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
                 CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.ESCAPE, "Escape character. Default is: escapes not supported  ", false,
                 CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.NULL_VALUE, "String used to represent a null value. Default is: none, nulls are not distinguished from empty strings  ", false,
+                    CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.IGNORE_SPACES, "Spaces around values are ignored. ", true,
                 CustomWrapperInputParameterTypeFactory.booleanType(false)),
             new CustomWrapperInputParameter(Parameter.HEADER, "The file has header ", true,
@@ -104,6 +106,9 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         final CustomWrapperSchemaParameter[] headerSchema =  new CustomWrapperSchemaParameter[headerNames.length];
         int i = 0;
         for (final Object item : headerNames) {
+            if (item == null) {
+                throw new CustomWrapperException("Header has null values and this is not allowed. Fix the file or try to clear the check box 'Header'.");
+            }
             headerSchema[i++] = new CustomWrapperSchemaParameter(item.toString(), Types.VARCHAR, null, !isSearchable,
                     CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, isNullable, !isMandatory);
 
@@ -173,7 +178,8 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
                 inputValues.get(Parameter.COMMENT_MARKER),
                 inputValues.get(Parameter.ESCAPE),
                 Boolean.parseBoolean(inputValues.get(Parameter.IGNORE_SPACES)),
-                Boolean.parseBoolean(inputValues.get(Parameter.HEADER)));
+                Boolean.parseBoolean(inputValues.get(Parameter.HEADER)),
+                inputValues.get(Parameter.NULL_VALUE));
     }
 
     @Override
