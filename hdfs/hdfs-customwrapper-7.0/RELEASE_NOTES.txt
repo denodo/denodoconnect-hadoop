@@ -6,6 +6,7 @@
 - #40578 - Configure null-values in DFS Delimited Text File Wrapper
 - #40601 - Make CSV parser more lenient allowing the wrapper to recover from parsing errors
 - #40673 - Error executing a wrapper without Kerberos after a kerberized one
+- #40675 - Skip BOM in delimited files
 
 20181024
 --------

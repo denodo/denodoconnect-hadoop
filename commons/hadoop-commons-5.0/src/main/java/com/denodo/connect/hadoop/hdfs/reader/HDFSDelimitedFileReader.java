@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
+import org.apache.commons.io.input.BOMInputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -59,7 +60,7 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
         final Configuration configuration) throws IOException {
 
         final FSDataInputStream is = fileSystem.open(path);
-        this.reader = new CSVReader(new InputStreamReader(is), this.csvConfig);
+        this.reader = new CSVReader(new InputStreamReader(new BOMInputStream(is)), this.csvConfig);
     }
     
     @Override
