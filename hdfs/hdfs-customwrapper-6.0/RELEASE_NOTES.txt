@@ -1,8 +1,9 @@
-CURRENT
+20181121
 -------
 - #40114 - Update manual mentioning the need to increase the JVM's heap space for Admin Tool
 - #40062 - Include a class similar to the file system wrapper to list files in a bucket
 - #40578 - Configure null-values in DFS Delimited Text File Wrapper
+- #40601 - Make CSV parser more lenient allowing the wrapper to recover from parsing errors
 
 20181024
 --------

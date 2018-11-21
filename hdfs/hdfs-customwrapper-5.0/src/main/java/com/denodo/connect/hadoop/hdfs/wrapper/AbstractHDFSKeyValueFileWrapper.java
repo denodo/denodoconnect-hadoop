@@ -33,6 +33,9 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  */
 public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHadoopWrapper {
 
+    private static final String NUMBER_OF_INVALID_ROWS = "Number of invalid rows";
+
+
     private static final  Logger LOG = LoggerFactory.getLogger(AbstractHDFSKeyValueFileWrapper.class); 
     
 
@@ -95,6 +98,7 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
 
         final boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
 
+        int invalidRows = 0;
         HDFSFileReader reader = null;
         try {
 
@@ -104,12 +108,16 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
                 
                 final Object[] row = (Object[]) data;
                 if (row.length != projectedFields.size()) {
-                    throw new IllegalArgumentException("Data does not match the schema: line with different number of columns");
+                    invalidRows ++;
+                    if (!ignoreMatchingErrors(inputValues)) {
+                        throw new IllegalArgumentException("Data does not match the schema: line with different number of columns");
+                    }
                 }
                 result.addRow(row, projectedFields);
 
                 data = reader.read();
             }
+            
 
             if (delete) {
                 reader.delete();
@@ -119,6 +127,7 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
             throw new CustomWrapperException("Error accessing HDFS file: " + e.getMessage(), e);
         } finally {
 
+            getCustomWrapperPlan().addPlanEntry(NUMBER_OF_INVALID_ROWS, String.valueOf(invalidRows));
             try {
                 if (reader != null && !delete) {
                     reader.close();
@@ -128,6 +137,10 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
             }
 
         }
+    }
+    
+    public boolean ignoreMatchingErrors(final Map<String, String> inputValues) {
+        return false;
     }
 
     public CustomWrapperInputParameter[] doGetInputParameters() {

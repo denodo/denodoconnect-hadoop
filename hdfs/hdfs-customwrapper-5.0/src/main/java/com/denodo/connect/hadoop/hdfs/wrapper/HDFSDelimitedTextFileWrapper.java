@@ -75,7 +75,9 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
             new CustomWrapperInputParameter(Parameter.IGNORE_SPACES, "Spaces around values are ignored. ", true,
                 CustomWrapperInputParameterTypeFactory.booleanType(false)),
             new CustomWrapperInputParameter(Parameter.HEADER, "The file has header ", true,
-                CustomWrapperInputParameterTypeFactory.booleanType(true))                            
+                CustomWrapperInputParameterTypeFactory.booleanType(true)),
+            new CustomWrapperInputParameter(Parameter.IGNORE_MATCHING_ERRORS, "Ignore the lines of this file that do not have the expected number of columns ", false,
+                    CustomWrapperInputParameterTypeFactory.booleanType(true))
     };
 
 
@@ -196,5 +198,10 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
         return new HDFSDelimitedFileReader(conf, getConfig(inputValues), path, fileNamePattern, null);
+    }
+
+    @Override
+    public boolean ignoreMatchingErrors(final Map<String, String> inputValues) {
+        return Boolean.parseBoolean(inputValues.get(Parameter.IGNORE_MATCHING_ERRORS));
     }
 }
