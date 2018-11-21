@@ -4,6 +4,7 @@
 - #40062 - Include a class similar to the file system wrapper to list files in a bucket
 - #40578 - Configure null-values in DFS Delimited Text File Wrapper
 - #40601 - Make CSV parser more lenient allowing the wrapper to recover from parsing errors
+- #40673 - Error executing a wrapper without Kerberos after a kerberized one
 
 20181024
 --------

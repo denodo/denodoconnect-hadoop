@@ -187,6 +187,8 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
                         ugi = KerberosUtils.loginFromPassword(this.userPrincipal, kdc, password);
                     }
                 }
+            } else {
+                KerberosUtils.disableKerberos();
             }
             
             return ugi;

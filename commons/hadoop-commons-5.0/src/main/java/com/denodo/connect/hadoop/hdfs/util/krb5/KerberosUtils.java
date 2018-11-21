@@ -55,6 +55,13 @@ public final class KerberosUtils {
         conf.set("hadoop.security.auth_to_local",  "RULE:[1:$1] RULE:[2:$1]"); // just extract the simple user name (for quickstart.cloudera)
         UserGroupInformation.setConfiguration(conf);
     }
+    
+    public static void disableKerberos() {
+        
+        final Configuration conf = new Configuration();
+        conf.set("hadoop.security.authentication", "simple");
+        UserGroupInformation.setConfiguration(conf);
+    }
 
     public static UserGroupInformation loginFromTicketCache() throws IOException {
 
