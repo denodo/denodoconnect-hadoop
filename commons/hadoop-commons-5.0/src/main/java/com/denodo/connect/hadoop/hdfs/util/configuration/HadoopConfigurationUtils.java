@@ -21,6 +21,8 @@
  */
 package com.denodo.connect.hadoop.hdfs.util.configuration;
 
+import java.net.URI;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -35,7 +37,7 @@ public final class HadoopConfigurationUtils {
     }
 
     /**
-     * @param fileSystemURI A URI whose scheme and authority determine the
+     * @param fileSystemURIString A URI whose scheme and authority determine the
      *        FileSystem implementation. The uri's scheme determines the config property
      *        (fs.SCHEME.impl) naming the FileSystem implementation class.
      *        The uri's authority is used to determine the host, port, etc. for a filesystem.
@@ -45,11 +47,21 @@ public final class HadoopConfigurationUtils {
      *             by replacing each slash / with the string %2F.)
      * @return the basic hadoop configuration
      */
-    public static Configuration getConfiguration(final String fileSystemURI, final String... customFilePathNames) {
+    public static Configuration getConfiguration(final String fileSystemURIString, final String... customFilePathNames) {
 
         final Configuration conf = new Configuration();
-        conf.set("fs.default.name", fileSystemURI);
-
+        conf.set("fs.default.name", fileSystemURIString);
+        
+        // FileSystem.get returns the same object for every invocation with the same filesystem. 
+        // So if one is closed anywhere, they are all closed. (#41229 - error when joining files residing in a hdfs filesystem)
+        
+        // This setting prevents a FileSystem object from being shared by multiple clients, because it would prevent,
+        // for example, two callers of FileSystem#get() from closing each other's filesystem.
+        // This setting is required too as FileSystem#close() is necessary for #39931: Failed connections could require restarting VDP to refresh wrapper configuration files
+        final URI fileSystemURI = URI.create(fileSystemURIString);
+        final String disableCacheName = String.format("fs.%s.impl.disable.cache", fileSystemURI.getScheme());
+        conf.setBoolean(disableCacheName, true);
+        
         // General pattern that avoids having to specify the server's Kerberos principal name when using Kerberos authentication
         conf.set("dfs.namenode.kerberos.principal.pattern", "*");
 

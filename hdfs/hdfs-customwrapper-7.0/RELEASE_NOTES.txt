@@ -1,3 +1,7 @@
+20190109
+-------
+- #41229 - Error joining files residing in the same hadoop filesystem
+
 20181121
 -------
 - #40114 - Update manual mentioning the need to increase the JVM's heap space for Admin Tool
