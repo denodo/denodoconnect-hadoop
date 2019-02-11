@@ -99,6 +99,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
             throws CustomWrapperException {
 
+        HDFSParquetFileReader reader = null;
         try {
 
             final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
@@ -111,7 +112,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             
             final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
-            final HDFSParquetFileReader reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null);
+            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null);
 
             final SchemaElement javaSchema = reader.getSchema(conf);
 
@@ -125,6 +126,15 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         } catch (final Exception e) {
             LOG.error("Error building wrapper schema", e);
             throw new CustomWrapperException(e.getMessage(), e);
+        } finally {
+            try {
+                if (reader != null ) {
+                    reader.close();
+                }
+            } catch (final IOException e) {
+                LOG.error("Error releasing the reader", e);
+            }
+
         }
 
     }

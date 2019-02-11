@@ -1,6 +1,8 @@
-current version
--------
-#41615 - Added profile errorprone to execute error prone
+20190212
+--------
+- #41819 - Issue converting INT96 and FIXED_LEN_BYTE_ARRAY Parquet types to VDP types
+- #41615 - Added profile errorprone to execute error prone
+
 
 20190109
 -------

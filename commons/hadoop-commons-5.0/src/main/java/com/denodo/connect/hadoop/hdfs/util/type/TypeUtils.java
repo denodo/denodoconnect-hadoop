@@ -148,6 +148,9 @@ public final class TypeUtils {
         if (java.util.Date.class.equals(javaClass)) {
             return Types.DATE;
         }
+        if (java.sql.Timestamp.class.equals(javaClass)) {
+            return Types.TIMESTAMP;
+        }
 
         LOG.warn("Class '" + javaClass + "' is not supported. Returning Types.VARCHAR");
         return Types.VARCHAR;

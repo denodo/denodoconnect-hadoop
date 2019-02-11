@@ -7,8 +7,8 @@
     <!-- *************************** -->
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
-    <artifactId>denodo-hdfs-customwrapper-5.0</artifactId>
-    <version>20190109</version>
+    <artifactId>denodo-hdfs-customwrapper-mapr</artifactId>
+    <version>20190212</version>
     <packaging>jar</packaging>
     <name>denodo-hdfs-customwrapper</name>
 
@@ -17,7 +17,7 @@
         <aws.sdk.version>1.11.199</aws.sdk.version>
         <commons-lang.version>2.6</commons-lang.version> 
         <commons-io.version>2.6</commons-io.version>        
-        <hadoop.version>2.9.1</hadoop.version>
+        <hadoop.version>2.7.0-mapr-1808</hadoop.version>
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version>
         <httpclient.version>4.5.2</httpclient.version> <!-- minimin required by aws-sdk  -->
         <httpcore.version>4.4.4</httpcore.version>    
@@ -253,8 +253,15 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions> 
-        </dependency>      
-       
+        </dependency>
+
+
+      <dependency>
+        <groupId>com.mapr.hadoop</groupId>
+        <artifactId>maprfs</artifactId>
+        <version>6.1.0-mapr</version>
+      </dependency>
+
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
@@ -307,7 +314,7 @@
         
         <dependency>
             <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-hdfs-client</artifactId>
+            <artifactId>hadoop-hdfs</artifactId>
             <version>${hadoop.version}</version>
               <exclusions>
                 <exclusion>

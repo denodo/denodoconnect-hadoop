@@ -38,6 +38,7 @@ import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.api.ReadSupport;
 import org.apache.parquet.hadoop.example.GroupReadSupport;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
@@ -208,21 +209,26 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                         return datum.getInteger(field.getName(), 0);
                     }
                     
-                }else if(primitiveTypeName.equals(PrimitiveTypeName.INT64)) {
+                } else if(primitiveTypeName.equals(PrimitiveTypeName.INT64)) {
                     //we dont differentiate INT64 from TIMESTAMP_MILLIS original types
                     return datum.getLong(field.getName(), 0);
                     
-                }else if(primitiveTypeName.equals(PrimitiveTypeName.INT96)) {
-                    return datum.getInt96(field.getName(), 0);
+                } else if(primitiveTypeName.equals(PrimitiveTypeName.INT96)) {
+                    Binary binary = datum.getInt96(field.getName(), 0);
+                    long timestampMillis = ParquetTypeUtils.int96ToTimestampMillis(binary);
+                    return new Date(timestampMillis);
                     
-                }else if(primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
-                    
+                } else if(primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
+                    if (OriginalType.DECIMAL.equals(field.getOriginalType())) {
+                        final int scale = field.asPrimitiveType().getDecimalMetadata().getScale();
+                        return new BigDecimal(new BigInteger(datum.getBinary(field.getName(), 0).getBytes()), scale);
+                    }
                     return datum.getBinary(field.getName(), 0).getBytes();
-                }else{
+                } else{
                     LOG.error("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
                     throw new IOException("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
                 }
-            }catch(final RuntimeException e){
+            } catch(final RuntimeException e){
                 LOG.warn("It was a error reading data", e);
             }
         } else if (field.getRepetition() == Repetition.REQUIRED) {
