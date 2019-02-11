@@ -1,7 +1,10 @@
+current version
+-------
+#41615 - Added profile errorprone to execute error prone
+
 20190109
 -------
 - #41229 - Error joining files residing in the same hadoop filesystem
-
 
 20181121
 -------
