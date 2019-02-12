@@ -17,7 +17,7 @@
         <aws.sdk.version>1.11.199</aws.sdk.version>
         <commons-lang.version>2.6</commons-lang.version> 
         <commons-io.version>2.6</commons-io.version>        
-        <hadoop.version>2.7.0-mapr-1808</hadoop.version>
+        <hadoop.version>2.9.1</hadoop.version>
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version>
         <httpclient.version>4.5.2</httpclient.version> <!-- minimin required by aws-sdk  -->
         <httpcore.version>4.4.4</httpcore.version>    
@@ -314,7 +314,7 @@
         
         <dependency>
             <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-hdfs</artifactId>
+            <artifactId>hadoop-hdfs-client</artifactId>
             <version>${hadoop.version}</version>
               <exclusions>
                 <exclusion>
