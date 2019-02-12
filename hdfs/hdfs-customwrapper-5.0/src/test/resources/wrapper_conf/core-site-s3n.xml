@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+ <configuration>
+<property>
+  <name>fs.s3n.awsAccessKeyId</name>
+  <value>AKIAIMTOPSQSRYBEQ4DQ</value>
+</property>
+
+<property>
+  <name>fs.s3n.awsSecretAccessKey</name>
+  <value>VOUzHmFCfauiGQycn5hyZCfcKJZ2Rjw8KdoOtqqF</value>
+</property>
+
+</configuration>

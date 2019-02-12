@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+        <property>
+                <name>fs.defaultFS</name>
+                <value>hdfs://epp-poc-hdfsn1:9000</value>
+        </property>
+        <property>
+                <name>io.file.buffer.size</name>
+                <value>131072</value>
+        </property>
+<!-- EMR -->
+        <property>
+                <name>emr.config.file</name>
+                <value>/home/hadoop/EPP/config/config.xml</value>
+        </property>
+        <property>
+                <name>emr.schema.path</name>
+                <value>/user/hdfs/schema</value>
+        </property>
+        <property>
+                <name>emr.raw.path</name>
+                <value>/user/hdfs/raw</value>
+        </property>
+         <property>
+                <name>emr.plugin.dir</name>
+                <value>file:///home/hadoop/emr/plugin</value>
+        </property>
+        <property>
+                <name>emr.ericsson.lte.pm.parser</name>
+                <value>com.ericsson.emr.plugin.ericsson.lte.pm.Parser</value>
+        </property>
+        <property>
+                <name>emr.hdfswatcher.data.signature</name>
+                <value>\/(ALU\/EVDO\/PM|Ericsson\/LTE\/(PM|CM|CTR|ENM|MSRBS|IMS))\/</value>
+        </property>
+<!-- EMR data queue -->
+        <property>
+                <name>emr.queues.data</name>
+                <value>12</value>
+        </property>
+        <property>
+                <name>emr.queues.data.path</name>
+                <value>/home/hadoop/EPP/queues/data</value>
+        </property>
+<!-- EMR aggregation queue -->
+        <property>
+                <name>emr.queues.aggregation</name>
+                <value>8</value>
+        </property>
+        <property>
+                <name>emr.merge.delete</name>
+                <value>false</value>
+        </property>
+        <property>
+                <name>emr.queues.aggregation.path</name>
+                <value>/home/hadoop/EPP/queues/aggregation</value>
+        </property>
+        <property>
+                <name>emr.hive.url</name>
+                <value>jdbc:hive2://epp-poc-hdfsn1:10000/epp_bigdata</value>
+                <description>JDBC connect string for a JDBC EPP Report Database</description>
+         </property>
+         <property>
+                <name>emr.hive.path</name>
+                <value>/user/hdfs/warehouse</value>
+        </property>
+         <property>
+                <name>emr.local.output</name>
+                <value>file:///home/hadoop/EPP/rop</value>
+        </property>
+        <property>
+                <name>emr.log.level</name>
+                <value>INFO</value>
+        </property>
+         <property>
+                <name>emr.output.format</name>
+                <value>orc</value>
+        </property>
+<!-- EMR Spark Aggregations config -->
+        <property>
+                <name>emr.spark.aggregation.cores</name>
+                <value>8</value>
+        </property>
+        <property>
+                 <name>emr.spark.aggregation.splits</name>
+                <value>16</value>
+        </property>
+<!-- HUE -->
+		  <property>
+			<name>hadoop.proxyuser.hadoop.hosts</name>
+			<value>*</value>
+		  </property>
+		  <property>
+			<name>hadoop.proxyuser.hadoop.groups</name>
+			<value>*</value>
+		  </property>
+		  <property>
+			<name>hadoop.proxyuser.httpfs.hosts</name>
+			<value>*</value>
+		  </property>
+		  <property>
+			<name>hadoop.proxyuser.httpfs.groups</name>
+			<value>*</value>
+		  </property>
+		  <property>
+			<name>hadoop.proxyuser.hdfs.hosts</name>
+			<value>*</value>
+		  </property>
+		  <property>
+			<name>hadoop.proxyuser.hdfs.groups</name>
+			<value>*</value>
+		  </property>
+		  <property>
+			<name>hadoop.proxyuser.hue.hosts</name>
+			<value>*</value>
+		  </property>
+		  <property>
+			<name>hadoop.proxyuser.hue.groups</name>
+			<value>*</value>
+		  </property> 
+		  <property>
+			<name>ipc.maximum.data.length</name>
+			<value>268435456</value>
+		  </property>
+</configuration>

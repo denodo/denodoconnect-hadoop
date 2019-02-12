@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <!-- WASB:// - Azure Blob Storage -->
+
+  <property>
+    <name>fs.azure.account.key.storageemulator</name>
+    <value>Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==</value>
+  </property>
+</configuration>

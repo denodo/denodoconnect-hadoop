@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+ <configuration>
+<property>
+  <name>fs.s3a.access.key</name>
+  <value>AKIAIMTOPSQSRYBEQ4DQ</value>
+</property>
+
+<property>
+  <name>fs.s3a.secret.key</name>
+  <value>VOUzHmFCfauiGQycn5hyZCfcKJZ2Rjw8KdoOtqqF</value>
+</property>
+
+<property>
+  <name>fs.s3a.endpoint</name>
+  <value>s3.us-east-1.amazonaws.com</value>
+</property>
+
+</configuration>
