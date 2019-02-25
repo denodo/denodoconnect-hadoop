@@ -23,19 +23,12 @@
             </includes>
         </fileSet>
         <fileSet>
-	      <directory>${basedir}/../hbase-customwrapper-5.0/src/main/resources/</directory>
+	      <directory>src/main/resources/</directory>
 	      <outputDirectory>/conf</outputDirectory>
 	      <includes>
 	        <include>hbase-site.xml</include>
 	      </includes>
 	    </fileSet>
-        <fileSet>
-            <directory>${basedir}/../hbase-customwrapper-5.0/doc/</directory>
-            <outputDirectory>/doc</outputDirectory>
-            <includes>
-                <include>**/*.pdf</include>
-            </includes>
-        </fileSet>
         <fileSet>
             <directory>${basedir}/</directory>
             <outputDirectory>/</outputDirectory>

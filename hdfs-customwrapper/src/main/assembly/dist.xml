@@ -42,13 +42,7 @@
           </includes>
         </fileSet>
                 
-        <fileSet>
-          <directory>${basedir}/../hdfs-customwrapper-5.0/doc/</directory>
-          <outputDirectory>doc</outputDirectory>
-          <includes>
-            <include>**/*.pdf</include>
-          </includes>
-        </fileSet>
+        
 
         <fileSet>
             <directory>${project.build.directory}/lib</directory>
