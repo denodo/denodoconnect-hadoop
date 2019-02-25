@@ -14,7 +14,7 @@
     <fileSets>
         <fileSet>
             <directory>${basedir}/target/</directory>
-            <outputDirectory>/dist</outputDirectory>
+            <outputDirectory>dist</outputDirectory>
             <includes>
                 <include>${project.artifactId}-${project.version}.jar</include>
                 <include>${project.artifactId}-${project.version}-javadoc.jar</include>
@@ -24,7 +24,7 @@
         </fileSet>
         <fileSet>
             <directory>${basedir}/</directory>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory></outputDirectory>
             <includes>
                 <include>README.txt</include>
                 <include>LICENSE.txt</include>
@@ -35,24 +35,18 @@
         </fileSet>
 
         <fileSet>
-          <directory>${basedir}/../hdfs-customwrapper-5.0/src/main/conf/</directory>
-          <outputDirectory>/conf</outputDirectory>
+          <directory>src/main/conf/</directory>
+          <outputDirectory>conf</outputDirectory>
           <includes>
             <include>**/*.xml</include>
           </includes>
         </fileSet> 
                 
-        <fileSet>
-          <directory>${basedir}/../hdfs-customwrapper-5.0/doc/</directory>
-          <outputDirectory>/doc</outputDirectory>
-          <includes>
-            <include>**/*.pdf</include>
-          </includes>
-        </fileSet>
+        
         
         <fileSet>
             <directory>${project.build.directory}/lib</directory>
-            <outputDirectory>/lib</outputDirectory>
+            <outputDirectory>lib</outputDirectory>
             <includes>
                 <include>*.*</include>
             </includes>

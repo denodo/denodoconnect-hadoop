@@ -32,13 +32,7 @@
         <include>RELEASE_NOTES.txt</include>        
       </includes>
     </fileSet>
-	<fileSet>
-	  <directory>${basedir}/../mapreduce-customwrapper-5.0/doc/</directory>
-	  <outputDirectory>/doc</outputDirectory>
-	  <includes>
-		<include>**/*.pdf</include>
-	  </includes>
-	</fileSet>
+
   </fileSets>
 
 
