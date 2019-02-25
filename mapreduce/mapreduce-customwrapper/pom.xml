@@ -31,17 +31,16 @@
             </resource>
         </resources>
 
-        <sourceDirectory>../mapreduce-customwrapper-5.0/src/main/java</sourceDirectory>
         <!-- ============================================================== -->
         <!-- Test-related directory locations -->
         <!-- ============================================================== -->
 
-        <testSourceDirectory>../mapreduce-customwrapper-5.0/src/test/java</testSourceDirectory>
-        <testOutputDirectory>../mapreduce-customwrapper-5.0/target/test-classes</testOutputDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+        <testOutputDirectory>target/test-classes</testOutputDirectory>
 
         <testResources>
           <testResource>
-              <directory>../mapreduce-customwrapper-5.0/src/test/resources</directory>
+              <directory>src/test/resources</directory>
           </testResource>
         </testResources>
 

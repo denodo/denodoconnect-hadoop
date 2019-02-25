@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hbase-customwrapper-6.0</artifactId>
-    <version>20181018</version>
+    <version>20190212</version>
     <packaging>jar</packaging>
     <name>denodo-hbase-customwrapper</name>
 
@@ -34,19 +34,18 @@
             </resource>
             
             <resource>
-                <directory>../hbase-customwrapper-5.0/src/main/resources</directory>
+                <directory>src/main/resources</directory>
             </resource>
         </resources>
 
-        <sourceDirectory>../hbase-customwrapper-5.0/src/main/java</sourceDirectory>
         <!-- ============================================================== -->
         <!-- Test-related directory locations -->
         <!-- ============================================================== -->
-        <testSourceDirectory>../hbase-customwrapper-5.0/src/test/java</testSourceDirectory>
-        <testOutputDirectory>../hbase-customwrapper-5.0/target/test-classes</testOutputDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+        <testOutputDirectory>target/test-classes</testOutputDirectory>
         <testResources>
             <testResource>
-                <directory>../hbase-customwrapper-5.0/src/test/resources</directory>
+                <directory>src/test/resources</directory>
             </testResource>
         </testResources>
         <plugins>

@@ -80,15 +80,14 @@
             </resource>
         </resources>
 
-         <sourceDirectory>../hdfs-customwrapper-5.0/src/main/java</sourceDirectory> 
         <!-- ============================================================== -->
         <!-- Test-related directory locations -->
         <!-- ============================================================== -->
-        <testSourceDirectory>../hdfs-customwrapper-5.0/src/test/java</testSourceDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
         <testOutputDirectory>target/test-classes</testOutputDirectory>
         <testResources>
             <testResource>
-                <directory>../hdfs-customwrapper-5.0/src/test/resources</directory>
+                <directory>src/test/resources</directory>
             </testResource>
         </testResources>
         <plugins>

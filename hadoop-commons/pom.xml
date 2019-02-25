@@ -75,7 +75,7 @@
             </resource>
         </resources>
 
-        <sourceDirectory>${basedir}/../hadoop-commons-5.0/src/main/java</sourceDirectory>
+
         
         <plugins>
             <!-- ========================================================== -->
