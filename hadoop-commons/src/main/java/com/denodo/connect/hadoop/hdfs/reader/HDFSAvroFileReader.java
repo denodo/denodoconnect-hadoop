@@ -91,7 +91,7 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
         }
     }
 
-    private static Object read(final Schema schema, final Object datum) {
+    public static Object read(final Schema schema, final Object datum) {
 
         Object result = null;
 
@@ -108,7 +108,7 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
             result = readRecord(schema, datum);
         } else if (AvroTypeUtils.isMap(schemaType)) {
             result = readMap(schema, datum);
-        }  else if (AvroTypeUtils.isFixed(schemaType)) {
+        } else if (AvroTypeUtils.isFixed(schemaType)) {
             result = readFixed(datum);
         }
 
