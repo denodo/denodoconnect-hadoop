@@ -8,9 +8,10 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hadoop-commons-6.0</artifactId>
-    <version>20190212</version>
-    <packaging>jar</packaging>
     <name>${project.artifactId}</name>
+    <description>${project.artifactId}</description>
+    <packaging>jar</packaging>
+    <version>20190212</version>
 
     <properties>
         <avro.version>1.8.2</avro.version>

@@ -8,9 +8,10 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
     <artifactId>denodo-hdfs-customwrapper-6.0</artifactId>
-    <version>20190212</version>
+    <name>${project.artifactId}</name>
+    <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <name>denodo-hdfs-customwrapper</name>
+    <version>20190212</version>
 
     <properties>
         <aws.sdk.version>1.11.199</aws.sdk.version>
