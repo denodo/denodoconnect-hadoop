@@ -1,0 +1,30 @@
+{
+  "type" : "record",
+  "name" : "EventData",
+  "namespace" : "Microsoft.ServiceBus.Messaging",
+  "fields" : [ {
+    "name" : "SequenceNumber",
+    "type" : "long"
+  }, {
+    "name" : "Offset",
+    "type" : "string"
+  }, {
+    "name" : "EnqueuedTimeUtc",
+    "type" : "string"
+  }, {
+    "name" : "SystemProperties",
+    "type" : {
+      "type" : "map",
+      "values" : [ "null", "long" ]
+    }
+  }, {
+    "name" : "Properties",
+    "type" : {
+      "type" : "map",
+      "values" : [ "null", "long" ]
+    }
+  }, {
+    "name" : "Body",
+    "type" : [ "null", "bytes" ]
+  } ]
+}

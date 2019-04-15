@@ -22,6 +22,7 @@
 package com.denodo.connect.hadoop.hdfs.util.type;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -130,7 +131,7 @@ public final class TypeUtils {
         if (Byte.class.equals(javaClass)) {
             return Types.BIT;
         }        
-        if (byte[].class.equals(javaClass)) {
+        if (byte[].class.equals(javaClass) || ByteBuffer.class.equals(javaClass)) {
             return Types.VARBINARY;
         }
         if (List.class.equals(javaClass)) {
