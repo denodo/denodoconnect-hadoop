@@ -1,3 +1,7 @@
+20190415
+--------
+- #42277 - Issue detecting binary fields in avro files
+
 20190212
 --------
 - #41819 - Issue converting INT96 and FIXED_LEN_BYTE_ARRAY Parquet types to VDP types
