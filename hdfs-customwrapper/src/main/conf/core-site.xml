@@ -116,6 +116,14 @@
         <value>YOUR ACCESS KEY</value>
     </property>
     -->
+
+    <!-- Azure Data Lake Storage Gen 2 credentials -->
+    <!--
+    <property>
+        <name>fs.azure.account.key.YOURACCOUNT.dfs.core.windows.net</name>
+        <value>YOUR ACCOUNT KEY KEY</value>
+    </property>
+    -->    
     
     <!-- Goolge Cloud Storage credentials -->
     <!-- 

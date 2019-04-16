@@ -11,20 +11,19 @@
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20190415</version>
+    <version>20190416</version>
 
     <properties>
-        <aws.sdk.version>1.11.271</aws.sdk.version>    
+        <aws.sdk.version>1.11.375</aws.sdk.version>
         <avro.version>1.8.2</avro.version>
         <commons-codec.version>1.10</commons-codec.version>
         <commons-io.version>2.6</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
         <gcs.version>hadoop3-1.9.10</gcs.version>
-        <hadoop.version>3.1.1</hadoop.version> <!-- Requires java 8 -->
+        <hadoop.version>3.2.0</hadoop.version> <!-- Requires java 8 -->
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version>   
         <httpclient.version>4.5.2</httpclient.version>  <!-- min required by aws-sdk  -->
-        <httpcore.version>4.4.4</httpcore.version>   
-        <jackson.version>2.9.4</jackson.version>   
+        <httpcore.version>4.4.4</httpcore.version>
         <log4j2.version>2.8.2</log4j2.version>
         <parquet.version>1.9.0</parquet.version>
         <slf4j.version>1.7.10</slf4j.version>     
@@ -311,56 +310,92 @@
                 </exclusion>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
+                    <artifactId>*</artifactId>
                 </exclusion>           
                 <exclusion>
                     <groupId>javax.servlet</groupId>
-                    <artifactId>javax.servlet-api</artifactId>
-                </exclusion>            
-                <exclusion>
+                    <artifactId>*</artifactId>
+                </exclusion>
+              <exclusion>
+                <groupId>javax.servlet.jsp</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
                     <groupId>commons-cli</groupId>
                     <artifactId>commons-cli</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-math3</artifactId>
-                </exclusion>                
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty</artifactId>
-                </exclusion>   
-                <exclusion>
-                    <groupId>org.apache.directory.server</groupId>
-                    <artifactId>apacheds-kerberos-codec</artifactId>
-               </exclusion>               
-                <exclusion>
-                    <groupId>org.mortbay.jetty</groupId>
+               <exclusion>
+                    <groupId>org.apache.kerby</groupId>
                     <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>jetty</groupId>
-                    <artifactId>org.eclipse.jetty</artifactId>
-                </exclusion>
+               </exclusion>
                 <exclusion>
                     <groupId>org.eclipse.jetty</groupId>
-                    <artifactId>jetty-server</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.jetty</groupId>
-                    <artifactId>jetty-util</artifactId>
+                    <artifactId>*</artifactId>
                 </exclusion>
                 <exclusion>
                   <groupId>com.sun.jersey</groupId>
                   <artifactId>*</artifactId>
-                </exclusion>    
-                 <exclusion>
+                </exclusion>
+                <exclusion>
                     <groupId>com.jcraft</groupId>
                     <artifactId>jsch</artifactId>
-                </exclusion> 
+                </exclusion>
+              <exclusion>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.tukaani</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>io.netty</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>jline</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.yetus</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>net.minidev</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>jdk.tools</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.codehaus.woodstox</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>dnsjava</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
                 <exclusion>  <!-- Use the more modern guava version included by gcs-connector -->
                     <groupId>com.google.guava</groupId>
                     <artifactId>guava</artifactId>
@@ -456,24 +491,7 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>             
-        </dependency>   
-                            
-                
-         <!-- >An incorrect version of jackson causes: java.lang.NoClassDefFoundError: Could not initialize class com.amazonaws.ClientConfiguration -->
-        <!-- 
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>    
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency> 
-         -->
-        <!--  -->                
+        </dependency>
         
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -487,13 +505,9 @@
             <version>${hadoop.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-common</artifactId>
-                </exclusion>  
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <groupId>org.codehaus.jackson</groupId>
                     <artifactId>*</artifactId>
-                </exclusion> 
+                </exclusion>
                 <exclusion>  <!-- Use the more modern guava version included by gcs-connector -->
                     <groupId>com.google.guava</groupId>
                     <artifactId>guava</artifactId>
@@ -510,6 +524,18 @@
                     <groupId>log4j</groupId>
                     <artifactId>log4j</artifactId>
                 </exclusion>
+              <exclusion>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
             </exclusions>       
        </dependency>              
                         

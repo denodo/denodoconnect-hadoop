@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+                
+
+  <property>
+    <name>fs.azure.account.key.meriponaccount.dfs.core.windows.net</name>
+    <value>vn7szSCkuQDA74UZAgiYfb6oNnPoy0H33BG0f8EouTKYJC/S/Meyf31hr0iIXU9yqBHs74EN0g/k/7BO7GH+Jw==</value>
+  </property>
+</configuration>

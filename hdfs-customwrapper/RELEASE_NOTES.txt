@@ -1,6 +1,7 @@
-20190415
+20190416
 --------
 - #42277 - Issue detecting binary fields in avro files
+- #42266 - Support Azure Data Lake Storage Gen2 (abfs)
 
 20190212
 --------

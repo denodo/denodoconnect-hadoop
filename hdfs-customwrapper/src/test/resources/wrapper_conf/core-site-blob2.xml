@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <!-- WASB:// - Azure Blob Storage -->
+
+  <property>
+    <name>fs.azure.account.key.blobaccoun.blob.core.windows.net</name>
+    <value>02uAq04GtRfq1sINuyfLAQLv1sz1VXhLGmBSRXhoSnJ56mZZ/N9XVqM1DuFduaILYi/8npUzSym/Kd1SRn3ARQ==</value>
+  </property>
+</configuration>
