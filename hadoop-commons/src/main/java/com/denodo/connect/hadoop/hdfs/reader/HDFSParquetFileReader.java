@@ -104,8 +104,6 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         
         final MessageType schema = readFooter.getFileMetaData().getSchema();
         
-        initFileIterator();
-        
         return schema;
     }
 
