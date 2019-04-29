@@ -1661,6 +1661,38 @@ CREATE OR REPLACE WRAPPER CUSTOM mapmap
         "VALUE" = 'VALUE' : 'java.lang.Long' (sourcetypeid='-5')  NOT SORTABLE NOT UPDATEABLE
     );
 
+CREATE OR REPLACE WRAPPER CUSTOM parquet_bug_duplicatedrecords
+    DATASOURCENAME=parquetparquet
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Parquet File path' = '/user/cloudera/parquet/aum_2019-03.parquet',
+      'Kerberos enabled' = false
+    )
+    OUTPUTSCHEMA (
+        parent_company_channel = 'PARENT_COMPANY_CHANNEL' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        territory_channel = 'TERRITORY_CHANNEL' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        territory = 'TERRITORY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        parent_company_name = 'PARENT_COMPANY_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        sfdc_company_id = 'SFDC_COMPANY_ID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        company_name = 'COMPANY_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        company_address_city = 'COMPANY_ADDRESS_CITY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        company_address_state = 'COMPANY_ADDRESS_STATE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        company_address_postalcode = 'COMPANY_ADDRESS_POSTALCODE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        product_type = 'PRODUCT_TYPE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        product_name = 'PRODUCT_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        cur_mkt_val_usd = 'CUR_MKT_VAL_USD' : 'java.math.BigDecimal' (sourcetypeid='3')  NOT SORTABLE NOT UPDATEABLE,
+        month_end_date = 'MONTH_END_DATE' : 'java.time.LocalDateTime' (sourcetypeid='93')  NOT SORTABLE NOT UPDATEABLE,
+        position_date = 'POSITION_DATE' : 'java.time.LocalDateTime' (sourcetypeid='93')  NOT SORTABLE NOT UPDATEABLE,
+        sales_compensation_flag = 'SALES_COMPENSATION_FLAG' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        parent_company_id = 'PARENT_COMPANY_ID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        cusip = 'CUSIP' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        shareclass_name = 'SHARECLASS_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        sma = 'SMA' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        fund_num = 'FUND_NUM' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        share_class_cd = 'SHARE_CLASS_CD' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        ss_fund_num = 'SS_FUND_NUM' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
+    );
+
 CREATE OR REPLACE WRAPPER CUSTOM parquet_was_bug41819
     DATASOURCENAME=parquetparquet
     PARAMETERS (
@@ -2317,6 +2349,38 @@ CREATE OR REPLACE WRAPPER CUSTOM parquetfile_web
         end_date = 'END_DATE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
         ln_1_txt = 'LN_1_TXT' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
         ln_2_txt = 'LN_2_TXT' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
+    );
+
+CREATE OR REPLACE WRAPPER CUSTOM parquetparquet
+    DATASOURCENAME=parquetparquet
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Parquet File path' = '/user/cloudera/parquet/aum_2019-03.parquet',
+      'Kerberos enabled' = false
+    )
+    OUTPUTSCHEMA (
+        parent_company_channel = 'PARENT_COMPANY_CHANNEL' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        territory_channel = 'TERRITORY_CHANNEL' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        territory = 'TERRITORY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        parent_company_name = 'PARENT_COMPANY_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        sfdc_company_id = 'SFDC_COMPANY_ID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        company_name = 'COMPANY_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        company_address_city = 'COMPANY_ADDRESS_CITY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        company_address_state = 'COMPANY_ADDRESS_STATE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        company_address_postalcode = 'COMPANY_ADDRESS_POSTALCODE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        product_type = 'PRODUCT_TYPE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        product_name = 'PRODUCT_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        cur_mkt_val_usd = 'CUR_MKT_VAL_USD' : 'java.math.BigDecimal' (sourcetypeid='3')  NOT SORTABLE NOT UPDATEABLE,
+        month_end_date = 'MONTH_END_DATE' : 'java.time.LocalDateTime' (sourcetypeid='93')  NOT SORTABLE NOT UPDATEABLE,
+        position_date = 'POSITION_DATE' : 'java.time.LocalDateTime' (sourcetypeid='93')  NOT SORTABLE NOT UPDATEABLE,
+        sales_compensation_flag = 'SALES_COMPENSATION_FLAG' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        parent_company_id = 'PARENT_COMPANY_ID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        cusip = 'CUSIP' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        shareclass_name = 'SHARECLASS_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        sma = 'SMA' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        fund_num = 'FUND_NUM' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        share_class_cd = 'SHARE_CLASS_CD' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        ss_fund_num = 'SS_FUND_NUM' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequence_dir
@@ -4342,6 +4406,64 @@ CREATE OR REPLACE TABLE mapfile_web I18N us_pst (
         WRAPPER (custom mapfile_web)
     );
 
+CREATE OR REPLACE TABLE parquet_bug_duplicatedrecords I18N us_pst (
+        parent_company_channel:text (sourcetypeid = '12'), 
+        territory_channel:text (sourcetypeid = '12'), 
+        territory:text (sourcetypeid = '12'), 
+        parent_company_name:text (sourcetypeid = '12'), 
+        sfdc_company_id:text (sourcetypeid = '12'), 
+        company_name:text (sourcetypeid = '12'), 
+        company_address_city:text (sourcetypeid = '12'), 
+        company_address_state:text (sourcetypeid = '12'), 
+        company_address_postalcode:text (sourcetypeid = '12'), 
+        product_type:text (sourcetypeid = '12'), 
+        product_name:text (sourcetypeid = '12'), 
+        cur_mkt_val_usd:decimal (sourcetypeid = '3'), 
+        month_end_date:timestamp (sourcetypeid = '93'), 
+        position_date:timestamp (sourcetypeid = '93'), 
+        sales_compensation_flag:text (sourcetypeid = '12'), 
+        parent_company_id:text (sourcetypeid = '12'), 
+        cusip:text (sourcetypeid = '12'), 
+        shareclass_name:text (sourcetypeid = '12'), 
+        sma:text (sourcetypeid = '12'), 
+        fund_num:text (sourcetypeid = '12'), 
+        share_class_cd:text (sourcetypeid = '12'), 
+        ss_fund_num:text (sourcetypeid = '12')
+    )
+    DESCRIPTION = 'expected records: 259804'
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD parquet_bug_duplicatedrecords(
+        I18N us_pst
+        CONSTRAINTS (
+             ADD parent_company_channel NOS ZERO ()
+             ADD territory_channel NOS ZERO ()
+             ADD territory NOS ZERO ()
+             ADD parent_company_name NOS ZERO ()
+             ADD sfdc_company_id NOS ZERO ()
+             ADD company_name NOS ZERO ()
+             ADD company_address_city NOS ZERO ()
+             ADD company_address_state NOS ZERO ()
+             ADD company_address_postalcode NOS ZERO ()
+             ADD product_type NOS ZERO ()
+             ADD product_name NOS ZERO ()
+             ADD cur_mkt_val_usd NOS ZERO ()
+             ADD month_end_date NOS ZERO ()
+             ADD position_date NOS ZERO ()
+             ADD sales_compensation_flag NOS ZERO ()
+             ADD parent_company_id NOS ZERO ()
+             ADD cusip NOS ZERO ()
+             ADD shareclass_name NOS ZERO ()
+             ADD sma NOS ZERO ()
+             ADD fund_num NOS ZERO ()
+             ADD share_class_cd NOS ZERO ()
+             ADD ss_fund_num NOS ZERO ()
+        )
+        OUTPUTLIST (company_address_city, company_address_postalcode, company_address_state, company_name, cur_mkt_val_usd, cusip, fund_num, month_end_date, parent_company_channel, parent_company_id, parent_company_name, position_date, product_name, product_type, sales_compensation_flag, sfdc_company_id, share_class_cd, shareclass_name, sma, ss_fund_num, territory, territory_channel
+        )
+        WRAPPER (custom parquet_bug_duplicatedrecords)
+    );
+
 CREATE OR REPLACE TABLE parquet_was_bug41819 I18N us_pst (
         parent_company_channel:text (sourcetypeid = '12'), 
         territory_channel:text (sourcetypeid = '12'), 
@@ -4370,7 +4492,9 @@ CREATE OR REPLACE TABLE parquet_was_bug41819 I18N us_pst (
 
  - CUR_MKT_VAL_USD: FIXED_LEN_BYTE_ARRAY
  - MONTH_END_DATE: INT96
- - POSITION_DATE: INT96'
+ - POSITION_DATE: INT96
+
+Expected records: 1000'
     CACHE OFF
     TIMETOLIVEINCACHE DEFAULT
     ADD SEARCHMETHOD parquet_was_bug41819(
@@ -4780,6 +4904,7 @@ CREATE OR REPLACE TABLE parquetdir_empty_file I18N us_pst (
 CREATE OR REPLACE TABLE parquetfile I18N us_pst (
         flight:parquetfile_flight
     )
+    DESCRIPTION = '21938 records count expected'
     CACHE OFF
     TIMETOLIVEINCACHE DEFAULT
     ADD SEARCHMETHOD parquetfile(
@@ -5031,6 +5156,7 @@ CREATE OR REPLACE TABLE parquetfile_empty I18N us_pst (
         ln_1_txt:text (sourcetypeid = '12'), 
         ln_2_txt:text (sourcetypeid = '12')
     )
+    DESCRIPTION = 'expected records: 0'
     CACHE OFF
     TIMETOLIVEINCACHE DEFAULT
     ADD SEARCHMETHOD parquetfile_empty(
@@ -5102,6 +5228,7 @@ CREATE OR REPLACE TABLE parquetfile_web I18N us_pst (
         ln_1_txt:text (sourcetypeid = '12'), 
         ln_2_txt:text (sourcetypeid = '12')
     )
+    DESCRIPTION = 'Expected record: 1'
     CACHE OFF
     TIMETOLIVEINCACHE DEFAULT
     ADD SEARCHMETHOD parquetfile_web(
