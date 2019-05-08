@@ -22,14 +22,16 @@
 package com.denodo.connect.hadoop.hdfs.reader;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
 
 import com.denodo.connect.hadoop.hdfs.util.csv.CSVConfig;
 import com.denodo.connect.hadoop.hdfs.util.csv.CSVReader;
@@ -44,6 +46,7 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
     private int linesToSkip;
     private int linesSkipped;
     private CSVReader reader;
+    private CompressionCodecFactory codecFactory;
 
 
     public HDFSDelimitedFileReader(final Configuration configuration, final CSVConfig cvsConfig,
@@ -53,13 +56,18 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
         this.csvConfig = cvsConfig;
         this.linesToSkip = cvsConfig.isHeader() ? 1 : 0;
         this.linesSkipped = 0;
+        this.codecFactory = new CompressionCodecFactory(configuration);
     }
     
     @Override
     public void doOpenReader(final FileSystem fileSystem, final Path path,
         final Configuration configuration) throws IOException {
 
-        final FSDataInputStream is = fileSystem.open(path);
+        InputStream is = fileSystem.open(path);
+        CompressionCodec codec = this.codecFactory.getCodec(path);
+        if (codec != null) {
+            is = codec.createInputStream(is); // for reading compressed files
+        }
         this.reader = new CSVReader(new InputStreamReader(new BOMInputStream(is)), this.csvConfig);
     }
     
