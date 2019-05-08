@@ -55,59 +55,34 @@ ALTER DATABASE hdfs
 # #######################################
 # WRAPPERS
 # #######################################
-CREATE OR REPLACE WRAPPER CUSTOM avroavro
+CREATE OR REPLACE WRAPPER CUSTOM avro_compress_copy
     DATASOURCENAME=avroavro
     PARAMETERS (
       'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
-      'File name pattern' = '(.*)\\.avro',
+      'Avro schema JSON' = ' \{{"type":"record","name":"User","namespace":"example.avro","fields":[\{{"name":"name","type":"string"\}},\{{"name":"favorite_number","type":["null","int"]\}},\{{"name":"favorite_color","type":["null","string"]\}}]\}}',
       'Delete after reading' = false,
       'Kerberos enabled' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
-        recordwithalltypes = 'RecordWithAllTypes' : REGISTER OF (
-            null_field = 'null_field' : 'java.lang.Object' (sourcetypeid='0')  NOT SORTABLE NOT UPDATEABLE,
-            boolean_field = 'boolean_field' : 'java.lang.Boolean' (sourcetypeid='16')  NOT SORTABLE NOT UPDATEABLE,
-            int_field = 'int_field' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
-            long_field = 'long_field' : 'java.lang.Long' (sourcetypeid='-5')  NOT SORTABLE NOT UPDATEABLE,
-            float_field = 'float_field' : 'java.lang.Float' (sourcetypeid='6')  NOT SORTABLE NOT UPDATEABLE,
-            double_field = 'double_field' : 'java.lang.Double' (sourcetypeid='8')  NOT SORTABLE NOT UPDATEABLE,
-            string_field = 'string_field' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-            bytes_field = 'bytes_field' : '[Ljava.lang.Byte;' (sourcetypeid='-3')  NOT SORTABLE NOT UPDATEABLE,
-            fixed_field = 'fixed_field' : '[Ljava.lang.Byte;' (sourcetypeid='-3')  NOT SORTABLE NOT UPDATEABLE,
-            int_array_field = 'int_array_field' : ARRAY OF (
-                int_array_field_record = 'int_array_field_record' : REGISTER OF (
-                    int = 'int' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE
-                )
-            ),
-            int_map_field = 'int_map_field' : ARRAY OF (
-                int_map_field_record = 'int_map_field_record' : REGISTER OF (
-                    key = 'KEY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-                    value = 'VALUE' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE
-                )
-            ),
-            int_array_array_field = 'int_array_array_field' : ARRAY OF (
-                int_array_array_field_record = 'int_array_array_field_record' : REGISTER OF (
-                    array = 'array' : ARRAY OF (
-                        array_record = 'array_record' : REGISTER OF (
-                            int = 'int' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE
-                        )
-                    )
-                )
-            ),
-            int_map_map_field = 'int_map_map_field' : ARRAY OF (
-                int_map_map_field_record = 'int_map_map_field_record' : REGISTER OF (
-                    key = 'KEY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-                    value = 'VALUE' : ARRAY OF (
-                        value_record = 'VALUE_record' : REGISTER OF (
-                            key = 'KEY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-                            value = 'VALUE' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE
-                        )
-                    )
-                )
-            )
+        user_0 = 'User' : REGISTER OF (
+            name = 'name' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+            favorite_number = 'favorite_number' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
+            favorite_color = 'favorite_color' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
         )
+    );
+
+CREATE OR REPLACE WRAPPER CUSTOM avroavro
+    DATASOURCENAME=avroavro
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Avro schema JSON' = '"bytes"',
+      'Delete after reading' = false,
+      'Kerberos enabled' = false
+    )
+    OUTPUTSCHEMA (
+        avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
+        bytes = 'bytes' : '[Ljava.lang.Byte;' (sourcetypeid='-3')  NOT SORTABLE NOT UPDATEABLE
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avroavro_0
@@ -664,6 +639,40 @@ CREATE OR REPLACE WRAPPER CUSTOM bug42277
         )
     );
 
+CREATE OR REPLACE WRAPPER CUSTOM delimited_bz2
+    DATASOURCENAME=delimiteddelimited
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Path' = '/user/cloudera/df/compress/concat.bz2',
+      'Delete after reading' = false,
+      'Ignore spaces' = false,
+      'Header' = false,
+      'Ignore matching errors' = true,
+      'Kerberos enabled' = false
+    )
+    OUTPUTSCHEMA (
+        column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
+    );
+
+CREATE OR REPLACE WRAPPER CUSTOM delimited_compress_dir
+    DATASOURCENAME=delimiteddelimited
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Path' = '/user/cloudera/df/compress/',
+      'Delete after reading' = false,
+      'Ignore spaces' = false,
+      'Header' = false,
+      'Ignore matching errors' = true,
+      'Kerberos enabled' = false
+    )
+    OUTPUTSCHEMA (
+        column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        column1 = 'column1' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        column2 = 'column2' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        column3 = 'column3' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        column4 = 'column4' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
+    );
+
 CREATE OR REPLACE WRAPPER CUSTOM delimited_dates_dir
     DATASOURCENAME=delimiteddelimited
     PARAMETERS (
@@ -686,6 +695,25 @@ CREATE OR REPLACE WRAPPER CUSTOM delimited_dates_dir
         wins = 'wins' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
         losses = 'losses' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
         ties = 'ties' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
+    );
+
+CREATE OR REPLACE WRAPPER CUSTOM delimited_gz
+    DATASOURCENAME=delimiteddelimited
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Path' = '/user/cloudera/df/compress/Salaries.csv.gz',
+      'Delete after reading' = false,
+      'Ignore spaces' = false,
+      'Header' = true,
+      'Ignore matching errors' = true,
+      'Kerberos enabled' = false
+    )
+    OUTPUTSCHEMA (
+        yearid = 'yearID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        teamid = 'teamID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        lgid = 'lgID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        playerid = 'playerID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
+        salary = 'salary' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimited_nomatch
@@ -739,27 +767,16 @@ CREATE OR REPLACE WRAPPER CUSTOM delimited_tab
 CREATE OR REPLACE WRAPPER CUSTOM delimiteddelimited
     DATASOURCENAME=delimiteddelimited
     PARAMETERS (
-      'File system URI' = 'gs://dfs-wrapper-test',
-      'Path' = '/resources/textfiles/matchingerrors.csv',
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Path' = '/user/cloudera/gz/concat.bz2',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimiteddelimited.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
-      'Separator' = ',',
-      'Quote' = '"',
-      'Null value' = 'NODATA',
       'Ignore spaces' = false,
-      'Header' = true,
+      'Header' = false,
+      'Ignore matching errors' = true,
       'Kerberos enabled' = false
     )
     OUTPUTSCHEMA (
-        grid_code = 'GRID_CODE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        level1 = 'LEVEL1' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        level2 = 'LEVEL2' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        level3 = 'LEVEL3' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        clc_code = 'CLC_CODE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        label1 = 'LABEL1' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        label2 = 'LABEL2' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        label3 = 'LABEL3' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        rgb = 'RGB' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
+        column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimiteddir
@@ -1661,36 +1678,18 @@ CREATE OR REPLACE WRAPPER CUSTOM mapmap
         "VALUE" = 'VALUE' : 'java.lang.Long' (sourcetypeid='-5')  NOT SORTABLE NOT UPDATEABLE
     );
 
-CREATE OR REPLACE WRAPPER CUSTOM parquet_bug_duplicatedrecords
+CREATE OR REPLACE WRAPPER CUSTOM parquet_gzip
     DATASOURCENAME=parquetparquet
     PARAMETERS (
       'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Parquet File path' = '/user/cloudera/parquet/aum_2019-03.parquet',
+      'Parquet File path' = '/user/cloudera/parquet/compress/gzip-nation.impala.parquet',
       'Kerberos enabled' = false
     )
     OUTPUTSCHEMA (
-        parent_company_channel = 'PARENT_COMPANY_CHANNEL' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        territory_channel = 'TERRITORY_CHANNEL' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        territory = 'TERRITORY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        parent_company_name = 'PARENT_COMPANY_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        sfdc_company_id = 'SFDC_COMPANY_ID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        company_name = 'COMPANY_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        company_address_city = 'COMPANY_ADDRESS_CITY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        company_address_state = 'COMPANY_ADDRESS_STATE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        company_address_postalcode = 'COMPANY_ADDRESS_POSTALCODE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        product_type = 'PRODUCT_TYPE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        product_name = 'PRODUCT_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        cur_mkt_val_usd = 'CUR_MKT_VAL_USD' : 'java.math.BigDecimal' (sourcetypeid='3')  NOT SORTABLE NOT UPDATEABLE,
-        month_end_date = 'MONTH_END_DATE' : 'java.time.LocalDateTime' (sourcetypeid='93')  NOT SORTABLE NOT UPDATEABLE,
-        position_date = 'POSITION_DATE' : 'java.time.LocalDateTime' (sourcetypeid='93')  NOT SORTABLE NOT UPDATEABLE,
-        sales_compensation_flag = 'SALES_COMPENSATION_FLAG' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        parent_company_id = 'PARENT_COMPANY_ID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        cusip = 'CUSIP' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        shareclass_name = 'SHARECLASS_NAME' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        sma = 'SMA' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        fund_num = 'FUND_NUM' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        share_class_cd = 'SHARE_CLASS_CD' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
-        ss_fund_num = 'SS_FUND_NUM' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
+        n_nationkey = 'n_nationkey' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
+        n_name = 'n_name' : '[Ljava.lang.Byte;' (sourcetypeid='-3')  NOT SORTABLE NOT UPDATEABLE,
+        n_regionkey = 'n_regionkey' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
+        n_comment = 'n_comment' : '[Ljava.lang.Byte;' (sourcetypeid='-3')  NOT SORTABLE NOT UPDATEABLE
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquet_was_bug41819
@@ -2609,6 +2608,8 @@ CREATE OR REPLACE WRAPPER CUSTOM table_b_for_join
 # #######################################
 # TYPES
 # #######################################
+CREATE OR REPLACE TYPE avro_compress_copy_user_0 AS REGISTER OF (name:text (sourcetypeid = '12'), favorite_number:int (sourcetypeid = '4'), favorite_color:text (sourcetypeid = '12'));
+
 CREATE OR REPLACE TYPE avroavro_eventdata_properties_properties_record AS REGISTER OF (key:text (sourcetypeid = '12'), value:long (sourcetypeid = '-5'));
 
 CREATE OR REPLACE TYPE avroavro_eventdata_systemproperties_systemproperties_record AS REGISTER OF (key:text (sourcetypeid = '12'), value:long (sourcetypeid = '-5'));
@@ -3062,6 +3063,32 @@ CREATE OR REPLACE TYPE parquetparquet_flight AS REGISTER OF (entityseqnumber:tex
 # #######################################
 # BASE VIEWS
 # #######################################
+CREATE OR REPLACE TABLE avro_compress I18N us_pst (
+        avrofilepath:text (sourcetypeid = '12'), 
+        user_0:avro_compress_copy_user_0
+    )
+    DESCRIPTION = 'schema:
+	{{"type":"record","name":"User","namespace":"example.avro","fields":[{{"name":"name","type":"string"}},{{"name":"favorite_number","type":["null","int"]}},{{"name":"favorite_color","type":["null","string"]}}]}}
+
+files:
+	- ''/user/cloudera/avro/compress/users-deflate.avro
+	- ''/user/cloudera/avro/compress/users-snappy.avro'
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD avro_compress_copy(
+        I18N us_pst
+        CONSTRAINTS (
+             ADD avrofilepath (=) OBL ONE
+             ADD user_0 NOS ZERO ()
+             ADD user_0.name NOS ZERO ()
+             ADD user_0.favorite_number NOS ZERO ()
+             ADD user_0.favorite_color NOS ZERO ()
+        )
+        OUTPUTLIST (avrofilepath, user_0
+        )
+        WRAPPER (custom avro_compress_copy)
+    );
+
 CREATE OR REPLACE TABLE avrodir I18N us_pst (
         avrofilepath:text (sourcetypeid = '12'), 
         recordwithalltypes:avrodir_recordwithalltypes
@@ -3373,6 +3400,44 @@ avrofile ->''/user/cloudera/avro/binary/binaryfield_test.avro'''
         WRAPPER (custom bug42277)
     );
 
+CREATE OR REPLACE TABLE delimited_bz2 I18N us_pst (
+        column0:text (sourcetypeid = '12')
+    )
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD delimited_bz2(
+        I18N us_pst
+        CONSTRAINTS (
+             ADD column0 NOS ZERO ()
+        )
+        OUTPUTLIST (column0
+        )
+        WRAPPER (custom delimited_bz2)
+    );
+
+CREATE OR REPLACE TABLE delimited_compress_dir I18N us_pst (
+        column0:text (sourcetypeid = '12'), 
+        column1:text (sourcetypeid = '12'), 
+        column2:text (sourcetypeid = '12'), 
+        column3:text (sourcetypeid = '12'), 
+        column4:text (sourcetypeid = '12')
+    )
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD delimited_compress_dir(
+        I18N us_pst
+        CONSTRAINTS (
+             ADD column0 NOS ZERO ()
+             ADD column1 NOS ZERO ()
+             ADD column2 NOS ZERO ()
+             ADD column3 NOS ZERO ()
+             ADD column4 NOS ZERO ()
+        )
+        OUTPUTLIST (column0, column1, column2, column3, column4
+        )
+        WRAPPER (custom delimited_compress_dir)
+    );
+
 CREATE OR REPLACE TABLE delimited_dates_dir I18N us_pst (
         "yearID":text (sourcetypeid = '12'), 
         round:text (sourcetypeid = '12'), 
@@ -3403,6 +3468,29 @@ CREATE OR REPLACE TABLE delimited_dates_dir I18N us_pst (
         OUTPUTLIST ("lgIDloser", "lgIDwinner", losses, round, "teamIDloser", "teamIDwinner", ties, wins, "yearID"
         )
         WRAPPER (custom delimited_dates_dir)
+    );
+
+CREATE OR REPLACE TABLE delimited_gz I18N us_pst (
+        yearid:text (sourcetypeid = '12'), 
+        teamid:text (sourcetypeid = '12'), 
+        lgid:text (sourcetypeid = '12'), 
+        playerid:text (sourcetypeid = '12'), 
+        salary:text (sourcetypeid = '12')
+    )
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD delimited_gz(
+        I18N us_pst
+        CONSTRAINTS (
+             ADD yearid NOS ZERO ()
+             ADD teamid NOS ZERO ()
+             ADD lgid NOS ZERO ()
+             ADD playerid NOS ZERO ()
+             ADD salary NOS ZERO ()
+        )
+        OUTPUTLIST (lgid, playerid, salary, teamid, yearid
+        )
+        WRAPPER (custom delimited_gz)
     );
 
 CREATE OR REPLACE TABLE delimited_nomatch I18N us_pst (
@@ -3624,7 +3712,9 @@ CREATE OR REPLACE TABLE delimitedfile_matching_errors I18N us_pst (
         label3:text (sourcetypeid = '12'), 
         rgb:text (sourcetypeid = '12')
     )
-    DESCRIPTION = 'Ignore matching errors: true -> those mathing errors correspond with the null values in the output'
+    DESCRIPTION = 'Ignore matching errors: true -> those mathing errors correspond with the null values in the output
+
+expected in trace -> Number of invalid rows = 2'
     CACHE OFF
     TIMETOLIVEINCACHE DEFAULT
     ADD SEARCHMETHOD delimitedfile_matching_errors(
@@ -4406,62 +4496,25 @@ CREATE OR REPLACE TABLE mapfile_web I18N us_pst (
         WRAPPER (custom mapfile_web)
     );
 
-CREATE OR REPLACE TABLE parquet_bug_duplicatedrecords I18N us_pst (
-        parent_company_channel:text (sourcetypeid = '12'), 
-        territory_channel:text (sourcetypeid = '12'), 
-        territory:text (sourcetypeid = '12'), 
-        parent_company_name:text (sourcetypeid = '12'), 
-        sfdc_company_id:text (sourcetypeid = '12'), 
-        company_name:text (sourcetypeid = '12'), 
-        company_address_city:text (sourcetypeid = '12'), 
-        company_address_state:text (sourcetypeid = '12'), 
-        company_address_postalcode:text (sourcetypeid = '12'), 
-        product_type:text (sourcetypeid = '12'), 
-        product_name:text (sourcetypeid = '12'), 
-        cur_mkt_val_usd:decimal (sourcetypeid = '3'), 
-        month_end_date:timestamp (sourcetypeid = '93'), 
-        position_date:timestamp (sourcetypeid = '93'), 
-        sales_compensation_flag:text (sourcetypeid = '12'), 
-        parent_company_id:text (sourcetypeid = '12'), 
-        cusip:text (sourcetypeid = '12'), 
-        shareclass_name:text (sourcetypeid = '12'), 
-        sma:text (sourcetypeid = '12'), 
-        fund_num:text (sourcetypeid = '12'), 
-        share_class_cd:text (sourcetypeid = '12'), 
-        ss_fund_num:text (sourcetypeid = '12')
+CREATE OR REPLACE TABLE parquet_gzip I18N us_pst (
+        n_nationkey:int (sourcetypeid = '4'), 
+        n_name:blob (sourcetypeid = '-3'), 
+        n_regionkey:int (sourcetypeid = '4'), 
+        n_comment:blob (sourcetypeid = '-3')
     )
-    DESCRIPTION = 'expected records: 259804'
     CACHE OFF
     TIMETOLIVEINCACHE DEFAULT
-    ADD SEARCHMETHOD parquet_bug_duplicatedrecords(
+    ADD SEARCHMETHOD parquet_gzip(
         I18N us_pst
         CONSTRAINTS (
-             ADD parent_company_channel NOS ZERO ()
-             ADD territory_channel NOS ZERO ()
-             ADD territory NOS ZERO ()
-             ADD parent_company_name NOS ZERO ()
-             ADD sfdc_company_id NOS ZERO ()
-             ADD company_name NOS ZERO ()
-             ADD company_address_city NOS ZERO ()
-             ADD company_address_state NOS ZERO ()
-             ADD company_address_postalcode NOS ZERO ()
-             ADD product_type NOS ZERO ()
-             ADD product_name NOS ZERO ()
-             ADD cur_mkt_val_usd NOS ZERO ()
-             ADD month_end_date NOS ZERO ()
-             ADD position_date NOS ZERO ()
-             ADD sales_compensation_flag NOS ZERO ()
-             ADD parent_company_id NOS ZERO ()
-             ADD cusip NOS ZERO ()
-             ADD shareclass_name NOS ZERO ()
-             ADD sma NOS ZERO ()
-             ADD fund_num NOS ZERO ()
-             ADD share_class_cd NOS ZERO ()
-             ADD ss_fund_num NOS ZERO ()
+             ADD n_nationkey NOS ZERO ()
+             ADD n_name NOS ZERO ()
+             ADD n_regionkey NOS ZERO ()
+             ADD n_comment NOS ZERO ()
         )
-        OUTPUTLIST (company_address_city, company_address_postalcode, company_address_state, company_name, cur_mkt_val_usd, cusip, fund_num, month_end_date, parent_company_channel, parent_company_id, parent_company_name, position_date, product_name, product_type, sales_compensation_flag, sfdc_company_id, share_class_cd, shareclass_name, sma, ss_fund_num, territory, territory_channel
+        OUTPUTLIST (n_comment, n_name, n_nationkey, n_regionkey
         )
-        WRAPPER (custom parquet_bug_duplicatedrecords)
+        WRAPPER (custom parquet_gzip)
     );
 
 CREATE OR REPLACE TABLE parquet_was_bug41819 I18N us_pst (
@@ -5267,6 +5320,63 @@ CREATE OR REPLACE TABLE parquetfile_web I18N us_pst (
         OUTPUTLIST (amount, catl_cd_txt, catl_ctg_cd_txt, catl_sub_cd_txt, cont_ln_1_txt, cont_ln_2_txt, currency_cd, end_date, item_clos_dt, item_franchise_cd, item_instance_id, item_open_dt, item_stat_cd, item_sub_stat_cd, item_typ_cd, ln_1_txt, ln_2_txt, recv_h_ofc_dt, sgn_ctry_cd, sgn_dt, sgn_regn_cd, start_date, status_cd, tele_tran_alw_cd, titl_ln_1_txt, titl_ln_2_txt, titl_ln_3_txt, type_cd_1, type_cd_2
         )
         WRAPPER (custom parquetfile_web)
+    );
+
+CREATE OR REPLACE TABLE parquetparquet I18N us_pst (
+        parent_company_channel:text (sourcetypeid = '12'), 
+        territory_channel:text (sourcetypeid = '12'), 
+        territory:text (sourcetypeid = '12'), 
+        parent_company_name:text (sourcetypeid = '12'), 
+        sfdc_company_id:text (sourcetypeid = '12'), 
+        company_name:text (sourcetypeid = '12'), 
+        company_address_city:text (sourcetypeid = '12'), 
+        company_address_state:text (sourcetypeid = '12'), 
+        company_address_postalcode:text (sourcetypeid = '12'), 
+        product_type:text (sourcetypeid = '12'), 
+        product_name:text (sourcetypeid = '12'), 
+        cur_mkt_val_usd:decimal (sourcetypeid = '3'), 
+        month_end_date:timestamp (sourcetypeid = '93'), 
+        position_date:timestamp (sourcetypeid = '93'), 
+        sales_compensation_flag:text (sourcetypeid = '12'), 
+        parent_company_id:text (sourcetypeid = '12'), 
+        cusip:text (sourcetypeid = '12'), 
+        shareclass_name:text (sourcetypeid = '12'), 
+        sma:text (sourcetypeid = '12'), 
+        fund_num:text (sourcetypeid = '12'), 
+        share_class_cd:text (sourcetypeid = '12'), 
+        ss_fund_num:text (sourcetypeid = '12')
+    )
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD parquetparquet(
+        I18N us_pst
+        CONSTRAINTS (
+             ADD parent_company_channel NOS ZERO ()
+             ADD territory_channel NOS ZERO ()
+             ADD territory NOS ZERO ()
+             ADD parent_company_name NOS ZERO ()
+             ADD sfdc_company_id NOS ZERO ()
+             ADD company_name NOS ZERO ()
+             ADD company_address_city NOS ZERO ()
+             ADD company_address_state NOS ZERO ()
+             ADD company_address_postalcode NOS ZERO ()
+             ADD product_type NOS ZERO ()
+             ADD product_name NOS ZERO ()
+             ADD cur_mkt_val_usd NOS ZERO ()
+             ADD month_end_date NOS ZERO ()
+             ADD position_date NOS ZERO ()
+             ADD sales_compensation_flag NOS ZERO ()
+             ADD parent_company_id NOS ZERO ()
+             ADD cusip NOS ZERO ()
+             ADD shareclass_name NOS ZERO ()
+             ADD sma NOS ZERO ()
+             ADD fund_num NOS ZERO ()
+             ADD share_class_cd NOS ZERO ()
+             ADD ss_fund_num NOS ZERO ()
+        )
+        OUTPUTLIST (company_address_city, company_address_postalcode, company_address_state, company_name, cur_mkt_val_usd, cusip, fund_num, month_end_date, parent_company_channel, parent_company_id, parent_company_name, position_date, product_name, product_type, sales_compensation_flag, sfdc_company_id, share_class_cd, shareclass_name, sma, ss_fund_num, territory, territory_channel
+        )
+        WRAPPER (custom parquetparquet)
     );
 
 CREATE OR REPLACE TABLE sequence_dir I18N us_pst (
