@@ -22,6 +22,7 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,8 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolde
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
 
@@ -65,7 +68,7 @@ public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
                         true, CustomWrapperInputParameterTypeFactory.stringType()),
                     new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                             "Local route of hdfs-site.xml configuration file ",
-                            false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL}))                    
+                            false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
             };
     
     
@@ -132,16 +135,13 @@ public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
     public void doRun(final CustomWrapperConditionHolder condition, final List<CustomWrapperFieldExpression> projectedFields,
             final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
-        
-        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-        final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
-        
+        final Configuration conf = getHadoopConfiguration(inputValues);
+
         final Map<CustomWrapperFieldExpression, Object> conditions = condition.getConditionMap(true);
         final String parentFolder = (String) getMandatoryField(Parameter.PARENT_FOLDER, conditions);
         final boolean recursive = ((Boolean) getMandatoryField(Parameter.RECURSIVE, conditions)).booleanValue();
-        
-        final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, hdfsSitePath);
-        
+
+
         FileSystem fileSystem = null;
         try {
             

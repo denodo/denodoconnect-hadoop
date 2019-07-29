@@ -22,6 +22,7 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -47,6 +48,8 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolde
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 /**
  * HDFS file custom wrapper for reading Parquet files stored in HDFS (Hadoop
@@ -75,10 +78,10 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                     CustomWrapperInputParameterTypeFactory.stringType()),               
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL})),
+                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
             new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                 "Local route of hdfs-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL}))       
+                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
     };
 
     @Override
@@ -102,10 +105,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         HDFSParquetFileReader reader = null;
         try {
 
-            final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-            final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-            final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
-            final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+            final Configuration conf = getHadoopConfiguration(inputValues);
 
             final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
             final Path path = new Path(parquetFilePath);
@@ -144,10 +144,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     public void doRun(final CustomWrapperConditionHolder condition, final List<CustomWrapperFieldExpression> projectedFields,
             final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
-        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);      
-        final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-        final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
-        final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+        final Configuration conf = getHadoopConfiguration(inputValues);
 
         final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
         final Path path = new Path(parquetFilePath);
@@ -183,7 +180,5 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
         }
     }
-
-
 
 }

@@ -21,17 +21,20 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
+import java.io.InputStream;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.security.PrivilegedExceptionAction;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
+import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.util.krb5.KerberosUtils;
 import com.denodo.vdb.engine.customwrapper.AbstractCustomWrapper;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
@@ -43,6 +46,8 @@ import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpressi
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
 import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterLocalRouteValue;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 
 public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper {
@@ -197,7 +202,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
             LOG.error("Hadoop security error", e);
             String msg = "Hadoop security error: " + e.getMessage();
             if (e.getCause() != null) {
-                msg += " " + e.getCause().getMessage();
+                msg += ' ' + e.getCause().getMessage();
             }
             throw new CustomWrapperException(msg, e);
         }
@@ -231,6 +236,27 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
     public boolean stop() {
         this.stopRequested = true;
         return true;
+    }
+
+    protected Configuration getHadoopConfiguration(final Map<String, String> inputValues) throws CustomWrapperException {
+
+        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
+
+        final CustomWrapperInputParameterValue coreSitePathValue = getInputParameterValue(Parameter.CORE_SITE_PATH);
+        InputStream coreSiteIs = null;
+        if (coreSitePathValue != null) {
+            coreSiteIs = ((CustomWrapperInputParameterRouteValue) coreSitePathValue).getInputStream();
+
+        }
+
+        final CustomWrapperInputParameterValue hdfsSitePathValue = getInputParameterValue(Parameter.HDFS_SITE_PATH);
+        InputStream hdfsSiteIs = null;
+        if (hdfsSitePathValue != null) {
+            hdfsSiteIs = ((CustomWrapperInputParameterRouteValue) hdfsSitePathValue).getInputStream();
+
+        }
+
+        return HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSiteIs, hdfsSiteIs);
     }
 
     public abstract void doRun(CustomWrapperConditionHolder condition,
