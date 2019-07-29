@@ -22,6 +22,7 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +43,8 @@ import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 /**
  * HDFS file custom wrapper for reading delimited text files stored in HDFS
@@ -185,13 +188,10 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues) throws IOException, InterruptedException {
-
-        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-        final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-        final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
+    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues)
+        throws IOException, InterruptedException, CustomWrapperException {
         
-        final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+        final Configuration conf = getHadoopConfiguration(inputValues);
         final String inputFilePath = inputValues.get(Parameter.FILE_PATH);
         final Path path = new Path(inputFilePath);
         
@@ -204,4 +204,5 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     public boolean ignoreMatchingErrors(final Map<String, String> inputValues) {
         return Boolean.parseBoolean(inputValues.get(Parameter.IGNORE_MATCHING_ERRORS));
     }
+
 }

@@ -1,3 +1,10 @@
+20190730
+--------
+- #44168 - Add FTP/SFTP file ability for core-site.xml and hdfs-site.xml files
+- #44020 - Take advantage of Route objects when reading xml files
+- #43383 - Documentation: Note the need to escape special characters in configured paths
+- #43230 - Documentation: Document S3 Temporary Credentials configuration
+
 20190508
 --------
 - #42877 - Support compressed delimited files

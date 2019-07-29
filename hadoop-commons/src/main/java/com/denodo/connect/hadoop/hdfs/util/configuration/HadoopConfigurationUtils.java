@@ -21,10 +21,10 @@
  */
 package com.denodo.connect.hadoop.hdfs.util.configuration;
 
+import java.io.InputStream;
 import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 
 public final class HadoopConfigurationUtils {
 
@@ -41,7 +41,7 @@ public final class HadoopConfigurationUtils {
      *        E.g. HDFS -> hdfs://ip:port
      * @return the basic hadoop configuration
      */
-    public static Configuration getConfiguration(final String fileSystemURIString, final String... customFilePathNames) {
+    public static Configuration getConfiguration(final String fileSystemURIString, final InputStream... customFiles) {
 
         final Configuration conf = new Configuration();
         conf.set("fs.defaultFS", fileSystemURIString);
@@ -52,9 +52,9 @@ public final class HadoopConfigurationUtils {
 
         setPropertyForAzure3_2_0(conf);
         
-        for (final String customFilePathName: customFilePathNames) {
-            if (customFilePathName != null) {
-                conf.addResource(new Path(customFilePathName));
+        for (final InputStream customFile: customFiles) {
+            if (customFile != null) {
+                conf.addResource(customFile);
             }
         }
 

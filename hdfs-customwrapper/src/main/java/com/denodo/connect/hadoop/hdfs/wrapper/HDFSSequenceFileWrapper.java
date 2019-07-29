@@ -22,6 +22,7 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -33,8 +34,11 @@ import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.keyvalue.HDFSSequenceFileReader;
 import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.util.type.TypeUtils;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 /**
  * HDFS file custom Wrapper for reading sequence files stored in HDFS (Hadoop
@@ -70,12 +74,10 @@ public class HDFSSequenceFileWrapper extends AbstractHDFSKeyValueFileWrapper {
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues) throws IOException, InterruptedException {
+    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues)
+        throws IOException, InterruptedException, CustomWrapperException {
 
-        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
-        final String coreSitePath = inputValues.get(Parameter.CORE_SITE_PATH);
-        final String hdfsSitePath = inputValues.get(Parameter.HDFS_SITE_PATH);
-        final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSitePath, hdfsSitePath);
+        final Configuration conf = getHadoopConfiguration(inputValues);
 
         final String hadoopKeyClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
         final String hadoopValueClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
