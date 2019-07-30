@@ -1,4 +1,4 @@
-20190730
+20190805
 --------
 - #44168 - Add FTP/SFTP file ability for core-site.xml and hdfs-site.xml files
 - #44020 - Take advantage of Route objects when reading xml files
