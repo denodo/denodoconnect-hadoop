@@ -11,7 +11,7 @@
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20190805</version>
+    <version>20190814</version>
 
     <properties>
         <avro.version>1.8.2</avro.version>

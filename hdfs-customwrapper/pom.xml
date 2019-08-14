@@ -11,7 +11,7 @@
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20190805</version>
+    <version>20190814</version>
 
     <properties>
         <aws.sdk.version>1.11.199</aws.sdk.version>
@@ -217,6 +217,18 @@
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
                         </configuration>
                     </execution>
+                  <execution>
+                    <id>copy-source</id>
+                    <phase>package</phase>
+                    <goals>
+                      <goal>copy-dependencies</goal>
+                    </goals>
+                    <configuration>
+                      <includeArtifactIds>denodo-hadoop-commons-6.0</includeArtifactIds>
+                      <classifier>sources</classifier>
+                      <outputDirectory>${project.build.directory}</outputDirectory>
+                    </configuration>
+                  </execution>
                 </executions>
             </plugin>
             

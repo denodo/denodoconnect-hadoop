@@ -19,6 +19,7 @@
                 <include>${project.artifactId}-${project.version}.jar</include>
                 <include>${project.artifactId}-${project.version}-javadoc.jar</include>
                 <include>${project.artifactId}-${project.version}-sources.jar</include>
+                <include>denodo-hadoop-commons-6.0-${project.version}-sources.jar</include>
                 <include>${project.artifactId}-${project.version}-jar-with-dependencies.jar</include>
             </includes>
         </fileSet>
