@@ -24,6 +24,7 @@ package com.denodo.connect.hadoop.hdfs.reader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +33,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.example.data.Group;
+import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.ParquetReader;
@@ -60,14 +62,16 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
     private ParquetReader<Group> dataFileReader;
     private List<CustomWrapperFieldExpression> projectedFields;
     private MessageType parquetSchema;
-    
+    private FilterCompat.Filter filter;
 
-    public HDFSParquetFileReader(final Configuration conf, final Path path, final String finalNamePattern,
-            final String user, final List<CustomWrapperFieldExpression> projectedFields) 
+
+    public HDFSParquetFileReader(final Configuration conf, final Path path, final String finalNamePattern, final String user,
+        final List<CustomWrapperFieldExpression> projectedFields, FilterCompat.Filter filter)
             throws IOException, InterruptedException {
 
         super(conf, path, finalNamePattern, user);
         this.projectedFields = projectedFields;
+        this.filter = filter;
     }
 
     @Override
@@ -83,7 +87,11 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.parquetSchema.toString());
         
         final GroupReadSupport groupReadSupport = new GroupReadSupport();
-        this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).build();
+        if (filter != null) {
+            this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).withFilter(this.filter).build();
+        } else {
+            this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).build();
+        }
     }
 
     public SchemaElement getSchema(final Configuration configuration) throws IOException {
@@ -103,7 +111,30 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         final ParquetMetadata readFooter = ParquetFileReader.readFooter(configuration, filePath, ParquetMetadataConverter.NO_FILTER);
         
         final MessageType schema = readFooter.getFileMetaData().getSchema();
-        
+
+        if (projectedFields != null) {
+            List<Integer> schemaFieldsToDelete  = new ArrayList<Integer>();
+            for (int i = 0; i < schema.getFields().size(); i++) {
+                String schemaFieldName = schema.getFields().get(i).getName();
+                Boolean includedInProjection = false;
+                for (int j = 0; j < this.projectedFields.size(); j++) {
+                    String projectedFieldName = this.projectedFields.get(j).getName();
+                    if (schemaFieldName.equals(projectedFieldName)) {
+                        includedInProjection = true;
+                        break;
+                    }
+                }
+                if (!includedInProjection) {
+                    schemaFieldsToDelete.add(0, i);
+                }
+            }
+
+            for (Integer index : schemaFieldsToDelete) {
+                schema.getFields().remove(index.intValue());
+            }
+        }
+
+
         return schema;
     }
 

@@ -30,6 +30,8 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.filter2.compat.FilterCompat;
+import org.apache.parquet.hadoop.ParquetInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +50,8 @@ import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpressi
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
 
+import static org.apache.parquet.filter2.predicate.FilterApi.*;
+
 /**
  * HDFS file custom wrapper for reading Parquet files stored in HDFS (Hadoop
  * Distributed File System).
@@ -59,7 +63,7 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
  */
 public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
-    private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileWrapper.class); 
+    private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileWrapper.class);
 
     
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
@@ -90,7 +94,6 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     public CustomWrapperConfiguration getConfiguration() {
 
         final CustomWrapperConfiguration conf = super.getConfiguration();
-        conf.setDelegateProjections(false);
 
         return conf;
     }
@@ -112,7 +115,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             
             final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null);
+            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null, null);
 
             final SchemaElement javaSchema = reader.getSchema(conf);
 
@@ -151,13 +154,16 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
         final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
         final Path path = new Path(parquetFilePath);
-        
+
+        /*ParquetInputFormat.setFilterPredicate(conf, lt(intColumn("id"),5));
+        FilterCompat.Filter filter = ParquetInputFormat.getFilter(conf);*/
+
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
         HDFSParquetFileReader reader = null;
         try {
 
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, projectedFields);
+            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, projectedFields, null);
 
             Object parquetData = reader.read();
             while (parquetData != null && !isStopRequested()) {
