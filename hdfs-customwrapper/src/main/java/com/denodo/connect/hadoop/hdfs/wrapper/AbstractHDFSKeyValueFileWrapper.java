@@ -2,6 +2,9 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +66,10 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
                 false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
             new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                 "Local route of hdfs-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
+                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
+            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
+                "Include full path of the file in the view? ", false,
+                CustomWrapperInputParameterTypeFactory.booleanType(false))
     };
     
 
@@ -87,12 +93,16 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
 
         final String keyHadoopClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
         final String valueHadoopClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
-
+        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
         final Collection<SchemaElement> javaSchema =
             AbstractHDFSKeyValueFileReader.getSchema(keyHadoopClass, valueHadoopClass);
-
-        return VDPSchemaUtils.buildSchema(javaSchema);
-
+        if(includePathColumn){
+            final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, false,
+                CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false);
+            return (CustomWrapperSchemaParameter[]) ArrayUtils.add(VDPSchemaUtils.buildSchema(javaSchema),filePath);
+        }else {
+            return VDPSchemaUtils.buildSchema(javaSchema);
+        }
     }
 
     @Override
@@ -107,17 +117,20 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
         HDFSFileReader reader = null;
         try {
 
-            reader = getHDFSFileReader(inputValues);
+            reader = getHDFSFileReader(inputValues, false);
             Object data = reader.read();
+
             while (data != null && !isStopRequested()) {
                 
-                final Object[] row = (Object[]) data;
-                if (row.length != projectedFields.size()) {
+                 Object[] row = (Object[]) data;
+                int rowLength = row.length;
+                if (rowLength != projectedFields.size()) {
                     invalidRows ++;
                     if (!ignoreMatchingErrors(inputValues)) {
                         throw new IllegalArgumentException("Data does not match the schema: line with different number of columns");
                     }
                 }
+
                 result.addRow(row, projectedFields);
 
                 data = reader.read();
@@ -152,7 +165,7 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
         return INPUT_PARAMETERS;
     }
 
-    public abstract HDFSFileReader getHDFSFileReader(Map<String, String> inputValues)
+    public abstract HDFSFileReader getHDFSFileReader(Map<String, String> inputValues, boolean getSchemaParameters)
         throws IOException, InterruptedException, CustomWrapperException;
 
 

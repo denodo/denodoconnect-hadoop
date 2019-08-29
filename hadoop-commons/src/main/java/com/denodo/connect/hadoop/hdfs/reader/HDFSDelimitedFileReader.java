@@ -50,9 +50,9 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
 
 
     public HDFSDelimitedFileReader(final Configuration configuration, final CSVConfig cvsConfig,
-        final Path outputPath, final String fileNamePattern, final String user) throws IOException, InterruptedException {
+        final Path outputPath, final String fileNamePattern, final String user, boolean includePathColumn) throws IOException, InterruptedException {
 
-        super(configuration, outputPath, fileNamePattern, user);
+        super(configuration, outputPath, fileNamePattern, user, includePathColumn);
         this.csvConfig = cvsConfig;
         this.linesToSkip = cvsConfig.isHeader() ? 1 : 0;
         this.linesSkipped = 0;

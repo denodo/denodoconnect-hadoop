@@ -74,7 +74,7 @@ public class HDFSSequenceFileWrapper extends AbstractHDFSKeyValueFileWrapper {
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues)
+    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues, final boolean getSchemaParameters)
         throws IOException, InterruptedException, CustomWrapperException {
 
         final Configuration conf = getHadoopConfiguration(inputValues);
@@ -87,7 +87,9 @@ public class HDFSSequenceFileWrapper extends AbstractHDFSKeyValueFileWrapper {
         
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
-        return new HDFSSequenceFileReader(conf, hadoopKeyClass, hadoopValueClass, path, fileNamePattern, null);
+        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
+
+        return new HDFSSequenceFileReader(conf, hadoopKeyClass, hadoopValueClass, path, fileNamePattern, null, includePathColumn && !getSchemaParameters);
     }
 
 }

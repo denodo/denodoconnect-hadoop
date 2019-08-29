@@ -101,14 +101,18 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         final boolean isUpdateable = true;
         final boolean isNullable = true;
         final boolean isMandatory = true;
-        
+        boolean includePathColumn = false;
         final boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
         Object[] headerNames = readHeader(inputValues);
         if (!header) {
             headerNames = buildSyntheticHeader(headerNames.length);
         }
-
-        final CustomWrapperSchemaParameter[] headerSchema =  new CustomWrapperSchemaParameter[headerNames.length];
+        int lengthSchemaParameters = headerNames.length;
+        if(Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN))){
+            includePathColumn = true;
+            lengthSchemaParameters++;
+        }
+        final CustomWrapperSchemaParameter[] headerSchema =  new CustomWrapperSchemaParameter[lengthSchemaParameters];
         int i = 0;
         for (final Object item : headerNames) {
             if (item == null) {
@@ -118,7 +122,10 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
                     CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, isNullable, !isMandatory);
 
         }
-        
+        if(includePathColumn){
+            headerSchema[i++] = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, !isSearchable,
+                CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, isNullable, !isMandatory);
+        }
         return headerSchema;
     }
 
@@ -128,7 +135,7 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         try {
 
             final Map<String, String> values = tuneInput(inputValues);
-            reader = getHDFSFileReader(values);
+            reader = getHDFSFileReader(values, true);
             final Object[] headerNames = (Object[]) reader.read();
 
             if (headerNames == null) {
@@ -188,7 +195,7 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues)
+    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues, boolean getSchemaParameters)
         throws IOException, InterruptedException, CustomWrapperException {
         
         final Configuration conf = getHadoopConfiguration(inputValues);
@@ -196,8 +203,9 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         final Path path = new Path(inputFilePath);
         
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
+        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
 
-        return new HDFSDelimitedFileReader(conf, getConfig(inputValues), path, fileNamePattern, null);
+        return new HDFSDelimitedFileReader(conf, getConfig(inputValues), path, fileNamePattern, null, includePathColumn && !getSchemaParameters);
     }
 
     @Override

@@ -24,6 +24,7 @@ package com.denodo.connect.hadoop.hdfs.reader;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -50,9 +51,10 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
     private PathFilter fileFilter;
     private boolean firstReading;
     private Path currentPath;
+    private boolean includePathColumn;
 
 
-    public AbstractHDFSFileReader(final Configuration configuration, final Path outputPath, final String fileNamePattern, final String user)
+    public AbstractHDFSFileReader(final Configuration configuration, final Path outputPath, final String fileNamePattern, final String user, final boolean includePathColumn)
         throws IOException, InterruptedException {
 
         try {
@@ -75,7 +77,7 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
             initFileIterator();
 
             this.firstReading = true;
-        
+            this.includePathColumn = includePathColumn;
             // When an error occurs, if the FileSystem is not closed, it will remain in the Hadoop cache until the JVM is restarted. Redmine #39931
         } catch (final IOException e) {
             if (this.fileSystem != null) {
@@ -171,6 +173,9 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
             
             Object data = doRead();
             if (data != null) {
+                if(this.includePathColumn){
+                    data= ArrayUtils.add((Object[])data, this.currentPath.toString());
+                }
                 return data;
             }
     
@@ -182,6 +187,9 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
                 openReader(this.fileSystem, this.configuration);
                 data = doRead();
                 if (data != null) {
+                    if(this.includePathColumn){
+                        data= ArrayUtils.add((Object[])data,this.currentPath.toString());
+                    }
                     return data;
                 }
                 closeReader();
