@@ -92,7 +92,10 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
                 false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
             new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                 "Local route of hdfs-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
+                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
+            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
+                "Include path column? ", false,
+                CustomWrapperInputParameterTypeFactory.booleanType(false))
         };
 
     @Override
@@ -128,7 +131,12 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
             final Configuration conf = getHadoopConfiguration(inputValues);
             final Schema avroSchema = AvroSchemaUtils.buildSchema(inputValues, conf);
             final SchemaElement javaSchema = HDFSAvroFileReader.getSchema(avroSchema);
-
+            boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
+            if(includePathColumn){
+                final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, !isSearchable,
+                    CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, isNullable, !isMandatory);
+                return new CustomWrapperSchemaParameter[] {avroFilePathParameter, VDPSchemaUtils.buildSchemaParameter(javaSchema), filePath};
+            }
             return new CustomWrapperSchemaParameter[] {avroFilePathParameter, VDPSchemaUtils.buildSchemaParameter(javaSchema)};
 
         } catch (final Exception e) {
@@ -149,17 +157,30 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
         final String avroFilePath = getAvroFilePath(condition);
         final Path path = new Path(avroFilePath);
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
+        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
 
         HDFSFileReader reader = null;
         try {
 
             final Schema avroSchema = AvroSchemaUtils.buildSchema(inputValues, conf);
-            reader = new HDFSAvroFileReader(conf, path, fileNamePattern, avroSchema, null);
-            final Object[] rowData = new Object[2];
+            reader = new HDFSAvroFileReader(conf, path, fileNamePattern, avroSchema, null, includePathColumn);
+            final Object[] rowData;
+            if(includePathColumn){
+                rowData = new Object[3];
+            }else{
+                rowData = new Object[2];
+            }
+
             rowData[0] = avroFilePath;
             Object avroData = reader.read();
             while (avroData != null && !isStopRequested()) {
-                rowData[1] = avroData;
+                if(includePathColumn){
+                    Object[] avroArray = (Object[]) avroData;
+                    rowData[1]= ArrayUtils.subarray(avroArray,0,avroArray.length-1);
+                    rowData[2]= avroArray[avroArray.length-1];
+                }else {
+                    rowData[1] = avroData;
+                }
                 result.addRow(rowData, projectedFields);
 
                 avroData = reader.read();

@@ -40,10 +40,10 @@ public class HDFSSequenceFileReader extends AbstractHDFSKeyValueFileReader {
     private SequenceFile.Reader currentReader;
 
     public HDFSSequenceFileReader(final Configuration configuration, final String hadoopKeyClass,
-            final String hadoopValueClass, final Path outputPath, final String fileNamePattern, final String user)
+            final String hadoopValueClass, final Path outputPath, final String fileNamePattern, final String user, final boolean includePathColumn)
             throws IOException, InterruptedException {
 
-        super(configuration, hadoopKeyClass, hadoopValueClass, outputPath, fileNamePattern, user);
+        super(configuration, hadoopKeyClass, hadoopValueClass, outputPath, fileNamePattern, user, includePathColumn);
     }
 
     @Override

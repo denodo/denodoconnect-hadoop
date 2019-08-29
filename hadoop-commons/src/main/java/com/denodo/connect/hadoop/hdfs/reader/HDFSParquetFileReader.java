@@ -66,10 +66,10 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
 
 
     public HDFSParquetFileReader(final Configuration conf, final Path path, final String finalNamePattern, final String user,
-        final List<CustomWrapperFieldExpression> projectedFields, FilterCompat.Filter filter)
+    		final List<CustomWrapperFieldExpression> projectedFields, final boolean includePathColumn, boolean getSchemaParameters, FilterCompat.Filter filter)
             throws IOException, InterruptedException {
 
-        super(conf, path, finalNamePattern, user);
+        super(conf, path, finalNamePattern, user, includePathColumn);
         this.projectedFields = projectedFields;
         this.filter = filter;
     }
