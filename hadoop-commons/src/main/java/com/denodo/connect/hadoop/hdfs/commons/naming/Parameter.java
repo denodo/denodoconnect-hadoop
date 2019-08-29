@@ -62,6 +62,8 @@ public final class Parameter {
     public static final String FILE_NAME_PATTERN = "File name pattern";
 
     public static final String DELETE_AFTER_READING = "Delete after reading";
+
+    public static final String INCLUDE_PATH_COLUMN = "Include full path column";
     
     public static final String CORE_SITE_PATH = "Custom core-site.xml file";
     public static final String HDFS_SITE_PATH = "Custom hdfs-site.xml file";

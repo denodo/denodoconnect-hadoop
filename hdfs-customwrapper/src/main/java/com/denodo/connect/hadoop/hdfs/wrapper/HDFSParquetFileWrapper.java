@@ -23,6 +23,7 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -81,7 +82,10 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
             new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                 "Local route of hdfs-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
+                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
+            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
+                "Include path column? ", false,
+                CustomWrapperInputParameterTypeFactory.booleanType(false))
     };
 
     @Override
@@ -112,12 +116,18 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             
             final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null);
+            final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
+
+            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null, includePathColumn, true);
 
             final SchemaElement javaSchema = reader.getSchema(conf);
-
-            return  VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
-            
+            if(includePathColumn){
+                final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, false,
+                    CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false);
+                return (CustomWrapperSchemaParameter[]) ArrayUtils.add(VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements()),filePath);
+            }else {
+                return VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
+            }
         } catch (final NoSuchElementException e) {
             throw new CustomWrapperException("There are no files in " + inputValues.get(Parameter.PARQUET_FILE_PATH) 
             + (StringUtils.isNotBlank(inputValues.get(Parameter.FILE_NAME_PATTERN)) 
@@ -151,10 +161,12 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
 
+        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
+
         HDFSParquetFileReader reader = null;
         try {
 
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, projectedFields);
+            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, projectedFields, includePathColumn, false);
 
             Object parquetData = reader.read();
             while (parquetData != null && !isStopRequested()) {
