@@ -91,7 +91,7 @@ public final class VDPSchemaUtils {
         int type = TypeUtils.toSQL(element.getType());
         return new CustomWrapperSchemaParameter(element.getName(), type,
             (params.length == 0) ? null : params,
-            !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
+            isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
             !isUpdateable, element.isNullable(), !isMandatory);
     }
     
