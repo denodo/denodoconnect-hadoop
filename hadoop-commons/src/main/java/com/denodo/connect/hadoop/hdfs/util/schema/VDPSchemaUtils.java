@@ -5,6 +5,8 @@ import java.util.Collection;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.util.type.TypeUtils;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
+import org.apache.commons.lang.StringUtils;
+import org.apache.parquet.schema.PrimitiveType;
 
 
 public final class VDPSchemaUtils {
@@ -89,10 +91,20 @@ public final class VDPSchemaUtils {
         }
         
         int type = TypeUtils.toSQL(element.getType());
-        return new CustomWrapperSchemaParameter(element.getName(), type,
-            (params.length == 0) ? null : params,
-            isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
-            !isUpdateable, element.isNullable(), !isMandatory);
+
+        //If this field have INT96 type is a deprecated timestamp and the parquet FilterAPI doesn't give support.
+        if (element.getSourceType().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
+            return new CustomWrapperSchemaParameter(element.getName(), type,
+                (params.length == 0) ? null : params,
+                !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
+                !isUpdateable, element.isNullable(), !isMandatory);
+        } else {
+            return new CustomWrapperSchemaParameter(element.getName(), type,
+                (params.length == 0) ? null : params,
+                isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
+                !isUpdateable, element.isNullable(), !isMandatory);
+        }
+
     }
     
     

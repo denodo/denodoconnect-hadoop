@@ -1,5 +1,7 @@
 package com.denodo.connect.hadoop.hdfs.commons.schema;
 
+import org.apache.parquet.schema.PrimitiveType;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -9,6 +11,7 @@ public class SchemaElement {
 
     private String name;
     private Class<?> type;
+    private PrimitiveType.PrimitiveTypeName sourceType;
     private Collection<SchemaElement> elements;
     private boolean isNullable = false;
 
@@ -23,6 +26,15 @@ public class SchemaElement {
 
         this.name = name;
         this.type = type;
+        this.elements = new ArrayList<SchemaElement>();
+        this.isNullable = isNullable;
+    }
+
+    public SchemaElement(String name, Class<?> type, PrimitiveType.PrimitiveTypeName sourceType, boolean isNullable) {
+
+        this.name = name;
+        this.type = type;
+        this.sourceType = sourceType;
         this.elements = new ArrayList<SchemaElement>();
         this.isNullable = isNullable;
     }
@@ -42,6 +54,10 @@ public class SchemaElement {
     public void setType(Class<?> type) {
         this.type = type;
     }
+
+    public PrimitiveType.PrimitiveTypeName getSourceType() { return this.sourceType; }
+
+    public void setSourceType(PrimitiveType.PrimitiveTypeName sourceType) { this.sourceType = sourceType; }
 
     public Collection<SchemaElement> getElements() {
         return this.elements;
