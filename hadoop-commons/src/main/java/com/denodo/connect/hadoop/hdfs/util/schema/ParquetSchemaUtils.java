@@ -176,7 +176,7 @@ public class ParquetSchemaUtils {
      * @throws CustomWrapperException
      */
     private static void addPrimitiveType(final SchemaElement schemaElement, final Type field, final boolean isNullable) {
-        schemaElement.add(new SchemaElement(field.getName(), ParquetTypeUtils.toJava(field), isNullable));
+        schemaElement.add(new SchemaElement(field.getName(), ParquetTypeUtils.toJava(field), field.asPrimitiveType().getPrimitiveTypeName(), isNullable));
     }
 
 }
