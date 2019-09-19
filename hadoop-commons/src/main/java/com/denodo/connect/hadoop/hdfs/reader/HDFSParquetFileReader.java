@@ -232,7 +232,8 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                     } else if (OriginalType.DATE.equals(field.getOriginalType())) {
                         //   DATE fields really holds the number of days since 1970-01-01
                         final int days = datum.getInteger(field.getName(),0);
-                        final long daysMillis = TimeUnit.DAYS.toMillis(days); 
+                        // We need to add one day because the index start in 0.
+                        final long daysMillis = TimeUnit.DAYS.toMillis(days+1);
                         return new Date(daysMillis);
                     } else {
                         return datum.getInteger(field.getName(), 0);

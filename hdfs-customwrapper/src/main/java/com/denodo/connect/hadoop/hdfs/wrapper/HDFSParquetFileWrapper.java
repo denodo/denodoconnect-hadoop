@@ -292,9 +292,10 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                         } else if (simpleExpression.getValue() instanceof Boolean) {
                             filterPredicate = eq(booleanColumn(field),Boolean.valueOf(simpleExpression.getValue().toString()));
                         } else if (simpleExpression.getValue() instanceof Date) {
-                            filterPredicate = eq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            //We add 1 day because the 1970-01-01 counter starts at 0
+                            filterPredicate = eq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof java.sql.Date) {
-                            filterPredicate = eq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = eq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof Short) {
                             filterPredicate = eq(intColumn(field),((Short)simpleExpression.getValue()).intValue());
                         } else {
@@ -317,9 +318,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                         } else if (simpleExpression.getValue() instanceof Boolean) {
                             filterPredicate = notEq(booleanColumn(field),Boolean.valueOf(simpleExpression.getValue().toString()));
                         } else if (simpleExpression.getValue() instanceof Date) {
-                            filterPredicate = notEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = notEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof java.sql.Date) {
-                            filterPredicate = notEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = notEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof Short) {
                             filterPredicate = eq(intColumn(field),((Short)simpleExpression.getValue()).intValue());
                         } else {
@@ -340,9 +341,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                             String s = simpleExpression.getValue().toString();
                             filterPredicate = lt(binaryColumn(field),Binary.fromString(s));
                         } else if (simpleExpression.getValue() instanceof Date) {
-                            filterPredicate = lt(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = lt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof java.sql.Date) {
-                            filterPredicate = lt(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = lt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof Short) {
                             filterPredicate = eq(intColumn(field),((Short)simpleExpression.getValue()).intValue());
                         } else {
@@ -363,9 +364,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                             String s = simpleExpression.getValue().toString();
                             filterPredicate = ltEq(binaryColumn(field),Binary.fromString(s));
                         } else if (simpleExpression.getValue() instanceof Date) {
-                            filterPredicate = ltEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = ltEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof java.sql.Date) {
-                            filterPredicate = ltEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = ltEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof Short) {
                             filterPredicate = ltEq(intColumn(field),((Short)simpleExpression.getValue()).intValue());
                         } else {
@@ -386,9 +387,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                             String s = simpleExpression.getValue().toString();
                             filterPredicate = gt(binaryColumn(field),Binary.fromString(s));
                         } else if (simpleExpression.getValue() instanceof Date) {
-                            filterPredicate = gt(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = gt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof java.sql.Date) {
-                            filterPredicate = gt(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = gt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof Short) {
                             filterPredicate = gt(intColumn(field),((Short)simpleExpression.getValue()).intValue());
                         } else {
@@ -409,9 +410,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                             String s = simpleExpression.getValue().toString();
                             filterPredicate = gtEq(binaryColumn(field),Binary.fromString(s));
                         } else if (simpleExpression.getValue() instanceof Date) {
-                            filterPredicate = gtEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = gtEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof java.sql.Date) {
-                            filterPredicate = gtEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                            filterPredicate = gtEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
                         } else if (simpleExpression.getValue() instanceof Short) {
                             filterPredicate = gtEq(intColumn(field),((Short)simpleExpression.getValue()).intValue());
                         } else {
