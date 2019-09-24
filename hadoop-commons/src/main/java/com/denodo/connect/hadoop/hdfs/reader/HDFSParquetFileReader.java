@@ -64,6 +64,13 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
     private MessageType parquetSchema;
     private FilterCompat.Filter filter;
 
+    public FilterCompat.Filter getFilter() {
+        return filter;
+    }
+
+    public void setFilter(FilterCompat.Filter filter) {
+        this.filter = filter;
+    }
 
     public HDFSParquetFileReader(final Configuration conf, final Path path, final String finalNamePattern, final String user,
     		final List<CustomWrapperFieldExpression> projectedFields, final boolean includePathColumn, boolean getSchemaParameters, FilterCompat.Filter filter)
