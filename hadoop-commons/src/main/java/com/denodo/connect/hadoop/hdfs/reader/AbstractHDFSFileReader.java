@@ -167,6 +167,9 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
         try {
 
             if (isFirstReading()) {
+                LOG.trace("We init iterator again because we need to obtain the path two times," +
+                    "one if we obtain the schema because of null condition, the other one when we read the file");
+                initFileIterator();
                 openReader(this.fileSystem, this.configuration);
                 this.firstReading = false;
             }
