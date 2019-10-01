@@ -126,7 +126,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
             final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
 
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null, includePathColumn, true, null);
+            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null, null, includePathColumn, true, null);
 
             final SchemaElement javaSchema = reader.getSchema(conf);
             if(includePathColumn){
@@ -163,43 +163,35 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
         final Configuration conf = getHadoopConfiguration(inputValues);
-
         final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
         final Path path = new Path(parquetFilePath);
-
-
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
-
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
-
         HDFSParquetFileReader reader = null;
         try {
-
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, projectedFields, includePathColumn, false, null);
-
+            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, projectedFields, condition, includePathColumn, false, null);
             SchemaElement schema = null;
-            if (hasNullValueInCondition(condition.getComplexCondition())) {
+            if (reader.getHasNullValueInConditions()) {
                 schema = reader.getSchema(conf);
             }
-
             FilterPredicate filterPredicate = this.buildFilter(condition.getComplexCondition(), schema);
             FilterCompat.Filter filter = null;
             if (filterPredicate != null) {
                 ParquetInputFormat.setFilterPredicate(conf,filterPredicate);
                 filter = ParquetInputFormat.getFilter(conf);
             }
-
             reader.setFilter(filter);
-
+            int conditionSize = reader.getConditionFields().size();
+            LOG.trace("We get the condition fields excluding the repeated projected fields and get size to delete the last elements of the");
             Object parquetData = reader.read();
             while (parquetData != null && !isStopRequested()) {
+                for (int i = 0; i < conditionSize; i++) {
+                    parquetData = Arrays.copyOf((Object[])parquetData,((Object[])parquetData).length-1);
+                }
                 result.addRow( (Object[])parquetData, projectedFields);
 
                 parquetData = reader.read();
             }
-
-         
-
         } catch (final Exception e) {
             LOG.error("Error accessing Parquet file", e);
             throw new CustomWrapperException("Error accessing Parquet file: " + e.getMessage(), e);
@@ -212,7 +204,6 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             } catch (final IOException e) {
                 LOG.error("Error releasing the reader", e);
             }
-
         }
     }
 
@@ -272,52 +263,6 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         } else {
             return null;
         }
-    }
-
-    public boolean hasNullValueInCondition (final CustomWrapperCondition vdpCondition) throws CustomWrapperException {
-
-        if (vdpCondition != null) {
-            if (vdpCondition.isAndCondition()) {
-                CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) vdpCondition;
-                for (CustomWrapperCondition condition : andCondition.getConditions()) {
-                    if (condition.isSimpleCondition()) {
-                        if (hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) vdpCondition)) return true;
-                    } else {
-                        if (this.hasNullValueInCondition(condition)) return true;
-                    }
-                }
-            } else if (vdpCondition.isOrCondition()) {
-                CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) vdpCondition;
-                for (CustomWrapperCondition condition : orCondition.getConditions()) {
-                    if (condition.isSimpleCondition()) {
-                        if (hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) vdpCondition)) return true;
-                    } else {
-                        if (this.hasNullValueInCondition(condition)) return true;
-                    }
-                }
-            } else if (vdpCondition.isSimpleCondition()) {
-                if (hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) vdpCondition)) return true;
-            } else {
-                throw new CustomWrapperException("Condition \"" + vdpCondition.toString() + "\" not allowed");
-            }
-
-        } else {
-            return false;
-        }
-        return  false;
-    }
-
-    private boolean hasNullValueInSimpleCondition(CustomWrapperSimpleCondition vdpCondition) {
-        CustomWrapperSimpleCondition simpleCondition = vdpCondition;
-        for (CustomWrapperExpression expression : simpleCondition.getRightExpression()) {
-            if (expression.isSimpleExpression()) {
-                CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) expression;
-                if (simpleExpression.getValue() == null) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private SchemaElement getSchemaField(String field, SchemaElement schema) {

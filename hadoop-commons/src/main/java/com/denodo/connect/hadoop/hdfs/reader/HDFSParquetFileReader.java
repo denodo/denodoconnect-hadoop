@@ -29,6 +29,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.denodo.vdb.engine.customwrapper.condition.*;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -61,8 +64,12 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
 
     private ParquetReader<Group> dataFileReader;
     private List<CustomWrapperFieldExpression> projectedFields;
+    private CustomWrapperConditionHolder condition;
     private MessageType parquetSchema;
+    private MessageType projectedParquetSchema;
     private FilterCompat.Filter filter;
+    private boolean hasNullValueInConditions;
+    private List<String> conditionFields;
 
     public FilterCompat.Filter getFilter() {
         return filter;
@@ -72,26 +79,38 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         this.filter = filter;
     }
 
+    public boolean getHasNullValueInConditions() {
+        return hasNullValueInConditions;
+    }
+
+    public List<String> getConditionFields() {
+        return conditionFields;
+    }
+
     public HDFSParquetFileReader(final Configuration conf, final Path path, final String finalNamePattern, final String user,
-    		final List<CustomWrapperFieldExpression> projectedFields, final boolean includePathColumn, boolean getSchemaParameters, FilterCompat.Filter filter)
+    		final List<CustomWrapperFieldExpression> projectedFields, final CustomWrapperConditionHolder condition,
+            final boolean includePathColumn, boolean getSchemaParameters, FilterCompat.Filter filter)
             throws IOException, InterruptedException {
 
         super(conf, path, finalNamePattern, user, includePathColumn);
         this.projectedFields = projectedFields;
+        this.condition = condition;
         this.filter = filter;
+        this.hasNullValueInConditions = false;
+        this.conditionFields = this.getFieldsNameAndCheckNullConditions(condition.getComplexCondition());
     }
 
     @Override
     public void doOpenReader(final FileSystem fileSystem, final Path path,
             final Configuration configuration) throws IOException {
         
-        if (this.parquetSchema == null) {
-            this.parquetSchema = getParquetSchema(configuration, path);
+        if (this.projectedParquetSchema == null) {
+            this.projectedParquetSchema = getProjectedParquetSchema(configuration, path);
         }
         
         // Sets the expected schema so Parquet could validate that all files (e.g. in a directory) follow this schema. 
         // If the schema is not set Parquet will use the schema contained in each Parquet file 
-        configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.parquetSchema.toString());
+        configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.projectedParquetSchema.toString());
         
         final GroupReadSupport groupReadSupport = new GroupReadSupport();
         if (filter != null) {
@@ -114,35 +133,131 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
     }
 
     private MessageType getParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
+
+        final ParquetMetadata readFooter = ParquetFileReader.readFooter(configuration, filePath, ParquetMetadataConverter.NO_FILTER);
+
+        final MessageType schema = readFooter.getFileMetaData().getSchema();
+
+        return schema;
+    }
+
+    private MessageType getProjectedParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
         
         final ParquetMetadata readFooter = ParquetFileReader.readFooter(configuration, filePath, ParquetMetadataConverter.NO_FILTER);
         
         final MessageType schema = readFooter.getFileMetaData().getSchema();
 
-        if (projectedFields != null) {
+        if (this.projectedFields != null || this.conditionFields != null) {
             List<Integer> schemaFieldsToDelete  = new ArrayList<Integer>();
-            for (int i = 0; i < schema.getFields().size(); i++) {
-                String schemaFieldName = schema.getFields().get(i).getName();
-                Boolean includedInProjection = false;
-                for (int j = 0; j < this.projectedFields.size(); j++) {
-                    String projectedFieldName = this.projectedFields.get(j).getName();
-                    if (schemaFieldName.equals(projectedFieldName)) {
-                        includedInProjection = true;
-                        break;
+
+            List<Type> schemaWithProjectionAndConditionFields = new ArrayList<Type>();
+            for (CustomWrapperFieldExpression projectedField : this.projectedFields) {
+                for (Type schemaField : schema.getFields()) {
+                    if (schemaField.getName().equals(projectedField.getName())) {
+                        schemaWithProjectionAndConditionFields.add(schemaField);
                     }
                 }
-                if (!includedInProjection) {
-                    schemaFieldsToDelete.add(0, i);
+            }
+            for (String conditionField : this.conditionFields) {
+                for (Type schemaField : schema.getFields()) {
+                    if (schemaField.getName().equals(conditionField)) {
+                        schemaWithProjectionAndConditionFields.add(schemaField);
+                    }
                 }
             }
+            schema.getFields().removeAll(schema.getFields());
+            schema.getFields().addAll(schemaWithProjectionAndConditionFields);
+        }
+        return schema;
+    }
 
-            for (Integer index : schemaFieldsToDelete) {
-                schema.getFields().remove(index.intValue());
+    /**
+     * Get the condition field names excluding the projected field names and compound fields (compound fields is not included in projections).
+     * This method also initialize the hasNullValueInConditions variable
+     *
+     * @param condition
+     * @return list with fields
+     */
+    private List<String> getFieldsNameAndCheckNullConditions(CustomWrapperCondition condition) throws IOException {
+        List<String> conditionFields = new ArrayList<String>();
+        if (condition != null) {
+            if (condition.isAndCondition()) {
+                CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) condition;
+                for (CustomWrapperCondition c : andCondition.getConditions()) {
+                    if (c.isSimpleCondition()) {
+                        String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
+                        if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                            conditionFields.add(fieldName);
+                        }
+                        if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
+                            this.hasNullValueInConditions = true;
+                        }
+                    } else {
+                        List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
+                        for (String fieldName : fieldsName) {
+                            if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                                conditionFields.add(fieldName);
+                            }
+                        }
+                    }
+                }
+            } else if (condition.isOrCondition()) {
+                CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) condition;
+                for (CustomWrapperCondition c : orCondition.getConditions()) {
+                    if (c.isSimpleCondition()) {
+                        String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
+                        if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                            conditionFields.add(fieldName);
+                        }
+                        if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
+                            this.hasNullValueInConditions = true;
+                        }
+                    } else {
+                        List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
+                        for (String fieldName : fieldsName) {
+                            if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                                conditionFields.add(fieldName);
+                            }
+                        }
+                    }
+                }
+            } else if (condition.isSimpleCondition()) {
+                String fieldName = ((CustomWrapperSimpleCondition) condition).getField().toString();
+                if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                    conditionFields.add(fieldName);
+                }
+                if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) condition)) {
+                    this.hasNullValueInConditions = true;
+                }
+            } else {
+                throw new IOException("Condition \"" + condition.toString() + "\" not allowed");
             }
         }
+        for (CustomWrapperFieldExpression projectedField : this.projectedFields) {
+            if(conditionFields.contains(projectedField.getName())) {
+                conditionFields.remove(projectedField.getName());
+            }
+        }
+        return  conditionFields;
+    }
 
-
-        return schema;
+    /**
+     * Get if a simple condition evaluate a null value
+     *
+     * @param vdpCondition
+     * @return
+     */
+    private boolean hasNullValueInSimpleCondition(CustomWrapperSimpleCondition vdpCondition) {
+        CustomWrapperSimpleCondition simpleCondition = vdpCondition;
+        for (CustomWrapperExpression expression : simpleCondition.getRightExpression()) {
+            if (expression.isSimpleExpression()) {
+                CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) expression;
+                if (simpleExpression.getValue() == null) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
