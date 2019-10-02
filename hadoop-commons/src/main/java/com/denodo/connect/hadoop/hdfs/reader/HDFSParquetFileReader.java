@@ -97,7 +97,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         this.condition = condition;
         this.filter = filter;
         this.hasNullValueInConditions = false;
-        this.conditionFields = this.getFieldsNameAndCheckNullConditions(condition.getComplexCondition());
+        this.conditionFields = condition != null ? this.getFieldsNameAndCheckNullConditions(condition.getComplexCondition()) : null;
     }
 
     @Override

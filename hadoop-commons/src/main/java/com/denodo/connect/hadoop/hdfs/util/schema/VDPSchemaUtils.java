@@ -98,7 +98,12 @@ public final class VDPSchemaUtils {
                 (params.length == 0) ? null : params,
                 !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
                 !isUpdateable, element.isNullable(), !isMandatory);
-        } else {
+        } else if (element.getSourceType().equals(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
+            return new CustomWrapperSchemaParameter(element.getName(), type,
+                (params.length == 0) ? null : params,
+                !isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
+                !isUpdateable, element.isNullable(), !isMandatory);
+        }else {
             return new CustomWrapperSchemaParameter(element.getName(), type,
                 (params.length == 0) ? null : params,
                 isSearchable, CustomWrapperSchemaParameter.NOT_SORTABLE,
