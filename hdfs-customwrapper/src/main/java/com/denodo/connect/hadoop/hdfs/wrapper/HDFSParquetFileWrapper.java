@@ -182,7 +182,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             }
             reader.setFilter(filter);
             int conditionSize = reader.getConditionFields().size();
-            LOG.trace("We get the condition fields excluding the repeated projected fields and get size to delete the last elements of the");
+            LOG.trace("We get the condition fields (only for simple fields) excluding the repeated " +
+                "projected fields and get size to delete the last elements of the data array");
             Object parquetData = reader.read();
             while (parquetData != null && !isStopRequested()) {
                 for (int i = 0; i < conditionSize; i++) {

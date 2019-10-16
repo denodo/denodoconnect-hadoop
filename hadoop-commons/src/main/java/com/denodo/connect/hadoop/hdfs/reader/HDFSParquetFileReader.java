@@ -66,7 +66,6 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
     private List<CustomWrapperFieldExpression> projectedFields;
     private CustomWrapperConditionHolder condition;
     private MessageType parquetSchema;
-    private MessageType projectedParquetSchema;
     private FilterCompat.Filter filter;
     private boolean hasNullValueInConditions;
     private List<String> conditionFields;
@@ -103,14 +102,16 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
     @Override
     public void doOpenReader(final FileSystem fileSystem, final Path path,
             final Configuration configuration) throws IOException {
-        
-        if (this.projectedParquetSchema == null) {
-            this.projectedParquetSchema = getProjectedParquetSchema(configuration, path);
-        }
+
+            if (this.parquetSchema == null) {
+                this.parquetSchema = getProjectedParquetSchema(configuration, path);
+            } else {
+                this.schemaWithProjectedAndConditionFields(this.parquetSchema);
+            }
         
         // Sets the expected schema so Parquet could validate that all files (e.g. in a directory) follow this schema. 
         // If the schema is not set Parquet will use the schema contained in each Parquet file 
-        configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.projectedParquetSchema.toString());
+        configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.parquetSchema.toString());
         
         final GroupReadSupport groupReadSupport = new GroupReadSupport();
         if (filter != null) {
@@ -147,6 +148,12 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         
         final MessageType schema = readFooter.getFileMetaData().getSchema();
 
+        this.schemaWithProjectedAndConditionFields(schema);
+
+        return schema;
+    }
+
+    private void schemaWithProjectedAndConditionFields(MessageType schema) {
         if (this.projectedFields != null || this.conditionFields != null) {
             List<Integer> schemaFieldsToDelete  = new ArrayList<Integer>();
 
@@ -165,10 +172,11 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                     }
                 }
             }
-            schema.getFields().removeAll(schema.getFields());
-            schema.getFields().addAll(schemaWithProjectionAndConditionFields);
+            if (schema.getFields().size() != schemaWithProjectionAndConditionFields.size()) {
+                schema.getFields().removeAll(schema.getFields());
+                schema.getFields().addAll(schemaWithProjectionAndConditionFields);
+            }
         }
-        return schema;
     }
 
     /**
@@ -186,7 +194,8 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                 for (CustomWrapperCondition c : andCondition.getConditions()) {
                     if (c.isSimpleCondition()) {
                         String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
-                        if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                        //We only add fieldName to conditionFields if it is not a compound type and if it is not already included.
+                        if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
                             conditionFields.add(fieldName);
                         }
                         if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
@@ -195,7 +204,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                     } else {
                         List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
                         for (String fieldName : fieldsName) {
-                            if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                            if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
                                 conditionFields.add(fieldName);
                             }
                         }
@@ -206,7 +215,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                 for (CustomWrapperCondition c : orCondition.getConditions()) {
                     if (c.isSimpleCondition()) {
                         String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
-                        if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                        if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
                             conditionFields.add(fieldName);
                         }
                         if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
@@ -215,7 +224,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                     } else {
                         List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
                         for (String fieldName : fieldsName) {
-                            if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                            if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
                                 conditionFields.add(fieldName);
                             }
                         }
@@ -223,7 +232,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
                 }
             } else if (condition.isSimpleCondition()) {
                 String fieldName = ((CustomWrapperSimpleCondition) condition).getField().toString();
-                if (!conditionFields.contains(fieldName) && fieldName.split(",").length > 1){
+                if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
                     conditionFields.add(fieldName);
                 }
                 if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) condition)) {
