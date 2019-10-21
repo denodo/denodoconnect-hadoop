@@ -86,6 +86,10 @@ public final class Parameter {
     public static final String AVRO_FILE_PATH = "avroFilepath";
 
     public static final String PARQUET_FILE_PATH = "Parquet File path";
+
+    public static final String ACCESS_KEY_ID = "Access Key ID";
+    public static final String SECRET_ACCESS_KEY = "Secret Access Key";
+    public static final String ENDPOINT = "Endpoint";
     
     
     public static final String RECURSIVE = "recursive";
