@@ -93,7 +93,8 @@ public final class VDPSchemaUtils {
         int type = TypeUtils.toSQL(element.getType());
 
         //If this field have INT96 or FIXED_LEN_BYTE_ARRAY type is a deprecated timestamp and the parquet FilterAPI doesn't give support.
-        if (element.getSourceType().equals(PrimitiveType.PrimitiveTypeName.INT96)
+        if (element.getSourceType() == null
+            || element.getSourceType().equals(PrimitiveType.PrimitiveTypeName.INT96)
             || element.getSourceType().equals(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
             return new CustomWrapperSchemaParameter(element.getName(), type,
                 (params.length == 0) ? null : params,
