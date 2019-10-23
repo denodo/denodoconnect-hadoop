@@ -130,7 +130,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
             final SchemaElement javaSchema = reader.getSchema(conf);
             if(includePathColumn){
-                final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, true,
+                final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, false,
                     CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false);
                 return (CustomWrapperSchemaParameter[]) ArrayUtils.add(VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements()),filePath);
             }else {
