@@ -85,6 +85,9 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
                 false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
+            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
+                "Include path column? ", false,
+                CustomWrapperInputParameterTypeFactory.booleanType(false))
     };
 
     @Override
@@ -118,7 +121,7 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
 
             final SchemaElement javaSchema = reader.getSchema(conf);
             if(includePathColumn){
-                final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, true,
+                final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, false,
                     CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false);
                 return (CustomWrapperSchemaParameter[]) ArrayUtils.add(VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements()),filePath);
             }else {
