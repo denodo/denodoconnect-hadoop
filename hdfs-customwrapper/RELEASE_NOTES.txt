@@ -1,3 +1,7 @@
+20191024
+--------
+- #44063 - Refresh state of the parquet libraries. Add predicate pushdown and projections delegation. Create the S3ParquetFileWrapper
+
 20190829
 --------
 - #44505 - Feature to include a column in base view to store the filenames
