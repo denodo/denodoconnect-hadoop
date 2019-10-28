@@ -11,7 +11,7 @@
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20190829</version>
+    <version>20191024</version>
 
     <properties>
         <avro.version>1.8.2</avro.version>
@@ -223,6 +223,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <version>1.1.7.3</version>
+        </dependency>
+
+         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs-client</artifactId>
             <version>${hadoop.version}</version>
@@ -233,13 +239,13 @@
                 </exclusion>
             </exclusions>             
         </dependency>
-        
-        <dependency>
+
+         <dependency>
             <groupId>com.denodo.vdp</groupId>
             <artifactId>denodo-vdp-server</artifactId>
             <version>${vdp.version}</version>
             <scope>provided</scope>
         </dependency>
-        
+
     </dependencies>
 </project>
