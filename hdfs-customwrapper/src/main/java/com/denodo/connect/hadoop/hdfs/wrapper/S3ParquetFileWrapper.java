@@ -80,7 +80,7 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
                 "Secret Access Key",
                 true,  CustomWrapperInputParameterTypeFactory.hiddenStringType()),
             new CustomWrapperInputParameter(Parameter.ENDPOINT,
-                "Endpoint",
+                "AWS S3 endpoint to connect to. Without this property, the standard region (s3.amazonaws.com) is assumed.",
                 false,  CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
