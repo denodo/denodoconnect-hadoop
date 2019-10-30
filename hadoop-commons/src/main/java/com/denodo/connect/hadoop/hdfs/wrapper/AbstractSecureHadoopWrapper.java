@@ -58,23 +58,23 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
     private String userPrincipal;
     private boolean stopRequested;
 
-    private static final CustomWrapperInputParameter[] SECURE_INPUT_PARAMETERS =
+    private static final CustomWrapperInputParameter[] SECURE_DATA_SOURCE_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.KERBEROS_ENABLED,
-                "Is Kerberos enabled? ", false,
-                CustomWrapperInputParameterTypeFactory.booleanType(false)),
+                "Is Kerberos enabled? ",
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
             new CustomWrapperInputParameter(Parameter.PRINCIPAL,
-                "Kerberos v5 Principal name to access HDFS, e.g. primary/instance@realm ", false,
-                CustomWrapperInputParameterTypeFactory.stringType()),
+                "Kerberos v5 Principal name to access HDFS, e.g. primary/instance@realm ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.KEYTAB,
-                "Keytab file containing the key of the Kerberos principal ", false,
-                CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL})),
+                "Keytab file containing the key of the Kerberos principal ",
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL})),
             new CustomWrapperInputParameter(Parameter.KERBEROS_PASWORD,
-                "Password associated with the principal ", false,
-                CustomWrapperInputParameterTypeFactory.passwordType()),
+                "Password associated with the principal ",
+                false, true, CustomWrapperInputParameterTypeFactory.passwordType()),
             new CustomWrapperInputParameter(Parameter.KDC,
-                "Kerberos Key Distribution Center ", false,
-                CustomWrapperInputParameterTypeFactory.stringType())
+                "Kerberos Key Distribution Center ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType())
     };
 
     public AbstractSecureHadoopWrapper() {
@@ -84,8 +84,8 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
     }
 
     @Override
-    public CustomWrapperInputParameter[] getInputParameters() {
-        return SECURE_INPUT_PARAMETERS;
+    public CustomWrapperInputParameter[] getDataSourceInputParameters() {
+        return SECURE_DATA_SOURCE_INPUT_PARAMETERS;
     }
 
     @Override

@@ -59,22 +59,22 @@ public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
 
 
     private static final  Logger LOG = LoggerFactory.getLogger(DFSListFilesWrapper.class);
-    
 
-    private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
-            new CustomWrapperInputParameter[] {
-                    new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
-                        "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
-                        true, CustomWrapperInputParameterTypeFactory.stringType()),
-                    new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
-                            "Local route of hdfs-site.xml configuration file ",
-                            false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
-            };
+
+    private static final CustomWrapperInputParameter[] DATA_SOURCE_INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
+                "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
+                "Local route of hdfs-site.xml configuration file ",
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
+        };
     
     
     @Override
-    public CustomWrapperInputParameter[] getInputParameters() {
-        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(INPUT_PARAMETERS, super.getInputParameters());
+    public CustomWrapperInputParameter[] getDataSourceInputParameters() {
+        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(DATA_SOURCE_INPUT_PARAMETERS, super.getDataSourceInputParameters());
     }    
     
     

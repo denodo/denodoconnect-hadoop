@@ -78,31 +78,36 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
         return new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(Parameter.HOST_IP, "Host IP or <bucket>.s3.amazonaws.com for Amazon S3 ",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.HOST_PORT, "HTTP port: default port for WebHDFS is 50075. For HttpFS is 14000. ",
-                true, CustomWrapperInputParameterTypeFactory.integerType()),
-            new CustomWrapperInputParameter(Parameter.USER, "User that will perform the operation or <id>:<secret> for Amazon S3 ",
-                false, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.FILE_PATH, "Absolute file path ",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),
-            
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.SEPARATOR, "Separator of the delimited file. Default is ',' ",
-                false, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.QUOTE, "Character used to encapsulate values containing special characters. Default is '\"' ", false,
-                CustomWrapperInputParameterTypeFactory.stringType()),                
-            new CustomWrapperInputParameter(Parameter.COMMENT_MARKER, "Character marking the start of a line comment. Default is: comments not supported ", false,
-                CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.ESCAPE, "Escape character. Default is: escapes not supported  ", false,
-                CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.NULL_VALUE, "String used to represent a null value. Default is: none, nulls are not distinguished from empty strings  ", false,
-                    CustomWrapperInputParameterTypeFactory.stringType()),            
-            new CustomWrapperInputParameter(Parameter.IGNORE_SPACES, "Spaces around values are ignored. ", true,
-                CustomWrapperInputParameterTypeFactory.booleanType(false)),
-            new CustomWrapperInputParameter(Parameter.HEADER, "The file has header ", true,
-                CustomWrapperInputParameterTypeFactory.booleanType(true)),                
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.QUOTE, "Character used to encapsulate values containing special characters. Default is '\"' ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.COMMENT_MARKER, "Character marking the start of a line comment. Default is: comments not supported ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.ESCAPE, "Escape character. Default is: escapes not supported  ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.NULL_VALUE, "String used to represent a null value. Default is: none, nulls are not distinguished from empty strings  ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.IGNORE_SPACES, "Spaces around values are ignored. ",
+                true, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(Parameter.HEADER, "The file has header ",
+                true, true, CustomWrapperInputParameterTypeFactory.booleanType(true)),
             new CustomWrapperInputParameter(Parameter.DELETE_AFTER_READING, "Delete the file after reading it? ",
-                true, CustomWrapperInputParameterTypeFactory.booleanType(false))
+                true, true, CustomWrapperInputParameterTypeFactory.booleanType(false))
+        };
+    }
+
+    @Override
+    public CustomWrapperInputParameter[] getDataSourceInputParameters() {
+        return new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(Parameter.HOST_IP, "Host IP or <bucket>.s3.amazonaws.com for Amazon S3 ",
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.HOST_PORT, "HTTP port: default port for WebHDFS is 50075. For HttpFS is 14000. ",
+                true, true, CustomWrapperInputParameterTypeFactory.integerType()),
+            new CustomWrapperInputParameter(Parameter.USER, "User that will perform the operation or <id>:<secret> for Amazon S3 ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType())
         };
     }
 

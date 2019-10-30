@@ -64,30 +64,33 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
 
     private static final  Logger LOG = LoggerFactory.getLogger(S3ParquetFileWrapper.class);
 
-    
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(Parameter.PARQUET_FILE_PATH,
+                "Parquet File Path",
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
+                "Include path column? ",
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(false))
+        };
+
+    private static final CustomWrapperInputParameter[] DATA_SOURCE_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
                 "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.PARQUET_FILE_PATH,
-                "Parquet File Path",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.ACCESS_KEY_ID,
                 "Access Key ID",
-                true,  CustomWrapperInputParameterTypeFactory.stringType()),
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.SECRET_ACCESS_KEY,
                 "Secret Access Key",
-                true,  CustomWrapperInputParameterTypeFactory.hiddenStringType()),
+                true, true, CustomWrapperInputParameterTypeFactory.hiddenStringType()),
             new CustomWrapperInputParameter(Parameter.ENDPOINT,
                 "AWS S3 endpoint to connect to. Without this property, the standard region (s3.amazonaws.com) is assumed.",
-                false,  CustomWrapperInputParameterTypeFactory.stringType()),
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
-            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
-                "Include path column? ", false,
-                CustomWrapperInputParameterTypeFactory.booleanType(false))
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
     };
 
     @Override
@@ -96,6 +99,12 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
     }
 
     @Override
+    public CustomWrapperInputParameter[] getDataSourceInputParameters() {
+        return DATA_SOURCE_INPUT_PARAMETERS;
+    }
+
+
+        @Override
     public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
             throws CustomWrapperException {
 

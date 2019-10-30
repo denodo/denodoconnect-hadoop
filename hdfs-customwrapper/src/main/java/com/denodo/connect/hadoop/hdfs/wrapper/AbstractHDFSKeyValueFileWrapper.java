@@ -49,33 +49,42 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
 
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
-                "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\@<bucket> ", true,
-                CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.FILE_PATH,
-                "Absolute path for the file or the directory containing the files ", true,
-                CustomWrapperInputParameterTypeFactory.stringType()),
+                "Absolute path for the file or the directory containing the files ",
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.FILE_NAME_PATTERN,
-                    "Regular expression to filter file names. Example: (.*)\\.csv ", false,
-                    CustomWrapperInputParameterTypeFactory.stringType()),            
+                    "Regular expression to filter file names. Example: (.*)\\.csv ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.DELETE_AFTER_READING,
-                "Delete the file/s after reading? ", true,
-                CustomWrapperInputParameterTypeFactory.booleanType(false)),
+                "Delete the file/s after reading? ",
+                true, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
+                "Include full path of the file in the view? ",
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(false))
+    };
+
+    private static final CustomWrapperInputParameter[] DATA_SOURCE_INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
+                "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
             new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                 "Local route of hdfs-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
-            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
-                "Include full path of the file in the view? ", false,
-                CustomWrapperInputParameterTypeFactory.booleanType(false))
-    };
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
+        };
     
 
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
         return (CustomWrapperInputParameter[]) ArrayUtils.addAll(doGetInputParameters(), super.getInputParameters());
+    }
+
+    @Override
+    public CustomWrapperInputParameter[] getDataSourceInputParameters() {
+        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(doGetDataSourceInputParameters(), super.getDataSourceInputParameters());
     }
 
     @Override
@@ -163,6 +172,10 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
 
     public CustomWrapperInputParameter[] doGetInputParameters() {
         return INPUT_PARAMETERS;
+    }
+
+    public CustomWrapperInputParameter[] doGetDataSourceInputParameters() {
+        return DATA_SOURCE_INPUT_PARAMETERS;
     }
 
     public abstract HDFSFileReader getHDFSFileReader(Map<String, String> inputValues, boolean getSchemaParameters)

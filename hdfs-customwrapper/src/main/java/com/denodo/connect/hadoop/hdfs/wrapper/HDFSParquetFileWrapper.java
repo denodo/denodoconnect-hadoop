@@ -69,32 +69,42 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileWrapper.class);
 
-    
+
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(Parameter.PARQUET_FILE_PATH,
+                "Parquet File Path",
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.FILE_NAME_PATTERN,
+                "Regular expression to filter file names. Example: (.*)\\.parquet ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
+                "Include path column? ",
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(false))
+    };
+
+    private static final CustomWrapperInputParameter[] DATA_SOURCE_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
                 "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.PARQUET_FILE_PATH,
-                "Parquet File Path",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.FILE_NAME_PATTERN,
-                    "Regular expression to filter file names. Example: (.*)\\.parquet ", false,
-                    CustomWrapperInputParameterTypeFactory.stringType()),               
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
             new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                 "Local route of hdfs-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
-            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
-                "Include path column? ", false,
-                CustomWrapperInputParameterTypeFactory.booleanType(false))
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
     };
 
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
-        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(INPUT_PARAMETERS, super.getInputParameters());
+        return INPUT_PARAMETERS;
+    }
+
+    @Override
+    public CustomWrapperInputParameter[] getDataSourceInputParameters() {
+        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(DATA_SOURCE_INPUT_PARAMETERS, super.getDataSourceInputParameters());
+
     }
 
     @Override

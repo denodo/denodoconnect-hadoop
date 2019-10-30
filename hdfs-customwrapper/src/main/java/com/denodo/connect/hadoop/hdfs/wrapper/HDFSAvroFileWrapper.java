@@ -70,37 +70,46 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
     
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
-                "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
-                true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.AVRO_SCHEMA_PATH,
                 "Path to the Avro schema file. One of these parameters: '"
                     + Parameter.AVRO_SCHEMA_PATH + "' or '" + Parameter.AVRO_SCHEMA_JSON + "' must be specified",
-                    false, CustomWrapperInputParameterTypeFactory.stringType()),
+                    false, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.AVRO_SCHEMA_JSON,
                 "JSON of the Avro schema. One of these parameters: '"
                     + Parameter.AVRO_SCHEMA_PATH + "' or '" + Parameter.AVRO_SCHEMA_JSON + "' must be specified",
-                    false, CustomWrapperInputParameterTypeFactory.stringType()),
+                    false, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.FILE_NAME_PATTERN,
                     "Regular expression to filter file names. Example: (.*)\\.avro ", false,
                     CustomWrapperInputParameterTypeFactory.stringType()),               
             new CustomWrapperInputParameter(Parameter.DELETE_AFTER_READING,
-                "Delete the file after reading it? ", true,
-                CustomWrapperInputParameterTypeFactory.booleanType(false)),
+                "Delete the file after reading it? ",
+                true, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
+                "Include path column? ",
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(false))
+        };
+
+    private static final CustomWrapperInputParameter[] DATA_SOURCE_INPUT_PARAMETERS =
+        new CustomWrapperInputParameter[] {
+            new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
+                "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
+                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
             new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                 "Local route of hdfs-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
-            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
-                "Include path column? ", false,
-                CustomWrapperInputParameterTypeFactory.booleanType(false))
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
         };
 
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
         return (CustomWrapperInputParameter[]) ArrayUtils.addAll(INPUT_PARAMETERS, super.getInputParameters());
+    }
+
+    @Override
+    public CustomWrapperInputParameter[] getDataSourceInputParameters() {
+        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(DATA_SOURCE_INPUT_PARAMETERS, super.getDataSourceInputParameters());
     }
 
     @Override

@@ -27,7 +27,7 @@
         <log4j2.version>2.8.2</log4j2.version>
         <parquet.version>1.10.1</parquet.version>
         <slf4j.version>1.7.10</slf4j.version>     
-        <vdp.version>7.0.0</vdp.version>
+        <vdp.version>7.0.5</vdp.version>
         <java.version>1.8</java.version>
         <errorprone.javac.version>9+181-r4173-1</errorprone.javac.version>
         <errorprone.core.version>2.3.2</errorprone.core.version>
@@ -143,7 +143,7 @@
                         <Extension-Version>${project.version}</Extension-Version>
                         <Extension-Target-Version>7.0</Extension-Target-Version>
                         <!-- Uncomment when an update of VDP 7.0 is required -->
-                       <!-- <Extension-Target-Update>20140826</Extension-Target-Update> -->
+                       <Extension-Target-Update>20190903</Extension-Target-Update>
                         <Extension-Website>http://support.denodo.com</Extension-Website>
                       </manifestEntries>
                     </manifestSection>

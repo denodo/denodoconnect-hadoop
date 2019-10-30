@@ -66,21 +66,21 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     private static final  CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.SEPARATOR, "Separator of the delimited file. Default is ',' ",
-                false, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.QUOTE, "Character used to encapsulate values containing special characters. Default is '\"' ", false,
-                CustomWrapperInputParameterTypeFactory.stringType()),                
-            new CustomWrapperInputParameter(Parameter.COMMENT_MARKER, "Character marking the start of a line comment. Default is: comments not supported ", false,
-                CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.ESCAPE, "Escape character. Default is: escapes not supported  ", false,
-                CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.NULL_VALUE, "String used to represent a null value. Default is: none, nulls are not distinguished from empty strings  ", false,
-                    CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.IGNORE_SPACES, "Spaces around values are ignored. ", true,
-                CustomWrapperInputParameterTypeFactory.booleanType(false)),
-            new CustomWrapperInputParameter(Parameter.HEADER, "The file has header ", true,
-                CustomWrapperInputParameterTypeFactory.booleanType(true)),
-            new CustomWrapperInputParameter(Parameter.IGNORE_MATCHING_ERRORS, "Ignore the lines of this file that do not have the expected number of columns ", false,
-                    CustomWrapperInputParameterTypeFactory.booleanType(true))
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.QUOTE, "Character used to encapsulate values containing special characters. Default is '\"' ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.COMMENT_MARKER, "Character marking the start of a line comment. Default is: comments not supported ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.ESCAPE, "Escape character. Default is: escapes not supported  ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.NULL_VALUE, "String used to represent a null value. Default is: none, nulls are not distinguished from empty strings  ",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.IGNORE_SPACES, "Spaces around values are ignored. ",
+                true, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(Parameter.HEADER, "The file has header ",
+                true, true, CustomWrapperInputParameterTypeFactory.booleanType(true)),
+            new CustomWrapperInputParameter(Parameter.IGNORE_MATCHING_ERRORS, "Ignore the lines of this file that do not have the expected number of columns ",
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(true))
     };
 
 
