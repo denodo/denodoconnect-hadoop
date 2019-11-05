@@ -187,11 +187,7 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
                 "projected fields and get size to delete the last elements of the data array");
             Object parquetData = reader.read();
             while (parquetData != null && !isStopRequested()) {
-                for (int i = 0; i < conditionSize; i++) {
-                    parquetData = Arrays.copyOf((Object[])parquetData,((Object[])parquetData).length-1);
-                }
                 result.addRow( (Object[])parquetData, projectedFields);
-
                 parquetData = reader.read();
             }
         } catch (final Exception e) {
