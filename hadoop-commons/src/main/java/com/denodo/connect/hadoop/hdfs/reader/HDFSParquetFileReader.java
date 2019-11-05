@@ -500,7 +500,7 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         
         final Group data = this.dataFileReader.read();
         if (data != null) {
-            return readParquetLogicalTypes(data, this.projectedFields);
+            return readParquetLogicalTypes(data, this.projectedFields, this.conditionFields);
         }
 
         return null;
@@ -525,6 +525,24 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         int i = 0;
         for (final Type field : fields) {
             vdpRecord[i] = readTypes(datum, projectedFields, field);
+            i++;
+        }
+        return vdpRecord;
+    }
+
+    /**
+     * Method for read all the parquet types excluding the conditionFields
+     * @return Record with the fields
+     */
+    private static Object[] readParquetLogicalTypes(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, List<String> conditionFields)
+        throws IOException {
+        final List<Type> fields = datum.getType().getFields();
+        final Object[] vdpRecord = new Object[fields.size() - conditionFields.size()];
+        int i = 0;
+        for (final Type field : fields) {
+            if (!conditionFields.contains(field.getName()))  {
+                vdpRecord[i] = readTypes(datum, projectedFields, field);
+            }
             i++;
         }
         return vdpRecord;
