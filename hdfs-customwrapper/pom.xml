@@ -20,7 +20,7 @@
         <commons-io.version>2.6</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
         <gcs.version>hadoop3-1.9.10</gcs.version>
-        <hadoop.version>3.2.0</hadoop.version> <!-- Requires java 8 -->
+        <hadoop.version>3.2.1</hadoop.version> <!-- Requires java 8 -->
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version>   
         <httpclient.version>4.5.2</httpclient.version>  <!-- min required by aws-sdk  -->
         <httpcore.version>4.4.4</httpcore.version>
