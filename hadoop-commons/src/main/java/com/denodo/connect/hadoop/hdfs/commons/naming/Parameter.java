@@ -89,9 +89,14 @@ public final class Parameter {
 
     public static final String ACCESS_KEY_ID = "Access Key ID";
     public static final String SECRET_ACCESS_KEY = "Secret Access Key";
+    public static final String IAM_ROLE_ASSUME = "IAM Role to Assume";
     public static final String ENDPOINT = "Endpoint";
     
     
+    public static final String REGION = "Region";
+    public static final String USE_EC2_IAM_CREDENTIALS = "Use EC2 IAM credentials";
+
+
     public static final String RECURSIVE = "recursive";
     
     public static final String PARENT_FOLDER = "parentfolder";
@@ -111,6 +116,10 @@ public final class Parameter {
     public static final String TYPE_FILE = "file";
     public static final String TYPE_DIR = "directory";
     public static final String TYPE_SYMLINK = "symbolic link";
+
+    public static final String AWS_CREDENTIALS_PROVIDER = "org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider";
+    public static final String AWS_ASSUMED_ROLE_PROVIDER = "com.denodo.connect.hadoop.hdfs.wrapper.providers.AWSAssumedRoleCredentialProvider";
+    public static final String INSTANCE_PROFILE_CREDENTIALS_PROVIDER = "com.amazonaws.auth.InstanceProfileCredentialsProvider";
 
     private Parameter() {
 
