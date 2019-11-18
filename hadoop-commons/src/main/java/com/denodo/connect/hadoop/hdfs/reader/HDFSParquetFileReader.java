@@ -36,6 +36,7 @@ import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpress
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.filter2.predicate.FilterPredicate;
@@ -45,6 +46,7 @@ import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.api.ReadSupport;
 import org.apache.parquet.hadoop.example.GroupReadSupport;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
@@ -141,18 +143,20 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
     }
 
     private MessageType getParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
+        ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
+        ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
 
-        final ParquetMetadata readFooter = ParquetFileReader.readFooter(configuration, filePath, ParquetMetadataConverter.NO_FILTER);
-
+        final ParquetMetadata readFooter = parquetFileReader.getFooter();
         final MessageType schema = readFooter.getFileMetaData().getSchema();
 
         return schema;
     }
 
     private MessageType getProjectedParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
-        
-        final ParquetMetadata readFooter = ParquetFileReader.readFooter(configuration, filePath, ParquetMetadataConverter.NO_FILTER);
-        
+        ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
+        ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
+
+        final ParquetMetadata readFooter = parquetFileReader.getFooter();
         final MessageType schema = readFooter.getFileMetaData().getSchema();
 
         this.schemaWithProjectedAndConditionFields(schema);

@@ -28,9 +28,7 @@ import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
 import com.denodo.vdb.engine.customwrapper.*;
 import com.denodo.vdb.engine.customwrapper.condition.*;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
 import org.apache.commons.lang.ArrayUtils;
@@ -40,16 +38,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.filter2.predicate.FilterPredicate;
 import org.apache.parquet.hadoop.ParquetInputFormat;
-import org.apache.parquet.io.api.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Types;
 import java.util.*;
-
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.*;
-import static org.apache.parquet.filter2.predicate.FilterApi.*;
 
 /**
  * HDFS file custom wrapper for reading Parquet files stored in HDFS (Hadoop
@@ -77,17 +71,23 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
     private static final CustomWrapperInputParameter[] DATA_SOURCE_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
-                "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
+                "e.g. s3a://<bucket>",
                 true, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.ACCESS_KEY_ID,
                 "Access Key ID",
-                true, true, CustomWrapperInputParameterTypeFactory.stringType()),
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.SECRET_ACCESS_KEY,
                 "Secret Access Key",
-                true, true, CustomWrapperInputParameterTypeFactory.hiddenStringType()),
+                false, true, CustomWrapperInputParameterTypeFactory.hiddenStringType()),
+            new CustomWrapperInputParameter(Parameter.IAM_ROLE_ASSUME,
+                "IAM Role to Assume",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.ENDPOINT,
                 "AWS S3 endpoint to connect to. Without this property, the standard region (s3.amazonaws.com) is assumed.",
                 false, true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.USE_EC2_IAM_CREDENTIALS,
+                "Use EC2 IAM credentials ",
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
                 false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
@@ -113,8 +113,20 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
 
             final Configuration conf = getHadoopConfiguration(inputValues);
 
-            conf.set("fs.s3a.access.key", inputValues.get(Parameter.ACCESS_KEY_ID));
-            conf.set("fs.s3a.secret.key", inputValues.get(Parameter.SECRET_ACCESS_KEY));
+            if (inputValues.get(Parameter.USE_EC2_IAM_CREDENTIALS) != null && Boolean.parseBoolean(inputValues.get(Parameter.USE_EC2_IAM_CREDENTIALS))) {
+                conf.set("fs.s3a.aws.credentials.provider", Parameter.INSTANCE_PROFILE_CREDENTIALS_PROVIDER);
+            } else if (inputValues.get(Parameter.ACCESS_KEY_ID) != null && inputValues.get(Parameter.IAM_ROLE_ASSUME) != null) {
+                conf.set("fs.s3a.access.key", inputValues.get(Parameter.ACCESS_KEY_ID));
+                conf.set("fs.s3a.secret.key", inputValues.get(Parameter.SECRET_ACCESS_KEY));
+                conf.set("fs.s3a.aws.credentials.provider", Parameter.AWS_ASSUMED_ROLE_PROVIDER);
+                conf.set("fs.s3a.assumed.role.arn",inputValues.get(Parameter.IAM_ROLE_ASSUME));
+            } else if (inputValues.get(Parameter.ACCESS_KEY_ID) != null && inputValues.get(Parameter.SECRET_ACCESS_KEY) != null) {
+                conf.set("fs.s3a.access.key", inputValues.get(Parameter.ACCESS_KEY_ID));
+                conf.set("fs.s3a.secret.key", inputValues.get(Parameter.SECRET_ACCESS_KEY));
+            } else {
+                conf.set("fs.s3a.aws.credentials.provider", Parameter.AWS_CREDENTIALS_PROVIDER);
+            }
+
             if (inputValues.get(Parameter.ENDPOINT) != null) {
                 conf.set("fs.s3a.endpoint", inputValues.get(Parameter.ENDPOINT));
             }
@@ -161,9 +173,19 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
 
         final Configuration conf = getHadoopConfiguration(inputValues);
 
-        conf.set("fs.s3a.access.key", inputValues.get(Parameter.ACCESS_KEY_ID));
-        conf.set("fs.s3a.secret.key", inputValues.get(Parameter.SECRET_ACCESS_KEY));
-
+        if (inputValues.get(Parameter.USE_EC2_IAM_CREDENTIALS) != null && Boolean.parseBoolean(inputValues.get(Parameter.USE_EC2_IAM_CREDENTIALS))) {
+            conf.set("fs.s3a.aws.credentials.provider", Parameter.INSTANCE_PROFILE_CREDENTIALS_PROVIDER);
+        } else if (inputValues.get(Parameter.ACCESS_KEY_ID) != null && inputValues.get(Parameter.IAM_ROLE_ASSUME) != null) {
+            conf.set("fs.s3a.access.key", inputValues.get(Parameter.ACCESS_KEY_ID));
+            conf.set("fs.s3a.secret.key", inputValues.get(Parameter.SECRET_ACCESS_KEY));
+            conf.set("fs.s3a.aws.credentials.provider", Parameter.AWS_ASSUMED_ROLE_PROVIDER);
+            conf.set("fs.s3a.assumed.role.arn",inputValues.get(Parameter.IAM_ROLE_ASSUME));
+        } else if (inputValues.get(Parameter.ACCESS_KEY_ID) != null && inputValues.get(Parameter.SECRET_ACCESS_KEY) != null) {
+            conf.set("fs.s3a.access.key", inputValues.get(Parameter.ACCESS_KEY_ID));
+            conf.set("fs.s3a.secret.key", inputValues.get(Parameter.SECRET_ACCESS_KEY));
+        } else {
+            conf.set("fs.s3a.aws.credentials.provider", Parameter.AWS_CREDENTIALS_PROVIDER);
+        }
         final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
         final Path path = new Path(parquetFilePath);
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
