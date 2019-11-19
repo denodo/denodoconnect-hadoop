@@ -52,7 +52,7 @@ public class AWSAssumedRoleCredentialProvider implements AWSCredentialsProvider,
     public static final String E_NO_ROLE = "Unset property "
         + ASSUMED_ROLE_ARN;
 
-    private static STSAssumeRoleSessionCredentialsProvider stsProvider;
+    private final STSAssumeRoleSessionCredentialsProvider stsProvider;
 
     private final String sessionName;
 
@@ -154,7 +154,7 @@ public class AWSAssumedRoleCredentialProvider implements AWSCredentialsProvider,
                 new Invoker.Operation<AWSCredentials>() {
                     @Override
                     public AWSCredentials execute() throws IOException {
-                        return AWSAssumedRoleCredentialProvider.stsProvider.getCredentials();
+                        return AWSAssumedRoleCredentialProvider.this.stsProvider.getCredentials();
                     }
                 });
         } catch (IOException e) {
