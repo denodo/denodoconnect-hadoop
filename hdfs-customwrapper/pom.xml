@@ -11,7 +11,7 @@
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20191024</version>
+    <version>20191119</version>
 
     <properties>
         <aws.sdk.version>1.11.589</aws.sdk.version>
