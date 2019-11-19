@@ -1,3 +1,11 @@
+20191119
+--------
+- #45469 - Add "IAM Role to Assume" to Parquet/S3 wrapper
+- #45470 - Improve the tooltip of the "Endpoint" parameter in the Parquet/S3 wrapper
+- #45472 - Divide configuration between DataSource and Base View
+- #45700 - Optimization in the reading of parquet types excluding condition fields
+- #45708 - Update hadoop-common version to 3.2.1
+
 20191024
 --------
 - #44063 - Refresh state of the parquet libraries. Add predicate pushdown and projections delegation. Create the S3ParquetFileWrapper
