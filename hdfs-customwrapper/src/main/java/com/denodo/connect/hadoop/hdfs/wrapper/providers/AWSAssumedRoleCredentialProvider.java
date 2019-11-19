@@ -52,7 +52,7 @@ public class AWSAssumedRoleCredentialProvider implements AWSCredentialsProvider,
     public static final String E_NO_ROLE = "Unset property "
         + ASSUMED_ROLE_ARN;
 
-    private final STSAssumeRoleSessionCredentialsProvider stsProvider;
+    private static STSAssumeRoleSessionCredentialsProvider stsProvider;
 
     private final String sessionName;
 
@@ -129,7 +129,12 @@ public class AWSAssumedRoleCredentialProvider implements AWSCredentialsProvider,
 
         // to handle STS throttling by the AWS account, we
         // need to retry
-        invoker = new Invoker(new S3ARetryPolicy(conf), this::operationRetried);
+        invoker = new Invoker(new S3ARetryPolicy(conf), new Invoker.Retried() {
+            @Override
+            public void onFailure(final String text, final IOException exception, final int retries, final boolean idempotent) {
+                AWSAssumedRoleCredentialProvider.this.operationRetried(text, exception, retries, idempotent);
+            }
+        });
 
         // and force in a fail-fast check just to keep the stack traces less
         // convoluted
@@ -146,7 +151,12 @@ public class AWSAssumedRoleCredentialProvider implements AWSCredentialsProvider,
         try {
             return invoker.retryUntranslated("getCredentials",
                 true,
-                stsProvider::getCredentials);
+                new Invoker.Operation<AWSCredentials>() {
+                    @Override
+                    public AWSCredentials execute() throws IOException {
+                        return AWSAssumedRoleCredentialProvider.stsProvider.getCredentials();
+                    }
+                });
         } catch (IOException e) {
             // this is in the signature of retryUntranslated;
             // its hard to see how this could be raised, but for
