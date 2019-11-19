@@ -18,7 +18,7 @@
         <commons-csv.version>1.4</commons-csv.version>
         <commons-io.version>2.6</commons-io.version>          
         <commons-lang.version>2.6</commons-lang.version>     
-        <hadoop.version>2.9.1</hadoop.version>
+        <hadoop.version>3.2.1</hadoop.version>
         <log4j.version>1.2.15</log4j.version>        
         <slf4j.version>1.7.10</slf4j.version>
         <vdp.version>6.0.0</vdp.version>
