@@ -22,29 +22,251 @@ CONNECT DATABASE hdfs;
 # #######################################
 # DATASOURCES
 # #######################################
-CREATE OR REPLACE DATASOURCE CUSTOM avroavro
+CREATE OR REPLACE DATASOURCE CUSTOM avro
     CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSAvroFileWrapper'
-    JARS 'denodo-hdfs-customwrapper-7.0';
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Kerberos enabled' = false
+    );
 
-CREATE OR REPLACE DATASOURCE CUSTOM delimiteddelimited
+CREATE OR REPLACE DATASOURCE CUSTOM avro_web
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSAvroFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'webhdfs://quickstart.cloudera:50070',
+      'Kerberos enabled' = false
+    );
+
+
+CREATE OR REPLACE DATASOURCE CUSTOM delimited
     CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
-    JARS 'denodo-hdfs-customwrapper-7.0';
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+        'File system URI' = 'hdfs://quickstart.cloudera:8020',
+        'Kerberos enabled' = false
+    );
 
-CREATE OR REPLACE DATASOURCE CUSTOM listing_dfs
+CREATE OR REPLACE DATASOURCE CUSTOM delimited_abfs
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+        'File system URI' = 'abfs://testfilesystem\@meriponaccount.dfs.core.windows.net',
+        'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimited_abfs.Custom core-site.xml file.ROUTE.LOCAL.PATH}',        
+        'Kerberos enabled' = false
+    );
+
+
+
+CREATE OR REPLACE DATASOURCE CUSTOM delimited_adl
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+        'File system URI' = 'adl://denodosbdtddl01.azuredatalakestore.net',
+        'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimited_adl.Custom core-site.xml file.ROUTE.LOCAL.PATH}',        
+        'Kerberos enabled' = false
+    );
+
+
+CREATE OR REPLACE DATASOURCE CUSTOM delimited_s3a
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (    
+        'File system URI' = 's3a://denodo-rd-32385-athena',
+        'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimited_s3a.Custom core-site.xml file.ROUTE.LOCAL.PATH}',        
+        'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM delimited_s3n
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (    
+       'File system URI' = 's3n://AKIAIMTOPSQSRYBEQ4DQ:VOUzHmFCfauiGQycn5hyZCfcKJZ2Rjw8KdoOtqqF\@denodo-rd-32385-athena',
+       'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM delimited_gcs
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (    
+        'File system URI' = 'gs://dfs-wrapper-test',
+        'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimited_gcs.Custom core-site.xml file.ROUTE.LOCAL.PATH}',        
+        'Kerberos enabled' = false
+    );    
+
+CREATE OR REPLACE DATASOURCE CUSTOM delimited_wasb
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+        'File system URI' = 'wasb://test\@storageemulator',
+        'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimited_wasb.Custom core-site.xml file.ROUTE.LOCAL.PATH}',        
+        'Kerberos enabled' = false
+    );      
+
+CREATE OR REPLACE DATASOURCE CUSTOM delimited_wasbs
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+        'File system URI' = 'wasbs://test\@blobaccoun.blob.core.windows.net',
+        'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimited_wasbs.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
+        'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM delimited_web
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+        'File system URI' = 'webhdfs://quickstart.cloudera:50070',
+        'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM delimited_kerberos
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSDelimitedTextFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Kerberos enabled' = true,
+      'Kerberos principal name' = 'cloudera-scm/admin\@CLOUDERA',
+      'Kerberos password' = 'bqbDFPsFqtBwcAjD8gpcJ9T8k5A3KGyGNvNIqOmEvGS1VftT4z5fbuVqGA2NqU9uXESvr00mcgHu5JD1fknz64PVQUtU2J6b1QY5y36oX11VKvMPULcGXYHkzCP+9/8R' ENCRYPTED,
+      'Kerberos Distribution Center' = 'quickstart.cloudera'
+    );     
+
+
+CREATE OR REPLACE DATASOURCE CUSTOM listing_gcs
     CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.DFSListFilesWrapper'
-    JARS 'denodo-hdfs-customwrapper-7.0';
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'gs://dfs-wrapper-test',
+      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_gcs.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
+      'Kerberos enabled' = false
+    );
 
-CREATE OR REPLACE DATASOURCE CUSTOM mapmap
+CREATE OR REPLACE DATASOURCE CUSTOM listing_abfs
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.DFSListFilesWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'abfs://testfilesystem\@meriponaccount.dfs.core.windows.net',
+      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_abfs.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
+      'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM listing_adl
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.DFSListFilesWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'adl://denodosbdtddl01.azuredatalakestore.net',
+      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_adl.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
+      'Kerberos enabled' = false
+    );    
+
+CREATE OR REPLACE DATASOURCE CUSTOM listing_hdfs
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.DFSListFilesWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM listing_hdfs_kerberos
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.DFSListFilesWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Kerberos enabled' = true,
+      'Kerberos principal name' = 'cloudera-scm/admin\@CLOUDERA',
+      'Kerberos password' = '5LXfX8VPMPv3AJUYsiAJfX4Cr8Cy2DknRcd1iyFHdCtxtmsKowvwP8jRAuXZfu5Rf9S+xYbbAbjkgf7SV1V17uE7g88XQf8vptA+Z3XWBARCiaTwydxHGlZAhBE2ZM0E' ENCRYPTED,
+      'Kerberos Distribution Center' = 'quickstart.cloudera'
+    );   
+
+CREATE OR REPLACE DATASOURCE CUSTOM listing_s3a
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.DFSListFilesWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 's3a://denodo-rd-32385-athena',
+      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_s3a.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
+      'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM listing_wasb
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.DFSListFilesWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'wasb://test\@storageemulator',
+      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_wasb.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
+      'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM listing_wasb2
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.DFSListFilesWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'wasbs://test\@blobaccoun.blob.core.windows.net',
+      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_wasb2.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
+      'Kerberos enabled' = false
+    );    
+
+CREATE OR REPLACE DATASOURCE CUSTOM map
     CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSMapFileWrapper'
-    JARS 'denodo-hdfs-customwrapper-7.0';
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',    
+      'Kerberos enabled' = false
+    );         
 
-CREATE OR REPLACE DATASOURCE CUSTOM parquetparquet
+CREATE OR REPLACE DATASOURCE CUSTOM map_web
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSMapFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'webhdfs://quickstart.cloudera:50070',
+      'Kerberos enabled' = false
+    );
+   
+
+
+CREATE OR REPLACE DATASOURCE CUSTOM parquet
     CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSParquetFileWrapper'
-    JARS 'denodo-hdfs-customwrapper-7.0';
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Kerberos enabled' = false
+    );
 
-CREATE OR REPLACE DATASOURCE CUSTOM sequencesequence
+
+CREATE OR REPLACE DATASOURCE CUSTOM parquet_web
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSParquetFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'webhdfs://quickstart.cloudera:50070',    
+      'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM parquet_kerberos
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSParquetFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (
+      'File system URI' = 'hdfs://quickstart.cloudera:8020',
+      'Kerberos enabled' = true,
+      'Kerberos principal name' = 'cloudera-scm/admin\@CLOUDERA',
+      'Kerberos password' = 'XLrryvjgKdMKrWLhmGKJsdIrwN4lBTO9QiH8mInOjHQJihkrJGl2tBB7+0IVXAR9y765hQHnlY24cYL8i2tdhGvlry0erNvvNoGlKN5F2yyrw705DQ8eqbdf6/XXF2WB' ENCRYPTED,
+      'Kerberos Distribution Center' = 'quickstart.cloudera'
+    );
+
+
+CREATE OR REPLACE DATASOURCE CUSTOM sequence
     CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSSequenceFileWrapper'
-    JARS 'denodo-hdfs-customwrapper-7.0';
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (    
+        'File system URI' = 'hdfs://quickstart.cloudera:8020',
+        'Kerberos enabled' = false
+    );
+
+CREATE OR REPLACE DATASOURCE CUSTOM sequence_web
+    CLASSNAME='com.denodo.connect.hadoop.hdfs.wrapper.HDFSSequenceFileWrapper'
+    JARS 'denodo-hdfs-customwrapper-7.0'
+    PARAMETERS (  
+        'File system URI' = 'webhdfs://quickstart.cloudera:50070',
+        'Kerberos enabled' = false
+    );
 
 # #######################################
 # DATABASE CONFIGURATION
@@ -56,12 +278,10 @@ ALTER DATABASE hdfs
 # WRAPPERS
 # #######################################
 CREATE OR REPLACE WRAPPER CUSTOM avro_compress_copy
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema JSON' = ' \{{"type":"record","name":"User","namespace":"example.avro","fields":[\{{"name":"name","type":"string"\}},\{{"name":"favorite_number","type":["null","int"]\}},\{{"name":"favorite_color","type":["null","string"]\}}]\}}',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -73,12 +293,10 @@ CREATE OR REPLACE WRAPPER CUSTOM avro_compress_copy
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avroavro
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema JSON' = '"bytes"',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -86,13 +304,11 @@ CREATE OR REPLACE WRAPPER CUSTOM avroavro
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avroavro_0
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
       'File name pattern' = '(.*)\\.avro',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -141,13 +357,11 @@ CREATE OR REPLACE WRAPPER CUSTOM avroavro_0
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avroavro_1
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
       'File name pattern' = '(.*)\\.avro',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -196,12 +410,10 @@ CREATE OR REPLACE WRAPPER CUSTOM avroavro_1
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avrobinary
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/binary/binaryfield_test.avsc',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -226,13 +438,11 @@ CREATE OR REPLACE WRAPPER CUSTOM avrobinary
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avrodir
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
       'File name pattern' = '(.*)\\.avro',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -281,13 +491,11 @@ CREATE OR REPLACE WRAPPER CUSTOM avrodir
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avrodir2
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
       'File name pattern' = '(.*)\\.avro',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -336,13 +544,11 @@ CREATE OR REPLACE WRAPPER CUSTOM avrodir2
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avrodir_copy
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
       'File name pattern' = '(.*)\\.nomatch',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -391,13 +597,11 @@ CREATE OR REPLACE WRAPPER CUSTOM avrodir_copy
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avrodir_nomatch
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
       'File name pattern' = '(.*)\\.nomatch',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -446,12 +650,10 @@ CREATE OR REPLACE WRAPPER CUSTOM avrodir_nomatch
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avrodir_without_pattern
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -500,13 +702,11 @@ CREATE OR REPLACE WRAPPER CUSTOM avrodir_without_pattern
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avrofile
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
       'File name pattern' = '(.*)\\.avro',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -555,13 +755,11 @@ CREATE OR REPLACE WRAPPER CUSTOM avrofile
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM avrofile_web
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro_web
     PARAMETERS (
-      'File system URI' = 'webhdfs://quickstart.cloudera:50070',
       'Avro schema path' = '/user/cloudera/avro/RecordWithAllTypes.avsc',
       'File name pattern' = '(.*)\\.avro',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -610,12 +808,10 @@ CREATE OR REPLACE WRAPPER CUSTOM avrofile_web
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM bug42277
-    DATASOURCENAME=avroavro
+    DATASOURCENAME=avro
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Avro schema path' = '/user/cloudera/avro/binary/binaryfield_test.avsc',
-      'Delete after reading' = false,
-      'Kerberos enabled' = false
+      'Delete after reading' = false
     )
     OUTPUTSCHEMA (
         avrofilepath = 'avroFilepath' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL NOT SORTABLE NOT UPDATEABLE,
@@ -640,22 +836,20 @@ CREATE OR REPLACE WRAPPER CUSTOM bug42277
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimited_bz2
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/compress/concat.bz2',
       'Delete after reading' = false,
       'Ignore spaces' = false,
       'Header' = false,
-      'Ignore matching errors' = true,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = true
     )
     OUTPUTSCHEMA (
         column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimited_compress_dir
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
       'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/compress/',
@@ -674,16 +868,14 @@ CREATE OR REPLACE WRAPPER CUSTOM delimited_compress_dir
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimited_dates_dir
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/',
       'File name pattern' = '(.*)2018(.*)\\.csv',
       'Delete after reading' = false,
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         "yearID" = 'yearID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -698,15 +890,13 @@ CREATE OR REPLACE WRAPPER CUSTOM delimited_dates_dir
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimited_gz
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/compress/Salaries.csv.gz',
       'Delete after reading' = false,
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = true,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = true
     )
     OUTPUTSCHEMA (
         yearid = 'yearID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -717,15 +907,13 @@ CREATE OR REPLACE WRAPPER CUSTOM delimited_gz
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimited_nomatch
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/',
       'File name pattern' = '(.*)\\.nomatch',
       'Delete after reading' = false,
       'Ignore spaces' = false,
-      'Header' = true,
-      'Kerberos enabled' = false
+      'Header' = true
     )
     OUTPUTSCHEMA (
         "playerID" = 'playerID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -741,9 +929,8 @@ CREATE OR REPLACE WRAPPER CUSTOM delimited_nomatch
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimited_tab
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/SearchLog.tsv',
       'File name pattern' = '(.*)\\.tsv',
       'Delete after reading' = false,
@@ -751,8 +938,7 @@ CREATE OR REPLACE WRAPPER CUSTOM delimited_tab
       'Null value' = 'NULL',
       'Ignore spaces' = false,
       'Header' = false,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -765,31 +951,27 @@ CREATE OR REPLACE WRAPPER CUSTOM delimited_tab
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimiteddelimited
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/gz/concat.bz2',
       'Delete after reading' = false,
       'Ignore spaces' = false,
       'Header' = false,
-      'Ignore matching errors' = true,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = true
     )
     OUTPUTSCHEMA (
         column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimiteddir
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/awards',
       'File name pattern' = '(.*)\\.csv',
       'Delete after reading' = false,
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         playerid = 'playerID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -801,14 +983,12 @@ CREATE OR REPLACE WRAPPER CUSTOM delimiteddir
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimiteddir2
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df',
       'Delete after reading' = false,
       'Ignore spaces' = false,
-      'Header' = true,
-      'Kerberos enabled' = false
+      'Header' = true
     )
     OUTPUTSCHEMA (
         "awardID" = 'awardID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -821,15 +1001,13 @@ CREATE OR REPLACE WRAPPER CUSTOM delimiteddir2
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimiteddir_withnomatchingschemas
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df',
       'Delete after reading' = false,
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         "playerID" = 'playerID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -845,15 +1023,13 @@ CREATE OR REPLACE WRAPPER CUSTOM delimiteddir_withnomatchingschemas
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/Schools.csv',
       'Delete after reading' = false,
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         "schoolID" = 'schoolID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -864,16 +1040,12 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_abfs
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_abfs
     PARAMETERS (
-      'File system URI' = 'abfs://testfilesystem\@meriponaccount.dfs.core.windows.net',
       'Path' = '/Schools.csv',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_abfs.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Ignore spaces' = false,
-      'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Header' = true
     )
     OUTPUTSCHEMA (
         "schoolID" = 'schoolID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -884,16 +1056,13 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_abfs
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_adl
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_adl
     PARAMETERS (
-      'File system URI' = 'adl://denodosbdtddl01.azuredatalakestore.net',
       'Path' = '/customer_sentiment',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_adl.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         user_id = 'user_id' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -902,15 +1071,12 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_adl
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_azure
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_s3a
     PARAMETERS (
-      'File system URI' = 's3a://\@denodo-rd-32385-athena',
       'Path' = '/sample_data/sample_data.csv',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_azure.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Ignore spaces' = false,
-      'Header' = false,
-      'Kerberos enabled' = false
+      'Header' = false
     )
     OUTPUTSCHEMA (
         column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -920,18 +1086,15 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_azure
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_gcs
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_gcs
     PARAMETERS (
-      'File system URI' = 'gs://dfs-wrapper-test',
       'Path' = '/resources/textfiles/nullvalues.csv',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_gcs.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Separator' = ',',
       'Null value' = '\\N',
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         id = 'Id' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -941,18 +1104,15 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_gcs
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_matching_errors
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_gcs
     PARAMETERS (
-      'File system URI' = 'gs://dfs-wrapper-test',
       'Path' = '/resources/textfiles/matchingerrors.csv',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_matching_errors.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Separator' = ',',
       'Quote' = '"',
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = true,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = true
     )
     OUTPUTSCHEMA (
         grid_code = 'GRID_CODE' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -967,14 +1127,12 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_matching_errors
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_s3
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_s3n
     PARAMETERS (
-      'File system URI' = 's3n://AKIAIMTOPSQSRYBEQ4DQ:VOUzHmFCfauiGQycn5hyZCfcKJZ2Rjw8KdoOtqqF\@denodo-rd-32385-athena',
       'Path' = '/sample_data/sample_data.csv',
       'Delete after reading' = false,
       'Ignore spaces' = false,
-      'Header' = false,
-      'Kerberos enabled' = false
+      'Header' = false
     )
     OUTPUTSCHEMA (
         column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -984,14 +1142,12 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_s3
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_s3_0
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_s3n
     PARAMETERS (
-      'File system URI' = 's3n://AKIAIMTOPSQSRYBEQ4DQ:VOUzHmFCfauiGQycn5hyZCfcKJZ2Rjw8KdoOtqqF\@denodo-rd-32385-athena',
       'Path' = '/sample_data/sample_data.csv',
       'Delete after reading' = false,
       'Ignore spaces' = false,
-      'Header' = false,
-      'Kerberos enabled' = false
+      'Header' = false
     )
     OUTPUTSCHEMA (
         column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1001,16 +1157,13 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_s3_0
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_s3a
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_s3a
     PARAMETERS (
-      'File system URI' = 's3a://\@denodo-rd-32385-athena',
       'Path' = '/sample_data/sample_data.csv',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_s3a.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Ignore spaces' = false,
       'Header' = false,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1020,15 +1173,12 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_s3a
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_s3n
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_s3n
     PARAMETERS (
-      'File system URI' = 's3n://\@denodo-rd-32385-athena',
       'Path' = '/sample_data/sample_data.csv',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_s3n.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Ignore spaces' = false,
-      'Header' = false,
-      'Kerberos enabled' = false
+      'Header' = false
     )
     OUTPUTSCHEMA (
         column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1038,12 +1188,10 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_s3n
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_wasb
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_wasb
     PARAMETERS (
-      'File system URI' = 'wasb://test\@storageemulator',
       'Path' = '/Schools.csv',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_wasb.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Ignore spaces' = false,
       'Header' = true,
       'Ignore matching errors' = false,
@@ -1058,16 +1206,13 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_wasb
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_wasb2
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_wasbs
     PARAMETERS (
-      'File system URI' = 'wasbs://test\@blobaccoun.blob.core.windows.net',
       'Path' = '/AwardsPlayers.csv',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_wasb2.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         playerid = 'playerID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1079,16 +1224,13 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_wasb2
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_wasb_copy
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_wasb
     PARAMETERS (
-      'File system URI' = 'wasbs://test\@blobaccoun.blob.core.windows.net',
       'Path' = '/AwardsPlayers.csv',
       'Delete after reading' = false,
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.delimitedfile_wasb_copy.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         playerid = 'playerID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1100,15 +1242,13 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_wasb_copy
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_web
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_web
     PARAMETERS (
-      'File system URI' = 'webhdfs://quickstart.cloudera:50070',
       'Path' = '/user/cloudera/df/Schools.csv',
       'Delete after reading' = false,
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         "schoolID" = 'schoolID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1119,9 +1259,8 @@ CREATE OR REPLACE WRAPPER CUSTOM delimitedfile_web
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM kerberos_delimited_file
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited_kerberos
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SearchLog.tsv',
       'File name pattern' = '(.*)\\.tsv',
       'Delete after reading' = false,
@@ -1129,11 +1268,7 @@ CREATE OR REPLACE WRAPPER CUSTOM kerberos_delimited_file
       'Null value' = 'NULL',
       'Ignore spaces' = false,
       'Header' = false,
-      'Ignore matching errors' = false,
-      'Kerberos enabled' = true,
-      'Kerberos principal name' = 'cloudera-scm/admin\@CLOUDERA',
-      'Kerberos password' = 'bqbDFPsFqtBwcAjD8gpcJ9T8k5A3KGyGNvNIqOmEvGS1VftT4z5fbuVqGA2NqU9uXESvr00mcgHu5JD1fknz64PVQUtU2J6b1QY5y36oX11VKvMPULcGXYHkzCP+9/8R' ENCRYPTED,
-      'Kerberos Distribution Center' = 'quickstart.cloudera'
+      'Ignore matching errors' = false
     )
     OUTPUTSCHEMA (
         column0 = 'column0' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1146,14 +1281,9 @@ CREATE OR REPLACE WRAPPER CUSTOM kerberos_delimited_file
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM kerberos_parquetfile
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet_kerberos
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Parquet File path' = '/user/cloudera/complex_types.snappy.parquet',
-      'Kerberos enabled' = true,
-      'Kerberos principal name' = 'cloudera-scm/admin\@CLOUDERA',
-      'Kerberos password' = 'XLrryvjgKdMKrWLhmGKJsdIrwN4lBTO9QiH8mInOjHQJihkrJGl2tBB7+0IVXAR9y765hQHnlY24cYL8i2tdhGvlry0erNvvNoGlKN5F2yyrw705DQ8eqbdf6/XXF2WB' ENCRYPTED,
-      'Kerberos Distribution Center' = 'quickstart.cloudera'
+      'Parquet File path' = '/user/cloudera/complex_types.snappy.parquet'
     )
     OUTPUTSCHEMA (flight = 'Flight' : REGISTER OF (
         entityseqnumber = 'EntitySeqNumber' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1386,12 +1516,7 @@ CREATE OR REPLACE WRAPPER CUSTOM kerberos_parquetfile
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM listing_dfs
-    DATASOURCENAME=listing_dfs
-    PARAMETERS (
-      'File system URI' = 'gs://dfs-wrapper-test',
-      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_dfs.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
-      'Kerberos enabled' = false
-    )
+    DATASOURCENAME=listing_gcs
     OUTPUTSCHEMA (
         parentfolder = 'parentfolder' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL SORTABLE NOT UPDATEABLE,
         relativepath = 'relativepath' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1410,12 +1535,7 @@ CREATE OR REPLACE WRAPPER CUSTOM listing_dfs
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_abfs
-    DATASOURCENAME=listing_dfs
-    PARAMETERS (
-      'File system URI' = 'abfs://testfilesystem\@meriponaccount.dfs.core.windows.net',
-      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_dfs_abfs.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
-      'Kerberos enabled' = false
-    )
+    DATASOURCENAME=listing_abfs
     OUTPUTSCHEMA (
         parentfolder = 'parentfolder' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL SORTABLE NOT UPDATEABLE,
         relativepath = 'relativepath' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1434,12 +1554,7 @@ CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_abfs
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_adl
-    DATASOURCENAME=listing_dfs
-    PARAMETERS (
-      'File system URI' = 'adl://denodosbdtddl01.azuredatalakestore.net',
-      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_dfs_adl.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
-      'Kerberos enabled' = false
-    )
+    DATASOURCENAME=listing_adl
     OUTPUTSCHEMA (
         parentfolder = 'parentfolder' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL SORTABLE NOT UPDATEABLE,
         relativepath = 'relativepath' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1458,12 +1573,7 @@ CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_adl
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_gcs
-    DATASOURCENAME=listing_dfs
-    PARAMETERS (
-      'File system URI' = 'gs://dfs-wrapper-test',
-      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_dfs_gcs.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
-      'Kerberos enabled' = false
-    )
+    DATASOURCENAME=listing_gcs
     OUTPUTSCHEMA (
         parentfolder = 'parentfolder' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL SORTABLE NOT UPDATEABLE,
         relativepath = 'relativepath' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1482,11 +1592,7 @@ CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_gcs
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_hdfs
-    DATASOURCENAME=listing_dfs
-    PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Kerberos enabled' = false
-    )
+    DATASOURCENAME=listing_hdfs
     OUTPUTSCHEMA (
         parentfolder = 'parentfolder' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL SORTABLE NOT UPDATEABLE,
         relativepath = 'relativepath' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1505,14 +1611,7 @@ CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_hdfs
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_hdfs_kerberos
-    DATASOURCENAME=listing_dfs
-    PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Kerberos enabled' = true,
-      'Kerberos principal name' = 'cloudera-scm/admin\@CLOUDERA',
-      'Kerberos password' = '5LXfX8VPMPv3AJUYsiAJfX4Cr8Cy2DknRcd1iyFHdCtxtmsKowvwP8jRAuXZfu5Rf9S+xYbbAbjkgf7SV1V17uE7g88XQf8vptA+Z3XWBARCiaTwydxHGlZAhBE2ZM0E' ENCRYPTED,
-      'Kerberos Distribution Center' = 'quickstart.cloudera'
-    )
+    DATASOURCENAME=listing_hdfs_kerberos
     OUTPUTSCHEMA (
         parentfolder = 'parentfolder' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL SORTABLE NOT UPDATEABLE,
         relativepath = 'relativepath' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1531,12 +1630,7 @@ CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_hdfs_kerberos
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_s3a
-    DATASOURCENAME=listing_dfs
-    PARAMETERS (
-      'File system URI' = 's3a://\@denodo-rd-32385-athena',
-      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_dfs_s3a.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
-      'Kerberos enabled' = false
-    )
+    DATASOURCENAME=listing_s3a
     OUTPUTSCHEMA (
         parentfolder = 'parentfolder' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL SORTABLE NOT UPDATEABLE,
         relativepath = 'relativepath' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1555,12 +1649,7 @@ CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_s3a
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_wasb
-    DATASOURCENAME=listing_dfs
-    PARAMETERS (
-      'File system URI' = 'wasb://test\@storageemulator',
-      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_dfs_wasb.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
-      'Kerberos enabled' = false
-    )
+    DATASOURCENAME=listing_wasb
     OUTPUTSCHEMA (
         parentfolder = 'parentfolder' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL SORTABLE NOT UPDATEABLE,
         relativepath = 'relativepath' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1579,12 +1668,7 @@ CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_wasb
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_wasb2
-    DATASOURCENAME=listing_dfs
-    PARAMETERS (
-      'File system URI' = 'wasbs://test\@blobaccoun.blob.core.windows.net',
-      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.listing_dfs_wasb2.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
-      'Kerberos enabled' = false
-    )
+    DATASOURCENAME=listing_wasb2
     OUTPUTSCHEMA (
         parentfolder = 'parentfolder' : 'java.lang.String' (OBL) (sourcetypeid='12')  NOT NULL SORTABLE NOT UPDATEABLE,
         relativepath = 'relativepath' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1603,14 +1687,12 @@ CREATE OR REPLACE WRAPPER CUSTOM listing_dfs_wasb2
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM mapdir
-    DATASOURCENAME=mapmap
+    DATASOURCENAME=map
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/MAP',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -1618,15 +1700,13 @@ CREATE OR REPLACE WRAPPER CUSTOM mapdir
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM mapdir_nomatch
-    DATASOURCENAME=mapmap
+    DATASOURCENAME=map
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/MAP',
       'File name pattern' = '(.*)\\.nomatch',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -1634,14 +1714,12 @@ CREATE OR REPLACE WRAPPER CUSTOM mapdir_nomatch
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM mapfile
-    DATASOURCENAME=mapmap
+    DATASOURCENAME=map
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/MAP/data',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -1649,14 +1727,12 @@ CREATE OR REPLACE WRAPPER CUSTOM mapfile
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM mapfile_web
-    DATASOURCENAME=mapmap
+    DATASOURCENAME=map_web
     PARAMETERS (
-      'File system URI' = 'webhdfs://quickstart.cloudera:50070',
       'Path' = '/user/cloudera/MAP/data',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -1664,14 +1740,12 @@ CREATE OR REPLACE WRAPPER CUSTOM mapfile_web
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM mapmap
-    DATASOURCENAME=mapmap
+    DATASOURCENAME=map
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/MAP',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.LongWritable',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.LongWritable'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -1679,11 +1753,9 @@ CREATE OR REPLACE WRAPPER CUSTOM mapmap
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquet_gzip
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Parquet File path' = '/user/cloudera/parquet/compress/gzip-nation.impala.parquet',
-      'Kerberos enabled' = false
+      'Parquet File path' = '/user/cloudera/parquet/compress/gzip-nation.impala.parquet'
     )
     OUTPUTSCHEMA (
         n_nationkey = 'n_nationkey' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -1693,11 +1765,9 @@ CREATE OR REPLACE WRAPPER CUSTOM parquet_gzip
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquet_was_bug41819
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Parquet File path' = '/user/cloudera/parquet/bug41819.snappy.parquet',
-      'Kerberos enabled' = false
+      'Parquet File path' = '/user/cloudera/parquet/bug41819.snappy.parquet'
     )
     OUTPUTSCHEMA (
         parent_company_channel = 'PARENT_COMPANY_CHANNEL' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1725,12 +1795,10 @@ CREATE OR REPLACE WRAPPER CUSTOM parquet_was_bug41819
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquetdir
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Parquet File path' = '/user/cloudera/parquet/',
-      'File name pattern' = '(.*)\\.parquet',
-      'Kerberos enabled' = false
+      'File name pattern' = '(.*)\\.parquet'
     )
     OUTPUTSCHEMA (
         parent_company_channel = 'PARENT_COMPANY_CHANNEL' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1758,13 +1826,9 @@ CREATE OR REPLACE WRAPPER CUSTOM parquetdir
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquetdir_chriswalters
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Parquet File path' = '/user/cloudera/parquet/chriswalters_dir',
-      'Custom core-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.parquetdir_chriswalters.Custom core-site.xml file.ROUTE.LOCAL.PATH}',
-      'Custom hdfs-site.xml file' = ROUTE LOCAL 'LocalConnection' '${databases.hdfs.views.custom.parquetdir_chriswalters.Custom hdfs-site.xml file.ROUTE.LOCAL.PATH}',
-      'Kerberos enabled' = false
+      'Parquet File path' = '/user/cloudera/parquet/chriswalters_dir'
     )
     OUTPUTSCHEMA (flight = 'Flight' : REGISTER OF (
         entityseqnumber = 'EntitySeqNumber' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -1997,11 +2061,9 @@ CREATE OR REPLACE WRAPPER CUSTOM parquetdir_chriswalters
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquetdir_empty_file
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Parquet File path' = '/user/cloudera/parquet/dirwithemptyfile',
-      'Kerberos enabled' = false
+      'Parquet File path' = '/user/cloudera/parquet/dirwithemptyfile'
     )
     OUTPUTSCHEMA (
         item_instance_id = 'ITEM_INSTANCE_ID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2036,11 +2098,9 @@ CREATE OR REPLACE WRAPPER CUSTOM parquetdir_empty_file
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquetfile
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Parquet File path' = '/user/cloudera/parquet/complex_types.snappy.parquet',
-      'Kerberos enabled' = false
+      'Parquet File path' = '/user/cloudera/parquet/complex_types.snappy.parquet'
     )
     OUTPUTSCHEMA (flight = 'Flight' : REGISTER OF (
         entityseqnumber = 'EntitySeqNumber' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2273,11 +2333,9 @@ CREATE OR REPLACE WRAPPER CUSTOM parquetfile
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquetfile_empty
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Parquet File path' = '/user/cloudera/parquet/part-00000.snappy.parquet',
-      'Kerberos enabled' = false
+      'Parquet File path' = '/user/cloudera/parquet/part-00000.snappy.parquet'
     )
     OUTPUTSCHEMA (
         item_instance_id = 'ITEM_INSTANCE_ID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2312,11 +2370,9 @@ CREATE OR REPLACE WRAPPER CUSTOM parquetfile_empty
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquetfile_web
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet_web
     PARAMETERS (
-      'File system URI' = 'webhdfs://quickstart.cloudera:50070',
-      'Parquet File path' = '/user/cloudera/parquet/part-00002.snappy.parquet',
-      'Kerberos enabled' = false
+      'Parquet File path' = '/user/cloudera/parquet/part-00002.snappy.parquet'
     )
     OUTPUTSCHEMA (
         item_instance_id = 'ITEM_INSTANCE_ID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2351,11 +2407,9 @@ CREATE OR REPLACE WRAPPER CUSTOM parquetfile_web
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM parquetparquet
-    DATASOURCENAME=parquetparquet
+    DATASOURCENAME=parquet
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
-      'Parquet File path' = '/user/cloudera/parquet/aum_2019-03.parquet',
-      'Kerberos enabled' = false
+      'Parquet File path' = '/user/cloudera/parquet/aum_2019-03.parquet'
     )
     OUTPUTSCHEMA (
         parent_company_channel = 'PARENT_COMPANY_CHANNEL' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2383,14 +2437,12 @@ CREATE OR REPLACE WRAPPER CUSTOM parquetparquet
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequence_dir
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SEQUENCE',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -2398,14 +2450,12 @@ CREATE OR REPLACE WRAPPER CUSTOM sequence_dir
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequence_file
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence
     PARAMETERS (
-      'File system URI' = 'webhdfs://quickstart.cloudera:50070',
       'Path' = '/user/cloudera/SEQUENCE/sequence.seq',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -2413,14 +2463,12 @@ CREATE OR REPLACE WRAPPER CUSTOM sequence_file
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequence_file2
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SEQUENCE/InputFile.seq',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.Text',
-      'Value class' = 'org.apache.hadoop.io.BytesWritable',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.BytesWritable'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2428,14 +2476,12 @@ CREATE OR REPLACE WRAPPER CUSTOM sequence_file2
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequence_file_test
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SEQUENCE/InputFile.seq',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.Text',
-      'Value class' = 'org.apache.hadoop.io.BytesWritable',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.BytesWritable'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2443,15 +2489,13 @@ CREATE OR REPLACE WRAPPER CUSTOM sequence_file_test
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequence_nomatch
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SEQUENCE',
       'File name pattern' = '(.*)\\.nomatch',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -2459,14 +2503,12 @@ CREATE OR REPLACE WRAPPER CUSTOM sequence_nomatch
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequence_web
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence_web
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SEQUENCE/sequence.seq',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -2474,14 +2516,12 @@ CREATE OR REPLACE WRAPPER CUSTOM sequence_web
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequencesequence
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SEQUENCE/sequence.seq',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -2489,14 +2529,12 @@ CREATE OR REPLACE WRAPPER CUSTOM sequencesequence
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequencesequence_0
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SEQUENCE/sequence.seq',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -2504,14 +2542,12 @@ CREATE OR REPLACE WRAPPER CUSTOM sequencesequence_0
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequencesequence_1
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SEQUENCE/sequence.seq',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -2519,14 +2555,12 @@ CREATE OR REPLACE WRAPPER CUSTOM sequencesequence_1
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM sequencesequence_2
-    DATASOURCENAME=sequencesequence
+    DATASOURCENAME=sequence
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/SEQUENCE/sequence.seq',
       'Delete after reading' = false,
       'Key class' = 'org.apache.hadoop.io.IntWritable',
-      'Value class' = 'org.apache.hadoop.io.Text',
-      'Kerberos enabled' = false
+      'Value class' = 'org.apache.hadoop.io.Text'
     )
     OUTPUTSCHEMA (
         "KEY" = 'KEY' : 'java.lang.Integer' (sourcetypeid='4')  NOT SORTABLE NOT UPDATEABLE,
@@ -2534,16 +2568,14 @@ CREATE OR REPLACE WRAPPER CUSTOM sequencesequence_2
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM table_a
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/FileA.csv',
       'Delete after reading' = false,
       'Separator' = ',',
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = true,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = true
     )
     OUTPUTSCHEMA (
         yearid = 'yearID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2551,16 +2583,14 @@ CREATE OR REPLACE WRAPPER CUSTOM table_a
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM table_a_for_join
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/FileA.csv',
       'Delete after reading' = false,
       'Separator' = ',',
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = true,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = true
     )
     OUTPUTSCHEMA (
         yearid = 'yearID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2568,16 +2598,14 @@ CREATE OR REPLACE WRAPPER CUSTOM table_a_for_join
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM table_b
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/FileB.csv',
       'Delete after reading' = false,
       'Separator' = ',',
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = true,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = true
     )
     OUTPUTSCHEMA (
         yearid = 'yearID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
@@ -2585,16 +2613,14 @@ CREATE OR REPLACE WRAPPER CUSTOM table_b
     );
 
 CREATE OR REPLACE WRAPPER CUSTOM table_b_for_join
-    DATASOURCENAME=delimiteddelimited
+    DATASOURCENAME=delimited
     PARAMETERS (
-      'File system URI' = 'hdfs://quickstart.cloudera:8020',
       'Path' = '/user/cloudera/df/FileB.csv',
       'Delete after reading' = false,
       'Separator' = ',',
       'Ignore spaces' = false,
       'Header' = true,
-      'Ignore matching errors' = true,
-      'Kerberos enabled' = false
+      'Ignore matching errors' = true
     )
     OUTPUTSCHEMA (
         yearid = 'yearID' : 'java.lang.String' (sourcetypeid='12')  NOT SORTABLE NOT UPDATEABLE,
