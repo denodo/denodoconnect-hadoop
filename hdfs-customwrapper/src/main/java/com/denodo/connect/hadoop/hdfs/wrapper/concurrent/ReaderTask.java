@@ -23,12 +23,17 @@ package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
-public class ReaderTask implements Runnable {
+/**
+ * It is a Callable<Void> instead a Runnable because Callable can throw checked exceptions.
+ *
+ */
+public class ReaderTask implements Callable<Void> {
 
     private HDFSParquetFileReader reader;
     private List<CustomWrapperFieldExpression> projectedFields;
@@ -43,20 +48,18 @@ public class ReaderTask implements Runnable {
     }
 
     @Override
-    public void run() {
+    public Void call() throws IOException {
 
-        try {
-            Object parquetData = this.reader.read();
-            while (parquetData != null) {
+        Object parquetData = this.reader.read();
+        while (parquetData != null ) {
 
-                synchronized (this) {
-                    this.result.addRow((Object[]) parquetData, this.projectedFields);
-                }
-
-                parquetData = this.reader.read();
+            synchronized (this) {
+                this.result.addRow((Object[]) parquetData, this.projectedFields);
             }
-        } catch (final IOException e) {
-            e.printStackTrace();
+
+            parquetData = this.reader.read();
         }
+
+        return null;
     }
 }

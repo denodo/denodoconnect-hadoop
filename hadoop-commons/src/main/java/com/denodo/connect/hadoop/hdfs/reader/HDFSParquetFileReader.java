@@ -21,51 +21,26 @@
  */
 package com.denodo.connect.hadoop.hdfs.reader;
 
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GT;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LE;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LT;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_NE;
-import static org.apache.parquet.filter2.predicate.FilterApi.and;
-import static org.apache.parquet.filter2.predicate.FilterApi.binaryColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.booleanColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.doubleColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.eq;
-import static org.apache.parquet.filter2.predicate.FilterApi.floatColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.gt;
-import static org.apache.parquet.filter2.predicate.FilterApi.gtEq;
-import static org.apache.parquet.filter2.predicate.FilterApi.intColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.longColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.lt;
-import static org.apache.parquet.filter2.predicate.FilterApi.ltEq;
-import static org.apache.parquet.filter2.predicate.FilterApi.notEq;
-import static org.apache.parquet.filter2.predicate.FilterApi.or;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
-import com.denodo.connect.hadoop.hdfs.util.io.FileFilter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.filter2.compat.FilterCompat;
-import org.apache.parquet.filter2.predicate.FilterPredicate;
-import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.api.ReadSupport;
 import org.apache.parquet.hadoop.example.GroupReadSupport;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
@@ -75,18 +50,8 @@ import org.apache.parquet.schema.Type.Repetition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.type.ParquetTypeUtils;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperOrCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleCondition;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 
 
 public class HDFSParquetFileReader implements HDFSFileReader {
@@ -109,7 +74,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
 
     public HDFSParquetFileReader(final Configuration conf, final Path path, final String user,
     		final List<CustomWrapperFieldExpression> projectedFields, final boolean includePathColumn,
-            FilterCompat.Filter filter, MessageType parquetSchema, List<String> conditionFields)
+            final FilterCompat.Filter filter, final MessageType parquetSchema, final List<String> conditionFields)
             throws IOException, InterruptedException {
 
         try {
@@ -136,19 +101,8 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             this.projectedFields = projectedFields;
             this.filter = filter;
             this.conditionFields = conditionFields;
-        } catch (final IOException e) {
-            if (this.fileSystem != null) {
-                this.fileSystem.close();
-            }
 
-            throw e;
-        } catch (final InterruptedException e) {
-            if (this.fileSystem != null) {
-                this.fileSystem.close();
-            }
-
-            throw e;
-        } catch (final RuntimeException e) {
+        } catch (final IOException | InterruptedException | RuntimeException e) {
             if (this.fileSystem != null) {
                 this.fileSystem.close();
             }
@@ -157,19 +111,19 @@ public class HDFSParquetFileReader implements HDFSFileReader {
         }
     }
 
-    public void doOpenReader(final Path path, final Configuration configuration) throws IOException {
+    private void doOpenReader(final Path path, final Configuration configuration) throws IOException {
 
         configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.parquetSchema.toString());
         
         final GroupReadSupport groupReadSupport = new GroupReadSupport();
-        if (filter != null) {
+        if (this.filter != null) {
             this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).withFilter(this.filter).build();
         } else {
             this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).build();
         }
     }
 
-    public Object doRead() throws IOException {
+    private Object doRead() throws IOException {
         
         final Group data = this.dataFileReader.read();
         if (data != null) {
@@ -180,7 +134,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
 
     }
 
-    public void closeReader() throws IOException {
+    private void closeReader() throws IOException {
         if (this.dataFileReader != null) {
             this.dataFileReader.close();
         }
@@ -291,8 +245,8 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                     return datum.getLong(field.getName(), 0);
                     
                 } else if(primitiveTypeName.equals(PrimitiveTypeName.INT96)) {
-                    Binary binary = datum.getInt96(field.getName(), 0);
-                    long timestampMillis = ParquetTypeUtils.int96ToTimestampMillis(binary);
+                    final Binary binary = datum.getInt96(field.getName(), 0);
+                    final long timestampMillis = ParquetTypeUtils.int96ToTimestampMillis(binary);
                     return new Date(timestampMillis);
                     
                 } else if(primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
@@ -321,9 +275,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
      */
     private static Object readGroup(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Type field) throws IOException {
         if (datum.getFieldRepetitionCount(field.getName()) > 0) {
-            Object[] vdpGroupRecord = new Object[field.asGroupType().getFields().size()];
-            vdpGroupRecord = readParquetLogicalTypes(datum.getGroup(field.getName(), 0), projectedFields);
-            return vdpGroupRecord;
+            return readParquetLogicalTypes(datum.getGroup(field.getName(), 0), projectedFields);
         } else if (field.getRepetition() == Repetition.REQUIRED) {
             //Is required tipe in schema
             throw new IOException("The field "+ field.toString()+" is Required");
@@ -344,8 +296,8 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                 if (datumGroup.getFieldRepetitionCount(0) > 0) {
                     final Object[][] vdpArrayRecord = new Object[datumGroup.getFieldRepetitionCount(0)][1];
                     for (int j = 0; j < datumGroup.getFieldRepetitionCount(0); j++) {
-                        final Group datumList = datumGroup.getGroup(0, j)!= null ? datumGroup.getGroup(0, j) : null;
-                        if (datumList != null && datumList.getType().getFields().size() > 0) {
+                        final Group datumList = datumGroup.getGroup(0, j);
+                        if (datumList != null && !datumList.getType().getFields().isEmpty()) {
                             vdpArrayRecord[j][0] = readTypes(datumList, projectedFields, datumList.getType().getFields().get(0));
                         } else {
                             throw new IOException("The list element " + field.getName() + " don't have a valid format");
@@ -375,7 +327,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                 if (datumGroup.getFieldRepetitionCount(0) > 0) {
                     final Object[][] vdpArrayRecord = new Object[datumGroup.getFieldRepetitionCount(0)][2];
                     for (int j = 0; j < datumGroup.getFieldRepetitionCount(0); j++) {
-                        final Group datumMap = datumGroup.getGroup(0, j) != null ? datumGroup.getGroup(0, j) : null;
+                        final Group datumMap = datumGroup.getGroup(0, j);
                         if (datumMap != null && datumMap.getType().getFields().size() > 1) {
                             vdpArrayRecord[j][0] = readPrimitive(datumMap,datumMap.getType().getFields().get(0));
                             vdpArrayRecord[j][1] = readTypes(datumMap, projectedFields, datumMap.getType().getFields().get(0));
@@ -396,7 +348,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
         return null;
     }
 
-    public void initFileIterator() throws IOException {
+    private void initFileIterator() throws IOException {
 
         this.fileIterator = this.fileSystem.listFiles(this.path, true);
         if (!this.fileIterator.hasNext()) {
@@ -404,7 +356,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
         }
     }
 
-    public void openReader(final FileSystem fs, final Configuration conf) throws IOException {
+    private void openReader(final FileSystem fs, final Configuration conf) throws IOException {
 
         try {
             doOpenReader(this.path, conf);
@@ -418,17 +370,12 @@ public class HDFSParquetFileReader implements HDFSFileReader {
         }
     }
 
-    private boolean isFirstReading() {
-        return this.firstReading;
-    }
-
     @Override
     public Object read() throws IOException {
 
         try {
 
-            if (isFirstReading()) {
-                LOG.error(Thread.currentThread() + " DEBUG1 firstReading");
+            if (this.firstReading) {
                 openReader(this.fileSystem, this.configuration);
                 this.firstReading = false;
             }

@@ -136,8 +136,10 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
                         doRun(condition, projectedFields, result, inputValues);
                         return null;
                     }
-                } );
+                });
             }
+        } catch (final CustomWrapperException e) {
+            throw e;
         } catch (final UndeclaredThrowableException e) {
             LOG.error("Error running the wrapper ", e);
             final Exception ex = (Exception) e.getCause();

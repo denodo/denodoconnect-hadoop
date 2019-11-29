@@ -21,25 +21,29 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public final class ReaderManager {
 
     private static final ReaderManager instance = new ReaderManager();
 
-    private CompletionService completionService;
+    private int parallelism;
+    private CompletionService<Void> completionService;
 
 
     private ReaderManager() {
 
-        final int size = 16;
-        final ExecutorService threadPool = Executors.newFixedThreadPool(size);
-        this.completionService = new ExecutorCompletionService(threadPool);
+        this.parallelism = computeParallelism();
+        final int poolSize = computePoolSize(this.parallelism);
+        final ExecutorService threadPool = Executors.newFixedThreadPool(poolSize);
+        this.completionService = new ExecutorCompletionService<>(threadPool);
 
         // graceful shutdown when VDP stops
         Runtime.getRuntime().addShutdownHook(new Thread(threadPool::shutdownNow));
@@ -49,18 +53,61 @@ public final class ReaderManager {
         return instance;
     }
 
+    public void execute(final Collection<ReaderTask> readers) throws ExecutionException {
 
-    public void execute(final Collection<ReaderTask> readers) throws InterruptedException, ExecutionException {
-
+        final Collection<Future<Void>> futures = new ArrayList<>(readers.size());
         for (final ReaderTask reader : readers) {
-            this.completionService.submit(reader, null);
+            futures.add(this.completionService.submit(reader));
         }
 
-        final int n = readers.size();
-        for (int i = 0; i < n; ++i) {
-            this.completionService.take().get();
+        int n = readers.size();
+        try {
+            while (n > 0) {
+                n --;
+                this.completionService.take().get();
+            }
+        } catch (final InterruptedException e) {
+            cancel(futures, n);
+        } catch (final ExecutionException e) {
+            cancel(futures, n);
+
+            throw e;
         }
 
+
+    }
+
+    private void cancel(final Collection<Future<Void>> futures, final int remainingTasks) {
+
+        for (final Future<Void> f : futures) {
+            f.cancel(true);
+        }
+
+        for (int i = 0; i < remainingTasks; i ++) {
+            try {
+                this.completionService.take();  // remove interrupted tasks from the queue
+            } catch (final InterruptedException ignore) {
+
+            }
+        }
+    }
+
+    private static int computeParallelism() {
+
+        int parallelism = Runtime.getRuntime().availableProcessors() - 1;
+        if (parallelism <= 0) {
+            parallelism = 1;
+        }
+
+        return parallelism;
+    }
+
+    private static int computePoolSize(final int parallelism) {
+        return parallelism * 2;
+    }
+
+    public int getParallelism() {
+        return this.parallelism;
     }
 
 }

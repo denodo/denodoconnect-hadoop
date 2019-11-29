@@ -36,9 +36,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
 
-import com.denodo.connect.hadoop.hdfs.util.schema.HDFSParquetSchemaReader;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -52,6 +51,8 @@ import org.slf4j.LoggerFactory;
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
+import com.denodo.connect.hadoop.hdfs.util.schema.HDFSParquetSchemaReader;
+import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManager;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderTask;
@@ -89,6 +90,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 false, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
                 "Include path column? ",
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(Parameter.READ_PARALLEL,
+                "Read in parallel? ",
                 false, true, CustomWrapperInputParameterTypeFactory.booleanType(false))
     };
 
@@ -105,16 +109,6 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
     };
 
-
-    private static final ReaderManager readerManager = ReaderManager.getInstance();
-    private static int parallelism;
-
-    static {
-        parallelism = Runtime.getRuntime().availableProcessors() - 1;
-        if (parallelism <= 0) {
-            parallelism = 1;
-        }
-    }
 
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
@@ -196,7 +190,10 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final Path path = new Path(parquetFilePath);
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
+        final boolean readInParallel = Boolean.parseBoolean(inputValues.get(Parameter.READ_PARALLEL));
+
         HDFSParquetSchemaReader schemaReader = null;
+
         try {
             schemaReader = new HDFSParquetSchemaReader(conf, path, fileNamePattern, null, projectedFields, condition);
             SchemaElement schema = null;
@@ -210,20 +207,13 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 ParquetInputFormat.setFilterPredicate(conf,filterPredicate);
                 filter = ParquetInputFormat.getFilter(conf);
             }
-            final Collection<ReaderTask> readers = new ArrayList<>(parallelism);
 
-            while (schemaReader.hasNext()) {
-                int i = 0;
-                while (schemaReader.hasNext() && i < parallelism) {
-                    Path currentPath = schemaReader.nextFilePath();
-                    final HDFSParquetFileReader currentReader = new HDFSParquetFileReader(conf, currentPath,
-                        null, projectedFields, includePathColumn, filter,
-                        schemaReader.getProjectedSchema(), schemaReader.getConditionFields());
-                    readers.add(new ReaderTask(currentReader, projectedFields, result));
-                    i++;
-                }
-                readerManager.execute(readers);
-                readers.clear();
+            if (readInParallel) {
+                parallelRead(conf, projectedFields, includePathColumn, filter, result, schemaReader);
+            } else {
+                final HDFSParquetFileReader reader = new HDFSParquetFileReader(conf, schemaReader.nextFilePath(), null, projectedFields,
+                    includePathColumn, filter, schemaReader.getProjectedSchema(), schemaReader.getConditionFields());
+                singleRead(result, reader, projectedFields);
             }
 
         } catch (final Exception e) {
@@ -241,4 +231,41 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         }
     }
 
+
+    private void parallelRead(final Configuration conf, final List<CustomWrapperFieldExpression> projectedFields,
+        final boolean includePathColumn, final FilterCompat.Filter filter,
+        final CustomWrapperResult result, final HDFSParquetSchemaReader schemaReader) throws IOException, InterruptedException,
+        ExecutionException {
+
+        final ReaderManager readerManager = ReaderManager.getInstance();
+        final int parallelism = readerManager.getParallelism();
+
+        final Collection<ReaderTask> readers = new ArrayList<>(parallelism);
+
+        while (schemaReader.hasNext()) {
+            int i = 0;
+            while (schemaReader.hasNext() && i < parallelism && !isStopRequested()) {
+                final HDFSParquetFileReader currentReader = new HDFSParquetFileReader(conf, schemaReader.nextFilePath(),
+                    null, projectedFields, includePathColumn, filter, schemaReader.getProjectedSchema(), schemaReader.getConditionFields());
+
+                readers.add(new ReaderTask(currentReader, projectedFields, result));
+                i++;
+            }
+
+            if (! isStopRequested()) {
+                readerManager.execute(readers);
+                readers.clear();
+            }
+        }
+    }
+
+    private void singleRead(final CustomWrapperResult result, final HDFSParquetFileReader reader,
+        final List<CustomWrapperFieldExpression> projectedFields) throws IOException {
+
+        Object parquetData = reader.read();
+        while (parquetData != null && !isStopRequested()) {
+            result.addRow((Object[]) parquetData, projectedFields);
+            parquetData = reader.read();
+        }
+    }
 }

@@ -22,14 +22,33 @@
 package com.denodo.connect.hadoop.hdfs.util.schema;
 
 
-import java.util.*;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GT;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LE;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LT;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_NE;
+import static org.apache.parquet.filter2.predicate.FilterApi.and;
+import static org.apache.parquet.filter2.predicate.FilterApi.binaryColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.booleanColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.doubleColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.eq;
+import static org.apache.parquet.filter2.predicate.FilterApi.floatColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.gt;
+import static org.apache.parquet.filter2.predicate.FilterApi.gtEq;
+import static org.apache.parquet.filter2.predicate.FilterApi.intColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.longColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.lt;
+import static org.apache.parquet.filter2.predicate.FilterApi.ltEq;
+import static org.apache.parquet.filter2.predicate.FilterApi.notEq;
+import static org.apache.parquet.filter2.predicate.FilterApi.or;
 
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperOrCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleCondition;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.parquet.filter2.predicate.FilterPredicate;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.GroupType;
@@ -39,11 +58,12 @@ import org.apache.parquet.schema.Type.Repetition;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.util.type.ParquetTypeUtils;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
-
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.*;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
-import static org.apache.parquet.filter2.predicate.FilterApi.*;
-import static org.apache.parquet.filter2.predicate.FilterApi.binaryColumn;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperOrCondition;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleCondition;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 
 public class ParquetSchemaUtils {
 
@@ -59,16 +79,12 @@ public class ParquetSchemaUtils {
 
     /**
      * This method build the parquet schema
-     * @param group
-     * @param schemaElement
-     * @return The SchemaElement
-     * @throws CustomWrapperException
      */
     public static  SchemaElement buildSchema(final GroupType group, final SchemaElement schemaElement) {
 
         for (final Type field : group.getFields()) {
             try {
-                final boolean isNullable = field.getRepetition() == Repetition.REQUIRED  ? false : true;
+                final boolean isNullable = field.getRepetition() != Repetition.REQUIRED;
                 if (field.isPrimitive()) {
                     addPrimitiveType(schemaElement, field, isNullable);
                 } else if (ParquetTypeUtils.isGroup(field)) {
@@ -87,15 +103,12 @@ public class ParquetSchemaUtils {
 
     /**
      * Method to add the map types to the schema
-     * @param schemaElement
-     * @param field ,field to add, not null
-     * @param isNullable
-     * @throws CustomWrapperException
      */
     private static void addMapType(final SchemaElement schemaElement, final Type field, final boolean isNullable) {
         try {
             // This element have as OriginalType MAP. The standard MAPS in parquet should have repeated as next element
-            final Type nextFieldMap = field.asGroupType().getFields() != null && field.asGroupType().getFields().size() > 0 ? field.asGroupType().getFields().get(0) : null;
+            final Type nextFieldMap = field.asGroupType().getFields() != null && !field.asGroupType().getFields()
+                .isEmpty() ? field.asGroupType().getFields().get(0) : null;
             
             if (nextFieldMap != null
                     && MAP_VALUES.contains(nextFieldMap.getName()) 
@@ -112,7 +125,7 @@ public class ParquetSchemaUtils {
                 final Type nextFieldKey = nextFieldMap.asGroupType().getFields().get(0);
                 //Take the value field and if is nullable information
                 final Type nextFieldValue = nextFieldMap.asGroupType().getFields().get(1);
-                final boolean nextFieldIsNullable = nextFieldValue.getRepetition() == Repetition.REQUIRED  ? false : true;
+                final boolean nextFieldIsNullable = nextFieldValue.getRepetition() != Repetition.REQUIRED;
                 
                 //Add the key to the schema
                 if (nextFieldKey.isPrimitive()) {
@@ -138,15 +151,12 @@ public class ParquetSchemaUtils {
 
     /**
      * Method to add the list types to the schema
-     * @param schemaElement
-     * @param field ,field to add, not null
-     * @param isNullable
-     * @throws CustomWrapperException
      */
     private static void addListType(final SchemaElement schemaElement, final Type field, final boolean isNullable) {
         try {
             //This element have as OriginalType LIST. The standard LISTS in parquet should have repeated as next element
-            final Type nextFieldList = field.asGroupType().getFields() != null && field.asGroupType().getFields().size() > 0 ? field.asGroupType().getFields().get(0) : null;
+            final Type nextFieldList = field.asGroupType().getFields() != null && !field.asGroupType().getFields()
+                .isEmpty() ? field.asGroupType().getFields().get(0) : null;
             
             if (nextFieldList != null && LIST_VALUES.contains(nextFieldList.getName()) && nextFieldList.getRepetition() != null
                     && nextFieldList.getRepetition() == Repetition.REPEATED && nextFieldList.asGroupType().getFields() != null) {
@@ -164,10 +174,6 @@ public class ParquetSchemaUtils {
 
     /**
      * Method to add the group types to the schema
-     * @param schemaElement
-     * @param field ,field to add, not null
-     * @param isNullable
-     * @throws CustomWrapperException
      */
     private static void addGroupType(final SchemaElement schemaElement, final Type field, final boolean isNullable) {
         try {
@@ -180,27 +186,23 @@ public class ParquetSchemaUtils {
 
     /**
      * Method to add the primitive types to the schema
-     * @param schemaElement
-     * @param field ,field to add, not null
-     * @param isNullable 
-     * @throws CustomWrapperException
      */
     private static void addPrimitiveType(final SchemaElement schemaElement, final Type field, final boolean isNullable) {
         schemaElement.add(new SchemaElement(field.getName(), ParquetTypeUtils.toJava(field), field.asPrimitiveType().getPrimitiveTypeName(), isNullable));
     }
 
-    public static FilterPredicate buildFilter(final CustomWrapperCondition vdpCondition, SchemaElement schema) throws CustomWrapperException {
+    public static FilterPredicate buildFilter(final CustomWrapperCondition vdpCondition, final SchemaElement schema) throws CustomWrapperException {
 
         if (vdpCondition != null) {
             if (vdpCondition.isAndCondition()) {
-                CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) vdpCondition;
-                List<FilterPredicate> filterPredicates  = new ArrayList<FilterPredicate>();
-                for (CustomWrapperCondition condition : andCondition.getConditions()) {
+                final CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) vdpCondition;
+                final List<FilterPredicate> filterPredicates  = new ArrayList<FilterPredicate>();
+                for (final CustomWrapperCondition condition : andCondition.getConditions()) {
                     if (condition.isSimpleCondition()) {
-                        FilterPredicate filterPredicate = generateSimpleFilterPredicate(condition, schema);
+                        final FilterPredicate filterPredicate = generateSimpleFilterPredicate(condition, schema);
                         filterPredicates.add(filterPredicate);
                     } else {
-                        FilterPredicate filterPredicateComplex = buildFilter(condition, schema);
+                        final FilterPredicate filterPredicateComplex = buildFilter(condition, schema);
                         filterPredicates.add(filterPredicateComplex);
                     }
                 }
@@ -211,17 +213,17 @@ public class ParquetSchemaUtils {
                     }
                     return  filterPredicate;
                 } else {
-                    throw new CustomWrapperException("Error obtaining the FilterPredicate for the and condition \"" + andCondition.toString() + "\"");
+                    throw new CustomWrapperException("Error obtaining the FilterPredicate for the and condition \"" + andCondition.toString() + '"');
                 }
             } else if (vdpCondition.isOrCondition()) {
-                CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) vdpCondition;
-                List<FilterPredicate> filterPredicates  = new ArrayList<FilterPredicate>();
-                for (CustomWrapperCondition condition : orCondition.getConditions()) {
+                final CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) vdpCondition;
+                final List<FilterPredicate> filterPredicates  = new ArrayList<FilterPredicate>();
+                for (final CustomWrapperCondition condition : orCondition.getConditions()) {
                     if (condition.isSimpleCondition()) {
-                        FilterPredicate filterPredicate = generateSimpleFilterPredicate(condition, schema);
+                        final FilterPredicate filterPredicate = generateSimpleFilterPredicate(condition, schema);
                         filterPredicates.add(filterPredicate);
                     } else {
-                        FilterPredicate filterPredicateComplex = buildFilter(condition, schema);
+                        final FilterPredicate filterPredicateComplex = buildFilter(condition, schema);
                         filterPredicates.add(filterPredicateComplex);
                     }
                 }
@@ -232,7 +234,7 @@ public class ParquetSchemaUtils {
                     }
                     return  filterPredicate;
                 } else {
-                    throw new CustomWrapperException("Error obtaining the FilterPredicate for the and condition \"" + orCondition.toString() + "\"");
+                    throw new CustomWrapperException("Error obtaining the FilterPredicate for the and condition \"" + orCondition.toString() + '"');
                 }
             } else if (vdpCondition.isSimpleCondition()) {
                 return generateSimpleFilterPredicate(vdpCondition, schema);
@@ -245,10 +247,10 @@ public class ParquetSchemaUtils {
         }
     }
 
-    private static SchemaElement getSchemaField(String field, SchemaElement schema) {
+    private static SchemaElement getSchemaField(final String field, final SchemaElement schema) {
         if (schema != null) {
-            String[] fields = field.split("\\.",2);
-            for (SchemaElement element : schema.getElements()){
+            final String[] fields = field.split("\\.",2);
+            for (final SchemaElement element : schema.getElements()){
                 if (fields.length == 1 && element.getName().equals(fields[0])) {
                     return element;
                 } else if (fields.length > 1 && element.getName().equals(fields[0])) {
@@ -259,16 +261,16 @@ public class ParquetSchemaUtils {
         return null;
     }
 
-    private static FilterPredicate generateSimpleFilterPredicate(CustomWrapperCondition condition, SchemaElement schema) {
-        CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) condition;
-        String operator = simpleCondition.getOperator();
+    private static FilterPredicate generateSimpleFilterPredicate(final CustomWrapperCondition condition, final SchemaElement schema) {
+        final CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) condition;
+        final String operator = simpleCondition.getOperator();
         FilterPredicate filterPredicate = null;
-        String field = simpleCondition.getField().toString();
-        SchemaElement element = getSchemaField(field, schema);
-        for (CustomWrapperExpression expression : simpleCondition.getRightExpression()) {
+        final String field = simpleCondition.getField().toString();
+        final SchemaElement element = getSchemaField(field, schema);
+        for (final CustomWrapperExpression expression : simpleCondition.getRightExpression()) {
             if (expression.isSimpleExpression()) {
-                CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression)expression;
-                boolean simpleExpressionValueIsNull = simpleExpression.getValue() == null;
+                final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression)expression;
+                final boolean simpleExpressionValueIsNull = simpleExpression.getValue() == null;
                 if (simpleExpression.getValue() instanceof Integer || (simpleExpressionValueIsNull && element != null && element.getType().equals(Integer.class))) {
                     if (operator.equals(OPERATOR_EQ)) {
                         filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field),null) : eq(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));

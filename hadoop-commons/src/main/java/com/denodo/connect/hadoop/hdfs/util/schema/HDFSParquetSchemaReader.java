@@ -12,19 +12,22 @@
  */
 package com.denodo.connect.hadoop.hdfs.util.schema;
 
-import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
-import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
-import com.denodo.connect.hadoop.hdfs.util.io.FileFilter;
-import com.denodo.vdb.engine.customwrapper.condition.*;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.hadoop.ParquetFileReader;
-
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.schema.MessageType;
@@ -32,15 +35,20 @@ import org.apache.parquet.schema.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
+import com.denodo.connect.hadoop.hdfs.util.io.FileFilter;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperOrCondition;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleCondition;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 
 public class HDFSParquetSchemaReader implements Iterator {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HDFSParquetFileReader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HDFSParquetSchemaReader.class);
 
     private List<CustomWrapperFieldExpression> projectedFields;
     private MessageType parquetSchema;
@@ -56,11 +64,11 @@ public class HDFSParquetSchemaReader implements Iterator {
     private PathFilter fileFilter;
 
     public boolean getHasNullValueInConditions() {
-        return hasNullValueInConditions;
+        return this.hasNullValueInConditions;
     }
 
     public List<String> getConditionFields() {
-        return conditionFields;
+        return this.conditionFields;
     }
 
     public HDFSParquetSchemaReader(final Configuration conf, final Path path, final String finalNamePattern, final String user,
@@ -71,11 +79,9 @@ public class HDFSParquetSchemaReader implements Iterator {
             this.configuration = conf;
             this.outputPath = path;
 
-            if (!UserGroupInformation.isSecurityEnabled()) {
-                this.fileSystem = FileSystem.get(FileSystem.getDefaultUri(this.configuration), this.configuration, user);
-            } else {
-                this.fileSystem = FileSystem.get(this.configuration);
-            }
+            this.fileSystem = UserGroupInformation.isSecurityEnabled() ? FileSystem.get(this.configuration) : FileSystem
+                .get(FileSystem.getDefaultUri(this.configuration), this.configuration, user);
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("FileSystem is: " + this.fileSystem.getUri());
                 LOG.debug("Path is: " + path);
@@ -89,19 +95,8 @@ public class HDFSParquetSchemaReader implements Iterator {
 
             this.hasNullValueInConditions = false;
             this.conditionFields = condition != null ? this.getFieldsNameAndCheckNullConditions(condition.getComplexCondition()) : null;
-        } catch (final IOException e) {
-            if (this.fileSystem != null) {
-                this.fileSystem.close();
-            }
 
-            throw e;
-        } catch (final InterruptedException e) {
-            if (this.fileSystem != null) {
-                this.fileSystem.close();
-            }
-
-            throw e;
-        } catch (final RuntimeException e) {
+        } catch (final IOException | RuntimeException | InterruptedException e) {
             if (this.fileSystem != null) {
                 this.fileSystem.close();
             }
@@ -115,7 +110,7 @@ public class HDFSParquetSchemaReader implements Iterator {
         final Path filePath = nextFilePath();
         this.parquetSchema = getParquetSchema(configuration, filePath);
 
-        final boolean isMandatory = this.parquetSchema.getRepetition() == Type.Repetition.REQUIRED  ? true : false;
+        final boolean isMandatory = this.parquetSchema.getRepetition() == Type.Repetition.REQUIRED;
         final SchemaElement schemaElement = new SchemaElement(this.parquetSchema.getName(), Object.class, isMandatory);
 
         return ParquetSchemaUtils.buildSchema(this.parquetSchema, schemaElement);
@@ -123,20 +118,19 @@ public class HDFSParquetSchemaReader implements Iterator {
     }
 
     private MessageType getParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
-        ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
-        ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
+        final ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
+        final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
 
         final ParquetMetadata readFooter = parquetFileReader.getFooter();
-        final MessageType schema = readFooter.getFileMetaData().getSchema();
 
-        return schema;
+        return readFooter.getFileMetaData().getSchema();
     }
 
     public MessageType getProjectedSchema() throws IOException {
         // Sets the expected schema so Parquet could validate that all files (e.g. in a directory) follow this schema.
         // If the schema is not set Parquet will use the schema contained in each Parquet file
         if (this.parquetSchema == null) {
-            this.parquetSchema = getProjectedParquetSchema(configuration, currentPath);
+            this.parquetSchema = getProjectedParquetSchema(this.configuration, this.currentPath);
         } else {
             this.schemaWithProjectedAndConditionFields(this.parquetSchema);
         }
@@ -144,8 +138,8 @@ public class HDFSParquetSchemaReader implements Iterator {
     }
 
     private MessageType getProjectedParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
-        ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
-        ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
+        final ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
+        final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
 
         final ParquetMetadata readFooter = parquetFileReader.getFooter();
         final MessageType schema = readFooter.getFileMetaData().getSchema();
@@ -155,20 +149,20 @@ public class HDFSParquetSchemaReader implements Iterator {
         return schema;
     }
 
-    private void schemaWithProjectedAndConditionFields(MessageType schema) {
+    private void schemaWithProjectedAndConditionFields(final MessageType schema) {
         if (this.projectedFields != null || this.conditionFields != null) {
-            List<Integer> schemaFieldsToDelete  = new ArrayList<Integer>();
+            final List<Integer> schemaFieldsToDelete  = new ArrayList<Integer>();
 
-            List<Type> schemaWithProjectionAndConditionFields = new ArrayList<Type>();
-            for (CustomWrapperFieldExpression projectedField : this.projectedFields) {
-                for (Type schemaField : schema.getFields()) {
+            final List<Type> schemaWithProjectionAndConditionFields = new ArrayList<Type>();
+            for (final CustomWrapperFieldExpression projectedField : this.projectedFields) {
+                for (final Type schemaField : schema.getFields()) {
                     if (schemaField.getName().equals(projectedField.getName())) {
                         schemaWithProjectionAndConditionFields.add(schemaField);
                     }
                 }
             }
-            for (String conditionField : this.conditionFields) {
-                for (Type schemaField : schema.getFields()) {
+            for (final String conditionField : this.conditionFields) {
+                for (final Type schemaField : schema.getFields()) {
                     if (schemaField.getName().equals(conditionField)) {
                         schemaWithProjectionAndConditionFields.add(schemaField);
                     }
@@ -181,7 +175,7 @@ public class HDFSParquetSchemaReader implements Iterator {
         }
     }
 
-    public void initFileIterator() throws IOException {
+    private void initFileIterator() throws IOException {
 
         this.fileIterator = this.fileSystem.listFiles(this.outputPath, true);
         if (!this.fileIterator.hasNext()) {
@@ -192,28 +186,25 @@ public class HDFSParquetSchemaReader implements Iterator {
     /**
      * Get the condition field names excluding the projected field names and compound fields (compound fields is not included in projections).
      * This method also initialize the hasNullValueInConditions variable
-     *
-     * @param condition
-     * @return list with fields
      */
-    private List<String> getFieldsNameAndCheckNullConditions(CustomWrapperCondition condition) throws IOException {
-        List<String> conditionFields = new ArrayList<String>();
+    private List<String> getFieldsNameAndCheckNullConditions(final CustomWrapperCondition condition) throws IOException {
+        final List<String> conditionFields = new ArrayList<String>();
         if (condition != null) {
             if (condition.isAndCondition()) {
-                CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) condition;
-                for (CustomWrapperCondition c : andCondition.getConditions()) {
+                final CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) condition;
+                for (final CustomWrapperCondition c : andCondition.getConditions()) {
                     if (c.isSimpleCondition()) {
-                        String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
+                        final String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
                         //We only add fieldName to conditionFields if it is not a compound type and if it is not already included.
                         if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
                             conditionFields.add(fieldName);
                         }
-                        if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
+                        if (!this.hasNullValueInConditions && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
                             this.hasNullValueInConditions = true;
                         }
                     } else {
-                        List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
-                        for (String fieldName : fieldsName) {
+                        final List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
+                        for (final String fieldName : fieldsName) {
                             if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
                                 conditionFields.add(fieldName);
                             }
@@ -221,19 +212,19 @@ public class HDFSParquetSchemaReader implements Iterator {
                     }
                 }
             } else if (condition.isOrCondition()) {
-                CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) condition;
-                for (CustomWrapperCondition c : orCondition.getConditions()) {
+                final CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) condition;
+                for (final CustomWrapperCondition c : orCondition.getConditions()) {
                     if (c.isSimpleCondition()) {
-                        String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
+                        final String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
                         if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
                             conditionFields.add(fieldName);
                         }
-                        if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
+                        if (!this.hasNullValueInConditions && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
                             this.hasNullValueInConditions = true;
                         }
                     } else {
-                        List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
-                        for (String fieldName : fieldsName) {
+                        final List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
+                        for (final String fieldName : fieldsName) {
                             if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
                                 conditionFields.add(fieldName);
                             }
@@ -241,21 +232,19 @@ public class HDFSParquetSchemaReader implements Iterator {
                     }
                 }
             } else if (condition.isSimpleCondition()) {
-                String fieldName = ((CustomWrapperSimpleCondition) condition).getField().toString();
-                if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
+                final String fieldName = ((CustomWrapperSimpleCondition) condition).getField().toString();
+                if (fieldName.split("\\.").length == 1){
                     conditionFields.add(fieldName);
                 }
-                if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) condition)) {
+                if (!this.hasNullValueInConditions && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) condition)) {
                     this.hasNullValueInConditions = true;
                 }
             } else {
                 throw new IOException("Condition \"" + condition.toString() + "\" not allowed");
             }
         }
-        for (CustomWrapperFieldExpression projectedField : this.projectedFields) {
-            if(conditionFields.contains(projectedField.getName())) {
-                conditionFields.remove(projectedField.getName());
-            }
+        for (final CustomWrapperFieldExpression projectedField : this.projectedFields) {
+            conditionFields.remove(projectedField.getName());
         }
         return  conditionFields;
     }
@@ -263,14 +252,11 @@ public class HDFSParquetSchemaReader implements Iterator {
     /**
      * Get if a simple condition evaluate a null value
      *
-     * @param vdpCondition
-     * @return
      */
-    private boolean hasNullValueInSimpleCondition(CustomWrapperSimpleCondition vdpCondition) {
-        CustomWrapperSimpleCondition simpleCondition = vdpCondition;
-        for (CustomWrapperExpression expression : simpleCondition.getRightExpression()) {
+    private boolean hasNullValueInSimpleCondition(final CustomWrapperSimpleCondition vdpCondition) {
+        for (final CustomWrapperExpression expression : vdpCondition.getRightExpression()) {
             if (expression.isSimpleExpression()) {
-                CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) expression;
+                final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) expression;
                 if (simpleExpression.getValue() == null) {
                     return true;
                 }
@@ -337,12 +323,8 @@ public class HDFSParquetSchemaReader implements Iterator {
     @Override
     public boolean hasNext() {
         try {
-            if (this.fileIterator.hasNext()) {
-                return true;
-            } else {
-                return false;
-            }
-        } catch (IOException e) {
+            return this.fileIterator.hasNext();
+        } catch (final IOException e) {
             LOG.error("File Iterator error " + e.getMessage(), e);
             return  false;
         }
@@ -378,7 +360,7 @@ public class HDFSParquetSchemaReader implements Iterator {
                 }
             }
             this.currentPath = path;
-        } catch (IOException e) {
+        } catch (final IOException e) {
             LOG.error("File Iterator error " + e.getMessage(), e);
             return  null;
         }
