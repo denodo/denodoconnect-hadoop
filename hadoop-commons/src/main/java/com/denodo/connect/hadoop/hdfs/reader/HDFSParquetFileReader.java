@@ -21,26 +21,45 @@
  */
 package com.denodo.connect.hadoop.hdfs.reader;
 
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GT;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LE;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LT;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_NE;
+import static org.apache.parquet.filter2.predicate.FilterApi.and;
+import static org.apache.parquet.filter2.predicate.FilterApi.binaryColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.booleanColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.doubleColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.eq;
+import static org.apache.parquet.filter2.predicate.FilterApi.floatColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.gt;
+import static org.apache.parquet.filter2.predicate.FilterApi.gtEq;
+import static org.apache.parquet.filter2.predicate.FilterApi.intColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.longColumn;
+import static org.apache.parquet.filter2.predicate.FilterApi.lt;
+import static org.apache.parquet.filter2.predicate.FilterApi.ltEq;
+import static org.apache.parquet.filter2.predicate.FilterApi.notEq;
+import static org.apache.parquet.filter2.predicate.FilterApi.or;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
-import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
-import com.denodo.vdb.engine.customwrapper.condition.*;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
+import com.denodo.connect.hadoop.hdfs.util.io.FileFilter;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.filter2.predicate.FilterPredicate;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.api.ReadSupport;
@@ -59,67 +78,87 @@ import org.slf4j.LoggerFactory;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.type.ParquetTypeUtils;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperOrCondition;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleCondition;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
-
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.*;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
-import static org.apache.parquet.filter2.predicate.FilterApi.*;
-import static org.apache.parquet.filter2.predicate.FilterApi.binaryColumn;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 
 
-public class HDFSParquetFileReader extends AbstractHDFSFileReader {
+public class HDFSParquetFileReader implements HDFSFileReader {
 
     private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileReader.class);
 
     private ParquetReader<Group> dataFileReader;
     private List<CustomWrapperFieldExpression> projectedFields;
-    private CustomWrapperConditionHolder condition;
     private MessageType parquetSchema;
     private FilterCompat.Filter filter;
-    private boolean hasNullValueInConditions;
     private List<String> conditionFields;
 
-    public FilterCompat.Filter getFilter() {
-        return filter;
-    }
+    private Configuration configuration;
 
-    public void setFilter(FilterCompat.Filter filter) {
-        this.filter = filter;
-    }
+    private FileSystem fileSystem;
+    private RemoteIterator<LocatedFileStatus> fileIterator;
+    private boolean firstReading;
+    private Path path;
+    private boolean includePathColumn;
 
-    public boolean getHasNullValueInConditions() {
-        return hasNullValueInConditions;
-    }
-
-    public List<String> getConditionFields() {
-        return conditionFields;
-    }
-
-    public HDFSParquetFileReader(final Configuration conf, final Path path, final String finalNamePattern, final String user,
-    		final List<CustomWrapperFieldExpression> projectedFields, final CustomWrapperConditionHolder condition,
-            final boolean includePathColumn, boolean getSchemaParameters, FilterCompat.Filter filter)
+    public HDFSParquetFileReader(final Configuration conf, final Path path, final String user,
+    		final List<CustomWrapperFieldExpression> projectedFields, final boolean includePathColumn,
+            FilterCompat.Filter filter, MessageType parquetSchema, List<String> conditionFields)
             throws IOException, InterruptedException {
 
-        super(conf, path, finalNamePattern, user, includePathColumn);
-        this.projectedFields = projectedFields;
-        this.condition = condition;
-        this.filter = filter;
-        this.hasNullValueInConditions = false;
-        this.conditionFields = condition != null ? this.getFieldsNameAndCheckNullConditions(condition.getComplexCondition()) : null;
+        try {
+            this.configuration = conf;
+            this.path = path;
+
+            if (!UserGroupInformation.isSecurityEnabled()) {
+                this.fileSystem = FileSystem.get(FileSystem.getDefaultUri(this.configuration), this.configuration,
+                    user);
+            } else {
+                this.fileSystem = FileSystem.get(this.configuration);
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("FileSystem is: " + this.fileSystem.getUri());
+                LOG.debug("Path is: " + path);
+            }
+
+            initFileIterator();
+
+            this.firstReading = true;
+            this.includePathColumn = includePathColumn;
+            this.parquetSchema = parquetSchema;
+
+            this.projectedFields = projectedFields;
+            this.filter = filter;
+            this.conditionFields = conditionFields;
+        } catch (final IOException e) {
+            if (this.fileSystem != null) {
+                this.fileSystem.close();
+            }
+
+            throw e;
+        } catch (final InterruptedException e) {
+            if (this.fileSystem != null) {
+                this.fileSystem.close();
+            }
+
+            throw e;
+        } catch (final RuntimeException e) {
+            if (this.fileSystem != null) {
+                this.fileSystem.close();
+            }
+
+            throw e;
+        }
     }
 
-    @Override
-    public void doOpenReader(final FileSystem fileSystem, final Path path,
-            final Configuration configuration) throws IOException {
+    public void doOpenReader(final Path path, final Configuration configuration) throws IOException {
 
-            if (this.parquetSchema == null) {
-                this.parquetSchema = getProjectedParquetSchema(configuration, path);
-            } else {
-                this.schemaWithProjectedAndConditionFields(this.parquetSchema);
-            }
-        
-        // Sets the expected schema so Parquet could validate that all files (e.g. in a directory) follow this schema. 
-        // If the schema is not set Parquet will use the schema contained in each Parquet file 
         configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.parquetSchema.toString());
         
         final GroupReadSupport groupReadSupport = new GroupReadSupport();
@@ -130,376 +169,6 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         }
     }
 
-    public SchemaElement getSchema(final Configuration configuration) throws IOException {
-
-        final Path filePath = nextFilePath();
-        this.parquetSchema = getParquetSchema(configuration, filePath);
-        
-        final boolean isMandatory = this.parquetSchema.getRepetition() == Repetition.REQUIRED  ? true : false;
-        final SchemaElement schemaElement = new SchemaElement(this.parquetSchema.getName(), Object.class, isMandatory); 
-
-        return ParquetSchemaUtils.buildSchema(this.parquetSchema, schemaElement);
-
-    }
-
-    private MessageType getParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
-        ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
-        ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
-
-        final ParquetMetadata readFooter = parquetFileReader.getFooter();
-        final MessageType schema = readFooter.getFileMetaData().getSchema();
-
-        return schema;
-    }
-
-    private MessageType getProjectedParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
-        ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
-        ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
-
-        final ParquetMetadata readFooter = parquetFileReader.getFooter();
-        final MessageType schema = readFooter.getFileMetaData().getSchema();
-
-        this.schemaWithProjectedAndConditionFields(schema);
-
-        return schema;
-    }
-
-    private void schemaWithProjectedAndConditionFields(MessageType schema) {
-        if (this.projectedFields != null || this.conditionFields != null) {
-            List<Integer> schemaFieldsToDelete  = new ArrayList<Integer>();
-
-            List<Type> schemaWithProjectionAndConditionFields = new ArrayList<Type>();
-            for (CustomWrapperFieldExpression projectedField : this.projectedFields) {
-                for (Type schemaField : schema.getFields()) {
-                    if (schemaField.getName().equals(projectedField.getName())) {
-                        schemaWithProjectionAndConditionFields.add(schemaField);
-                    }
-                }
-            }
-            for (String conditionField : this.conditionFields) {
-                for (Type schemaField : schema.getFields()) {
-                    if (schemaField.getName().equals(conditionField)) {
-                        schemaWithProjectionAndConditionFields.add(schemaField);
-                    }
-                }
-            }
-            if (schema.getFields().size() != schemaWithProjectionAndConditionFields.size()) {
-                schema.getFields().removeAll(schema.getFields());
-                schema.getFields().addAll(schemaWithProjectionAndConditionFields);
-            }
-        }
-    }
-
-    /**
-     * Get the condition field names excluding the projected field names and compound fields (compound fields is not included in projections).
-     * This method also initialize the hasNullValueInConditions variable
-     *
-     * @param condition
-     * @return list with fields
-     */
-    private List<String> getFieldsNameAndCheckNullConditions(CustomWrapperCondition condition) throws IOException {
-        List<String> conditionFields = new ArrayList<String>();
-        if (condition != null) {
-            if (condition.isAndCondition()) {
-                CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) condition;
-                for (CustomWrapperCondition c : andCondition.getConditions()) {
-                    if (c.isSimpleCondition()) {
-                        String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
-                        //We only add fieldName to conditionFields if it is not a compound type and if it is not already included.
-                        if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
-                            conditionFields.add(fieldName);
-                        }
-                        if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
-                            this.hasNullValueInConditions = true;
-                        }
-                    } else {
-                        List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
-                        for (String fieldName : fieldsName) {
-                            if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
-                                conditionFields.add(fieldName);
-                            }
-                        }
-                    }
-                }
-            } else if (condition.isOrCondition()) {
-                CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) condition;
-                for (CustomWrapperCondition c : orCondition.getConditions()) {
-                    if (c.isSimpleCondition()) {
-                        String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
-                        if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
-                            conditionFields.add(fieldName);
-                        }
-                        if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) c)) {
-                            this.hasNullValueInConditions = true;
-                        }
-                    } else {
-                        List<String> fieldsName = this.getFieldsNameAndCheckNullConditions(c);
-                        for (String fieldName : fieldsName) {
-                            if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
-                                conditionFields.add(fieldName);
-                            }
-                        }
-                    }
-                }
-            } else if (condition.isSimpleCondition()) {
-                String fieldName = ((CustomWrapperSimpleCondition) condition).getField().toString();
-                if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
-                    conditionFields.add(fieldName);
-                }
-                if (this.hasNullValueInConditions == false && hasNullValueInSimpleCondition((CustomWrapperSimpleCondition) condition)) {
-                    this.hasNullValueInConditions = true;
-                }
-            } else {
-                throw new IOException("Condition \"" + condition.toString() + "\" not allowed");
-            }
-        }
-        for (CustomWrapperFieldExpression projectedField : this.projectedFields) {
-            if(conditionFields.contains(projectedField.getName())) {
-                conditionFields.remove(projectedField.getName());
-            }
-        }
-        return  conditionFields;
-    }
-
-    /**
-     * Get if a simple condition evaluate a null value
-     *
-     * @param vdpCondition
-     * @return
-     */
-    private boolean hasNullValueInSimpleCondition(CustomWrapperSimpleCondition vdpCondition) {
-        CustomWrapperSimpleCondition simpleCondition = vdpCondition;
-        for (CustomWrapperExpression expression : simpleCondition.getRightExpression()) {
-            if (expression.isSimpleExpression()) {
-                CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) expression;
-                if (simpleExpression.getValue() == null) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public FilterPredicate buildFilter (final CustomWrapperCondition vdpCondition, SchemaElement schema) throws CustomWrapperException {
-
-        if (vdpCondition != null) {
-            if (vdpCondition.isAndCondition()) {
-                CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) vdpCondition;
-                List<FilterPredicate> filterPredicates  = new ArrayList<FilterPredicate>();
-                for (CustomWrapperCondition condition : andCondition.getConditions()) {
-                    if (condition.isSimpleCondition()) {
-                        FilterPredicate filterPredicate = this.generateSimpleFilterPredicate(condition, schema);
-                        filterPredicates.add(filterPredicate);
-                    } else {
-                        FilterPredicate filterPredicateComplex = this.buildFilter(condition, schema);
-                        filterPredicates.add(filterPredicateComplex);
-                    }
-                }
-                if (filterPredicates.size() >= 2) {
-                    FilterPredicate filterPredicate = filterPredicates.get(0);
-                    for (int i = 1; i < filterPredicates.size(); i++) {
-                        filterPredicate = and(filterPredicate,filterPredicates.get(i));
-                    }
-                    return  filterPredicate;
-                } else {
-                    throw new CustomWrapperException("Error obtaining the FilterPredicate for the and condition \"" + andCondition.toString() + "\"");
-                }
-            } else if (vdpCondition.isOrCondition()) {
-                CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) vdpCondition;
-                List<FilterPredicate> filterPredicates  = new ArrayList<FilterPredicate>();
-                for (CustomWrapperCondition condition : orCondition.getConditions()) {
-                    if (condition.isSimpleCondition()) {
-                        FilterPredicate filterPredicate = this.generateSimpleFilterPredicate(condition, schema);
-                        filterPredicates.add(filterPredicate);
-                    } else {
-                        FilterPredicate filterPredicateComplex = this.buildFilter(condition, schema);
-                        filterPredicates.add(filterPredicateComplex);
-                    }
-                }
-                if (filterPredicates.size() >= 2) {
-                    FilterPredicate filterPredicate = filterPredicates.get(0);
-                    for (int i = 1; i < filterPredicates.size(); i++) {
-                        filterPredicate = or(filterPredicate,filterPredicates.get(i));
-                    }
-                    return  filterPredicate;
-                } else {
-                    throw new CustomWrapperException("Error obtaining the FilterPredicate for the and condition \"" + orCondition.toString() + "\"");
-                }
-            } else if (vdpCondition.isSimpleCondition()) {
-                return this.generateSimpleFilterPredicate(vdpCondition, schema);
-            } else {
-                throw new CustomWrapperException("Condition \"" + vdpCondition.toString() + "\" not allowed");
-            }
-
-        } else {
-            return null;
-        }
-    }
-
-    private SchemaElement getSchemaField(String field, SchemaElement schema) {
-        if (schema != null) {
-            String[] fields = field.split("\\.",2);
-            for (SchemaElement element : schema.getElements()){
-                if (fields.length == 1 && element.getName().equals(fields[0])) {
-                    return element;
-                } else if (fields.length > 1 && element.getName().equals(fields[0])) {
-                    return getSchemaField(fields[1],element);
-                }
-            }
-        }
-        return null;
-    }
-
-    private FilterPredicate generateSimpleFilterPredicate(CustomWrapperCondition condition, SchemaElement schema) {
-        CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) condition;
-        String operator = simpleCondition.getOperator();
-        FilterPredicate filterPredicate = null;
-        String field = simpleCondition.getField().toString();
-        SchemaElement element = getSchemaField(field, schema);
-        for (CustomWrapperExpression expression : simpleCondition.getRightExpression()) {
-            if (expression.isSimpleExpression()) {
-                CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression)expression;
-                boolean simpleExpressionValueIsNull = simpleExpression.getValue() == null;
-                if (simpleExpression.getValue() instanceof Integer || (simpleExpressionValueIsNull && element != null && element.getType().equals(Integer.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field),null) : eq(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field),null) : notEq(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field),null) : lt(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field),null) : ltEq(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field),null) : gt(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field),null) : gtEq(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    }
-                } else if (simpleExpression.getValue() instanceof Long || (simpleExpressionValueIsNull && element != null && element.getType().equals(Long.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(longColumn(field),null) : eq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(longColumn(field),null) : notEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(longColumn(field),null) : lt(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(longColumn(field),null) : ltEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(longColumn(field),null) : gt(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(longColumn(field),null) : gtEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    }
-                } else if (simpleExpression.getValue() instanceof Double || (simpleExpressionValueIsNull && element != null && element.getType().equals(Double.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(doubleColumn(field),null) : eq(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(doubleColumn(field),null) : notEq(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(doubleColumn(field),null) : lt(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(doubleColumn(field),null) : ltEq(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(doubleColumn(field),null) : gt(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(doubleColumn(field),null) : gtEq(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    }
-                } else if (simpleExpression.getValue() instanceof Float || (simpleExpressionValueIsNull && element != null && element.getType().equals(Float.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(floatColumn(field),null) : eq(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(floatColumn(field),null) : notEq(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(floatColumn(field),null) : lt(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(floatColumn(field),null) : ltEq(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(floatColumn(field),null) : gt(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(floatColumn(field),null) : gtEq(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    }
-                } else if (simpleExpression.getValue() instanceof String || (simpleExpressionValueIsNull && element != null && element.getType().equals(String.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(binaryColumn(field),null) : eq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(binaryColumn(field),null) : notEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(binaryColumn(field),null) : lt(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(binaryColumn(field),null) : ltEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(binaryColumn(field),null) : gt(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(binaryColumn(field),null) : gtEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    }
-                } else if (simpleExpression.getValue() instanceof Boolean || (simpleExpressionValueIsNull && element != null && element.getType().equals(Boolean.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(booleanColumn(field),null) : eq(booleanColumn(field),Boolean.valueOf(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(booleanColumn(field),null) : notEq(booleanColumn(field),Boolean.valueOf(simpleExpression.getValue().toString()));
-                    }
-                } else if (simpleExpression.getValue() instanceof Date || (simpleExpressionValueIsNull && element != null && element.getType().equals(Date.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        //We add 1 day because the 1970-01-01 counter starts at 0
-                        filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field),null) : eq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field),null) : notEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field),null) : lt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field),null) : ltEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field),null) : gt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field),null) : gtEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    }
-                } else if (simpleExpression.getValue() instanceof java.sql.Date || (simpleExpressionValueIsNull && element != null && element.getType().equals(java.sql.Date.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field),null) : eq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field),null) : notEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field),null) : lt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field),null) : ltEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field),null) : gt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field),null) : gtEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    }
-                } else if (simpleExpression.getValue() instanceof Short || (simpleExpressionValueIsNull && element != null && element.getType().equals(Short.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field),null) : eq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field),null) : notEq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field),null) : lt(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field),null) : ltEq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field),null) : gt(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field),null) : gtEq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    }
-                } else {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(binaryColumn(field),null) : eq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(binaryColumn(field),null) : notEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(binaryColumn(field),null) : lt(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(binaryColumn(field),null) : ltEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(binaryColumn(field),null) : gt(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(binaryColumn(field),null) : gtEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    }
-                }
-            }
-        }
-        return filterPredicate;
-    }
-
-    @Override
     public Object doRead() throws IOException {
         
         final Group data = this.dataFileReader.read();
@@ -511,7 +180,6 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
 
     }
 
-    @Override
     public void closeReader() throws IOException {
         if (this.dataFileReader != null) {
             this.dataFileReader.close();
@@ -726,6 +394,87 @@ public class HDFSParquetFileReader extends AbstractHDFSFileReader {
         }
         LOG.trace("The map " + field.getName() + " doesn't exist in the data");
         return null;
+    }
+
+    public void initFileIterator() throws IOException {
+
+        this.fileIterator = this.fileSystem.listFiles(this.path, true);
+        if (!this.fileIterator.hasNext()) {
+            throw new IOException("'" + this.path + "' does not exist or it denotes an empty directory");
+        }
+    }
+
+    public void openReader(final FileSystem fs, final Configuration conf) throws IOException {
+
+        try {
+            doOpenReader(this.path, conf);
+
+        } catch (final NoSuchElementException e) {
+            throw e;
+        } catch (final IOException e) {
+            throw new IOException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        } catch (final RuntimeException e) {
+            throw new RuntimeException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        }
+    }
+
+    private boolean isFirstReading() {
+        return this.firstReading;
+    }
+
+    @Override
+    public Object read() throws IOException {
+
+        try {
+
+            if (isFirstReading()) {
+                LOG.error(Thread.currentThread() + " DEBUG1 firstReading");
+                openReader(this.fileSystem, this.configuration);
+                this.firstReading = false;
+            }
+
+            Object data = doRead();
+            if (data != null) {
+                if(this.includePathColumn){
+                    data= ArrayUtils.add((Object[])data, this.path.toString());
+                }
+                return data;
+            }
+
+            // This reader does not have anything read -> take next one
+            closeReader();
+
+            close();
+            return null;
+
+        } catch (final NoSuchElementException e) {
+            return null;
+        } catch (final IOException e) {
+            throw new IOException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        } catch (final RuntimeException e) {
+            throw new RuntimeException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        }
+
+    }
+
+    @Override
+    public void close() throws IOException {
+        closeReader();
+        if (this.fileSystem != null) {
+            this.fileSystem.close();
+            this.fileSystem = null;
+        }
+    }
+
+    @Override
+    public void delete() throws IOException {
+
+        if (this.fileSystem == null) {
+            this.fileSystem = FileSystem.get(this.configuration);
+        }
+        this.fileSystem.delete(this.path, true);
+        this.fileSystem.close();
+        this.fileSystem = null;
     }
     
 }

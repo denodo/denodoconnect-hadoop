@@ -25,7 +25,11 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
+import com.denodo.connect.hadoop.hdfs.util.schema.HDFSParquetSchemaReader;
+import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
+import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManager;
+import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderTask;
 import com.denodo.vdb.engine.customwrapper.*;
 import com.denodo.vdb.engine.customwrapper.condition.*;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
@@ -93,6 +97,16 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
                 false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
     };
 
+    private static final ReaderManager readerManager = ReaderManager.getInstance();
+    private static int parallelism;
+
+    static {
+        parallelism = Runtime.getRuntime().availableProcessors() - 1;
+        if (parallelism <= 0) {
+            parallelism = 1;
+        }
+    }
+
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
         return INPUT_PARAMETERS;
@@ -108,7 +122,7 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
     public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
             throws CustomWrapperException {
 
-        HDFSParquetFileReader reader = null;
+            HDFSParquetSchemaReader reader = null;
         try {
 
             final Configuration conf = getHadoopConfiguration(inputValues);
@@ -138,7 +152,7 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
 
             final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
 
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null, null, includePathColumn, true, null);
+            reader = new HDFSParquetSchemaReader(conf, path, fileNamePattern, null, null, null);
 
             final SchemaElement javaSchema = reader.getSchema(conf);
             if(includePathColumn){
@@ -190,27 +204,38 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
         final Path path = new Path(parquetFilePath);
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
-        HDFSParquetFileReader reader = null;
+        HDFSParquetSchemaReader schemaReader = null;
         try {
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, projectedFields, condition, includePathColumn, false, null);
+            schemaReader = new HDFSParquetSchemaReader(conf, path, fileNamePattern, null, projectedFields, condition);
             SchemaElement schema = null;
-            if (reader.getHasNullValueInConditions()) {
-                schema = reader.getSchema(conf);
+            if (schemaReader.getHasNullValueInConditions()) {
+                schema = schemaReader.getSchema(conf);
             }
-            FilterPredicate filterPredicate = reader.buildFilter(condition.getComplexCondition(), schema);
+            FilterPredicate filterPredicate = ParquetSchemaUtils.buildFilter(condition.getComplexCondition(), schema);
             FilterCompat.Filter filter = null;
             if (filterPredicate != null) {
                 ParquetInputFormat.setFilterPredicate(conf,filterPredicate);
                 filter = ParquetInputFormat.getFilter(conf);
             }
-            reader.setFilter(filter);
-            int conditionSize = reader.getConditionFields().size();
-            LOG.trace("We get the condition fields (only for simple fields) excluding the repeated " +
-                "projected fields and get size to delete the last elements of the data array");
-            Object parquetData = reader.read();
-            while (parquetData != null && !isStopRequested()) {
-                result.addRow( (Object[])parquetData, projectedFields);
-                parquetData = reader.read();
+            final Collection<ReaderTask> readers = new ArrayList<>(parallelism);
+            try {
+                Path currentPath = schemaReader.nextFilePath();
+                while (currentPath != null) {
+                    int i = 0;
+                    while (currentPath != null && i < parallelism) {
+                        final HDFSParquetFileReader currentReader = new HDFSParquetFileReader(conf, currentPath,
+                            null, projectedFields, includePathColumn, filter,
+                            schemaReader.getProjectedSchema(), schemaReader.getConditionFields());
+                        readers.add(new ReaderTask(currentReader, projectedFields, result));
+                        i++;
+                        currentPath = schemaReader.nextFilePath();
+                    }
+                    readerManager.execute(readers);
+                    readers.clear();
+                }
+            } catch (final NoSuchElementException e) {
+                // throwed by nextFilePath
+                readerManager.execute(readers);
             }
         } catch (final Exception e) {
             LOG.error("Error accessing Parquet file", e);
@@ -218,11 +243,11 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
 
         } finally {
             try {
-                if (reader != null ) {
-                    reader.close();
+                if (schemaReader != null ) {
+                    schemaReader.close();
                 }
             } catch (final IOException e) {
-                LOG.error("Error releasing the reader", e);
+                LOG.error("Error releasing the schemaReader", e);
             }
         }
     }
