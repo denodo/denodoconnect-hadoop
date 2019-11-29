@@ -249,7 +249,7 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
     
     private static List<String> buildSyntheticHeader(final int size) {
         
-        final List<String> header = new ArrayList<String>();
+        final List<String> header = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             header.add("column" + i);
         }
@@ -266,7 +266,7 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
     private static String normalizePath(final String filePath) {
 
         if (!filePath.startsWith("/")) {
-            return "/" + filePath;
+            return '/' + filePath;
         }
 
         return filePath;

@@ -22,13 +22,12 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -37,14 +36,11 @@ import org.slf4j.LoggerFactory;
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSDelimitedFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
-import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.util.csv.CSVConfig;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 /**
  * HDFS file custom wrapper for reading delimited text files stored in HDFS
@@ -168,7 +164,7 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
      */
     private Map<String, String> tuneInput(final Map<String, String> inputValues) {
         
-        final Map<String, String> values = new HashMap<String, String>(inputValues);
+        final Map<String, String> values = new HashMap<>(inputValues);
         values.put(Parameter.HEADER, Boolean.toString(false));
         
         return values;
@@ -195,7 +191,7 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
     }
 
     @Override
-    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues, boolean getSchemaParameters)
+    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues, final boolean getSchemaParameters)
         throws IOException, InterruptedException, CustomWrapperException {
         
         final Configuration conf = getHadoopConfiguration(inputValues);

@@ -1,8 +1,8 @@
 package com.denodo.connect.hadoop.hdfs.wrapper.util.http;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Calendar;
@@ -12,7 +12,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 
 import com.denodo.connect.hadoop.hdfs.wrapper.util.s3.S3Utils;
@@ -34,26 +34,26 @@ public final class URIUtils {
 
     }
 
-    public static URI getWebHDFSOpenURI(String host, int port, String user,
-        String path) throws URISyntaxException, InvalidKeyException {
+    public static URI getWebHDFSOpenURI(final String host, final int port, final String user,
+        final String path) throws URISyntaxException, InvalidKeyException {
 
         if (S3Utils.isAmazonS3(host)) {
-            String accessKey = S3Utils.getAmazonS3AccessKey(user);
-            String secretKey = S3Utils.getAmazonS3SecretKey(user);
-            String bucket = S3Utils.getAmazonS3Bucket(host);
+            final String accessKey = S3Utils.getAmazonS3AccessKey(user);
+            final String secretKey = S3Utils.getAmazonS3SecretKey(user);
+            final String bucket = S3Utils.getAmazonS3Bucket(host);
             return getS3RESTURI(GET_METHOD, host, accessKey, secretKey, bucket, path);
         }
 
         return getWebHDFSURI(host, port, user, path, OPEN_OP);
     }
 
-    public static URI getWebHDFSDeleteURI(String host, int port, String user,
-        String path) throws URISyntaxException, InvalidKeyException {
+    public static URI getWebHDFSDeleteURI(final String host, final int port, final String user,
+        final String path) throws URISyntaxException, InvalidKeyException {
 
         if (S3Utils.isAmazonS3(host)) {
-            String accessKey = S3Utils.getAmazonS3AccessKey(user);
-            String secretKey = S3Utils.getAmazonS3SecretKey(user);
-            String bucket = S3Utils.getAmazonS3Bucket(host);
+            final String accessKey = S3Utils.getAmazonS3AccessKey(user);
+            final String secretKey = S3Utils.getAmazonS3SecretKey(user);
+            final String bucket = S3Utils.getAmazonS3Bucket(host);
             return getS3RESTURI(DELETE_METHOD, host, accessKey, secretKey, bucket, path);
         }
 
@@ -67,10 +67,10 @@ public final class URIUtils {
      * URI for DELETE operation:
      * http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=DELETE[&user.name=<USER>]
      */
-    private static URI getWebHDFSURI(String host, int port, String user,
-        String path, String operation) throws URISyntaxException {
+    private static URI getWebHDFSURI(final String host, final int port, final String user,
+        final String path, final String operation) throws URISyntaxException {
 
-        URIBuilder builder = new URIBuilder();
+        final URIBuilder builder = new URIBuilder();
         builder.setScheme("http").setHost(host).setPort(port)
             .setPath(REST_API_PREFIX + path)
             .setParameter("op", operation);
@@ -103,13 +103,13 @@ public final class URIUtils {
      * For more information see:
      * http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html#RESTAuthenticationQueryStringAuth
      */
-    public static URI getS3RESTURI(String method, String host, String accessKey, String secretKey,
-        String bucketName, String filename) throws InvalidKeyException, URISyntaxException {
+    public static URI getS3RESTURI(final String method, final String host, final String accessKey, final String secretKey,
+        final String bucketName, final String filename) throws InvalidKeyException, URISyntaxException {
 
-        long secondsSinceEpoch = getOneHourLaterExpirationTime();
-        String canonicalizedResource = "/" + bucketName + filename;
-        String stringToSign = method + "\n\n\n" + secondsSinceEpoch + "\n" + canonicalizedResource;
-        String signature = sign(secretKey, stringToSign);
+        final long secondsSinceEpoch = getOneHourLaterExpirationTime();
+        final String canonicalizedResource = '/' + bucketName + filename;
+        final String stringToSign = method + "\n\n\n" + secondsSinceEpoch + '\n' + canonicalizedResource;
+        final String signature = sign(secretKey, stringToSign);
 
         return buildURI(host, filename, accessKey, secondsSinceEpoch, signature);
     }
@@ -117,42 +117,39 @@ public final class URIUtils {
     // set the expiration to one hour later
     private static long getOneHourLaterExpirationTime() {
 
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         calendar.add(Calendar.HOUR, 1);
-        long secondsSinceEpoch = calendar.getTimeInMillis() / 1000L;
+        final long secondsSinceEpoch = calendar.getTimeInMillis() / 1000L;
 
         return secondsSinceEpoch;
     }
 
-    private static String sign(String secretKey, String stringToSign)
+    private static String sign(final String secretKey, final String stringToSign)
         throws InvalidKeyException {
 
         try {
-            byte[] keyBytes = secretKey.getBytes();
-            SecretKeySpec signingKey = new SecretKeySpec(keyBytes, ALGORITHM);
+            final byte[] keyBytes = secretKey.getBytes();
+            final SecretKeySpec signingKey = new SecretKeySpec(keyBytes, ALGORITHM);
 
-            Mac mac = Mac.getInstance(ALGORITHM);
+            final Mac mac = Mac.getInstance(ALGORITHM);
             mac.init(signingKey);
 
-            byte[] digest = mac.doFinal(stringToSign.getBytes());
-            byte[] base64bytes = Base64.encodeBase64(digest);
-            String signedString = new String(base64bytes, "UTF-8");
+            final byte[] digest = mac.doFinal(stringToSign.getBytes());
+            final byte[] base64bytes = Base64.encodeBase64(digest);
+            final String signedString = new String(base64bytes, StandardCharsets.UTF_8);
 
             return signedString;
 
-        } catch (NoSuchAlgorithmException e) {
-            // never happens hopefully
-            throw new IllegalStateException(e.getMessage(), e);
-        } catch (UnsupportedEncodingException e) {
+        } catch (final NoSuchAlgorithmException e) {
             // never happens hopefully
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
-    private static URI buildURI(String host, String canonicalizedResource, String accessKey,
-        long secondsSinceEpoch, String signature) throws URISyntaxException {
+    private static URI buildURI(final String host, final String canonicalizedResource, final String accessKey,
+        final long secondsSinceEpoch, final String signature) throws URISyntaxException {
 
-        URIBuilder builder = new URIBuilder();
+        final URIBuilder builder = new URIBuilder();
         builder.setScheme("https").setHost(host)
             .setPath(canonicalizedResource)
             .setParameter(ACCESS_KEY_PARAMETER, accessKey)

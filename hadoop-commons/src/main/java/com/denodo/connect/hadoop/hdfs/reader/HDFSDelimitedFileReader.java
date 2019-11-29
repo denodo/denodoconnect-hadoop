@@ -50,7 +50,7 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
 
 
     public HDFSDelimitedFileReader(final Configuration configuration, final CSVConfig cvsConfig,
-        final Path outputPath, final String fileNamePattern, final String user, boolean includePathColumn) throws IOException, InterruptedException {
+        final Path outputPath, final String fileNamePattern, final String user, final boolean includePathColumn) throws IOException, InterruptedException {
 
         super(configuration, outputPath, fileNamePattern, user, includePathColumn);
         this.csvConfig = cvsConfig;
@@ -64,7 +64,7 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
         final Configuration configuration) throws IOException {
 
         InputStream is = fileSystem.open(path);
-        CompressionCodec codec = this.codecFactory.getCodec(path);
+        final CompressionCodec codec = this.codecFactory.getCodec(path);
         if (codec != null) {
             is = codec.createInputStream(is); // for reading compressed files
         }
@@ -94,7 +94,7 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
 
 
     @Override
-    public void closeReader() throws IOException {
+    public void closeReader() {
         if (this.reader != null) {
             this.reader.close();
         }

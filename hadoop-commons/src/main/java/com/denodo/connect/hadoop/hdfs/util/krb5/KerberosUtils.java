@@ -31,7 +31,7 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public final class KerberosUtils {
 
     }
 
-    public static void enableKerberos() {
+    private static void enableKerberos() {
         
         final Configuration conf = new Configuration();
         conf.set("hadoop.security.authentication", "Kerberos");
@@ -119,7 +119,7 @@ public final class KerberosUtils {
 
 
     /* Principal is of the form 'primary/instance@realm', being optional the 'instance' component. */
-    public static String getRealm(final String principal) {
+    private static String getRealm(final String principal) {
 
         final String[] components = principal.split("@");
         if (components.length == 1) {

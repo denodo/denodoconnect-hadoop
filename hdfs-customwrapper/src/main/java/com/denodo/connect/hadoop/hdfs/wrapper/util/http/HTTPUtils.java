@@ -20,32 +20,32 @@ public final class HTTPUtils {
 
     }
 
-    public static InputStream requestGet(URI uri, DefaultHttpClient httpClient) throws IOException {
+    public static InputStream requestGet(final URI uri, final DefaultHttpClient httpClient) throws IOException {
 
-        HttpRequestBase httpRequest = new HttpGet(uri);
+        final HttpRequestBase httpRequest = new HttpGet(uri);
         return sendRequest(httpClient, httpRequest);
 
     }
 
-    public static void requestDelete(URI uri, DefaultHttpClient httpClient) throws IOException {
+    public static void requestDelete(final URI uri, final DefaultHttpClient httpClient) throws IOException {
 
-        HttpRequestBase httpRequest = new HttpDelete(uri);
+        final HttpRequestBase httpRequest = new HttpDelete(uri);
         sendRequest(httpClient, httpRequest);
     }
 
-    private static InputStream sendRequest(DefaultHttpClient httpClient,
-        HttpRequestBase httpRequest) throws IOException {
+    private static InputStream sendRequest(final DefaultHttpClient httpClient,
+        final HttpRequestBase httpRequest) throws IOException {
 
-        HttpResponse response = httpClient.execute(httpRequest);
-        int statusCode = response.getStatusLine().getStatusCode();
-        HttpEntity responseEntity = response.getEntity();
+        final HttpResponse response = httpClient.execute(httpRequest);
+        final int statusCode = response.getStatusLine().getStatusCode();
+        final HttpEntity responseEntity = response.getEntity();
         if (responseEntity != null) {
-            InputStream is = responseEntity.getContent();
+            final InputStream is = responseEntity.getContent();
             if (statusCode == HttpStatus.SC_OK) {
                 return is;
             }
-            String statusMessage = response.getStatusLine().getReasonPhrase();
-            String statusResponse = IOUtils.toString(is);
+            final String statusMessage = response.getStatusLine().getReasonPhrase();
+            final String statusResponse = IOUtils.toString(is);
             throw new IOException("HTTP error code " + statusCode + ". " + statusMessage + ": "
                 + statusResponse);
         }

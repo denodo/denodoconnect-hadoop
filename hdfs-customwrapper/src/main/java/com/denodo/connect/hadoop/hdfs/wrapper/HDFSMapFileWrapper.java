@@ -23,23 +23,19 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.keyvalue.HDFSMapFileReader;
-import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.util.type.TypeUtils;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 /**
  * HDFS file custom Wrapper for reading map files stored in HDFS (Hadoop

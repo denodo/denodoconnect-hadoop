@@ -1,16 +1,12 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.hadoop.conf.Configuration;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +14,6 @@ import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.keyvalue.AbstractHDFSKeyValueFileReader;
-import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.type.TypeUtils;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
@@ -30,8 +25,6 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolde
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 
 /**
@@ -50,7 +43,7 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
-                "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\@<bucket> ", true,
+                "e.g. hdfs://<ip>:<port> or s3a://<bucket> ", true,
                 CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.FILE_PATH,
                 "Absolute path for the file or the directory containing the files ", true,
@@ -122,8 +115,8 @@ public abstract class AbstractHDFSKeyValueFileWrapper extends AbstractSecureHado
 
             while (data != null && !isStopRequested()) {
                 
-                 Object[] row = (Object[]) data;
-                int rowLength = row.length;
+                 final Object[] row = (Object[]) data;
+                final int rowLength = row.length;
                 if (rowLength != projectedFields.size()) {
                     invalidRows ++;
                     if (!ignoreMatchingErrors(inputValues)) {

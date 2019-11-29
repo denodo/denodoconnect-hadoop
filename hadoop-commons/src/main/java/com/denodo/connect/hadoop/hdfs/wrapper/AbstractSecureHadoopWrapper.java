@@ -27,7 +27,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
@@ -136,8 +136,10 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
                         doRun(condition, projectedFields, result, inputValues);
                         return null;
                     }
-                } );
+                });
             }
+        } catch (final CustomWrapperException e) {
+            throw e;
         } catch (final UndeclaredThrowableException e) {
             LOG.error("Error running the wrapper ", e);
             final Exception ex = (Exception) e.getCause();
@@ -208,7 +210,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         }
     }
 
-    public boolean loginWithKerberosTicket() {
+    private boolean loginWithKerberosTicket() {
         return this.userPrincipal == null;
     }
 
@@ -220,7 +222,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         }
     }
 
-    public boolean isSecurityEnabled() {
+    private boolean isSecurityEnabled() {
         return this.securityEnabled;
     }
 

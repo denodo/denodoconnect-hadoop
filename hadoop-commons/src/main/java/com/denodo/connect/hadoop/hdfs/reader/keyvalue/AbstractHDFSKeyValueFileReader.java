@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
@@ -60,7 +60,7 @@ public abstract class AbstractHDFSKeyValueFileReader extends AbstractHDFSFileRea
 
     public static Collection<SchemaElement> getSchema(final String hadoopKeyClass, final String hadoopValueClass) {
 
-        final Collection<SchemaElement> schema = new ArrayList<SchemaElement>();
+        final Collection<SchemaElement> schema = new ArrayList<>();
 
         final Class<?> keyJavaClass = TypeUtils.toJava(hadoopKeyClass);
         final SchemaElement keyElement = new SchemaElement(Parameter.KEY, keyJavaClass);

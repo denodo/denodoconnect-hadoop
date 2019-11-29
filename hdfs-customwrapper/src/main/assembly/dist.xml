@@ -37,14 +37,13 @@
         </fileSet>
 
         <fileSet>
-          <directory>src/main/conf/</directory>
+          <directory>${basedir}/src/main/conf/</directory>
           <outputDirectory>conf</outputDirectory>
           <includes>
             <include>**/*.xml</include>
           </includes>
-        </fileSet> 
+        </fileSet>
                 
-        
         
         <fileSet>
             <directory>${project.build.directory}/lib</directory>
@@ -52,8 +51,7 @@
             <includes>
                 <include>*.*</include>
             </includes>
-        </fileSet>         
+        </fileSet>        
     </fileSets>
-
 
 </assembly>

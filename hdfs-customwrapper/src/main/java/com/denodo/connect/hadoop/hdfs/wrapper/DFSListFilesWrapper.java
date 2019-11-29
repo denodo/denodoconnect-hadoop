@@ -22,15 +22,14 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -41,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
-import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.util.filesystem.FileSystemUtils;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
@@ -52,8 +50,6 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolde
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
 
@@ -64,7 +60,7 @@ public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
             new CustomWrapperInputParameter[] {
                     new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
-                        "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
+                        "e.g. hdfs://<ip>:<port> or s3a://<bucket>t ",
                         true, CustomWrapperInputParameterTypeFactory.stringType()),
                     new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                             "Local route of hdfs-site.xml configuration file ",
@@ -90,8 +86,7 @@ public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
     
     
     @Override
-    public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
-            throws CustomWrapperException {
+    public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues) {
         
         final boolean searchable = true;
         final boolean updateable = true;

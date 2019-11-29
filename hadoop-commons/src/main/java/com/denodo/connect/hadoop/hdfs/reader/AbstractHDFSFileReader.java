@@ -24,7 +24,7 @@ package com.denodo.connect.hadoop.hdfs.reader;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -79,19 +79,7 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
             this.firstReading = true;
             this.includePathColumn = includePathColumn;
             // When an error occurs, if the FileSystem is not closed, it will remain in the Hadoop cache until the JVM is restarted. Redmine #39931
-        } catch (final IOException e) {
-            if (this.fileSystem != null) {
-                this.fileSystem.close();
-            }
-            
-            throw e;
-        } catch (final InterruptedException e) {
-            if (this.fileSystem != null) {
-                this.fileSystem.close();
-            }
-            
-            throw e;
-        } catch (final RuntimeException e) {
+        } catch (final IOException | InterruptedException | RuntimeException e) {
             if (this.fileSystem != null) {
                 this.fileSystem.close();
             }
@@ -101,7 +89,7 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
 
     }
 
-    public void initFileIterator() throws IOException {
+    private void initFileIterator() throws IOException {
         
         this.fileIterator = this.fileSystem.listFiles(this.outputPath, true);
         if (!this.fileIterator.hasNext()) {
@@ -109,7 +97,7 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
         }
     }
     
-    public Path nextFilePath() throws IOException {
+    private Path nextFilePath() throws IOException {
 
         Path path = null;
         boolean found = false;
@@ -145,7 +133,7 @@ public abstract class AbstractHDFSFileReader implements HDFSFileReader {
         return path;
     }
     
-    public void openReader(final FileSystem fs, final Configuration conf) throws IOException {
+    private void openReader(final FileSystem fs, final Configuration conf) throws IOException {
 
         try {
             this.currentPath = nextFilePath();

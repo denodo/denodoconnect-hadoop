@@ -22,44 +22,40 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.AUTOMATIC_PARALLELISM;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.CLUSTERING_FIELD;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.COLUMN_PARALLEL;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_PARALLEL;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.NOT_PARALLEL;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_LEVEL;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_TYPE;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.ROW_PARALLEL;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.THREADPOOL_SIZE;
+
+import java.io.InputStream;
+import java.util.Map;
+
+import org.apache.hadoop.conf.Configuration;
+
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
-import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
-import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
-import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
-import com.denodo.vdb.engine.customwrapper.*;
-import com.denodo.vdb.engine.customwrapper.condition.*;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
+import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.parquet.filter2.compat.FilterCompat;
-import org.apache.parquet.filter2.predicate.FilterPredicate;
-import org.apache.parquet.hadoop.ParquetInputFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.sql.Types;
-import java.util.*;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
+import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 /**
- * HDFS file custom wrapper for reading Parquet files stored in HDFS (Hadoop
- * Distributed File System).
- * <p>
- *
- * The following parameters are required: file system URI, Avro
- * schema file path or Avro schema JSON. <br/>
+ * Custom wrapper for reading Parquet files stored in Amazon S3. Ii is based on HDFSParquetFileWrapper, but it
+ * simplifies S3 specific configuration.
  *
  */
 public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
 
-    private static final  Logger LOG = LoggerFactory.getLogger(S3ParquetFileWrapper.class);
-
     
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
+
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
                 "e.g. s3a://<bucket>",
@@ -67,6 +63,25 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
             new CustomWrapperInputParameter(Parameter.PARQUET_FILE_PATH,
                 "Parquet File Path",
                 true, CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.FILE_NAME_PATTERN,
+                "Regular expression to filter file names. Example: (.*)\\.parquet ", false,
+                CustomWrapperInputParameterTypeFactory.stringType()),
+            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
+                "Include path column? ",
+                false, CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(PARALLELISM_TYPE,
+                "Type of parallelism, if any ",
+                true, CustomWrapperInputParameterTypeFactory.enumStringType(
+                new String[] {NOT_PARALLEL, AUTOMATIC_PARALLELISM, FILE_PARALLEL, ROW_PARALLEL, COLUMN_PARALLEL})),
+            new CustomWrapperInputParameter(PARALLELISM_LEVEL,
+                "Level of parallelism ",
+                false, CustomWrapperInputParameterTypeFactory.integerType()),
+            new CustomWrapperInputParameter(THREADPOOL_SIZE,
+                "Number of threads in the pool",
+                false, CustomWrapperInputParameterTypeFactory.integerType()),
+            new CustomWrapperInputParameter(CLUSTERING_FIELD,
+                "File/s sorted by this field ",
+                false, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.ACCESS_KEY_ID,
                 "Access Key ID",
                 false, CustomWrapperInputParameterTypeFactory.stringType()),
@@ -84,11 +99,9 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
                 false, CustomWrapperInputParameterTypeFactory.booleanType(false)),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
-                false,  CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
-            new CustomWrapperInputParameter(Parameter.INCLUDE_PATH_COLUMN,
-                "Include path column? ",
-                false, CustomWrapperInputParameterTypeFactory.booleanType(false))
+                false, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
     };
+
 
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
@@ -96,73 +109,24 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
     }
 
     @Override
-    public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
-            throws CustomWrapperException {
+    protected Configuration getHadoopConfiguration(final Map<String, String> inputValues) throws CustomWrapperException {
 
-        HDFSParquetFileReader reader = null;
-        try {
+        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
 
-            final Configuration conf = getHadoopConfiguration(inputValues);
-
-            if (inputValues.get(Parameter.USE_EC2_IAM_CREDENTIALS) != null && Boolean.parseBoolean(inputValues.get(Parameter.USE_EC2_IAM_CREDENTIALS))) {
-                conf.set("fs.s3a.aws.credentials.provider", Parameter.INSTANCE_PROFILE_CREDENTIALS_PROVIDER);
-            } else if (inputValues.get(Parameter.ACCESS_KEY_ID) != null && inputValues.get(Parameter.IAM_ROLE_ASSUME) != null) {
-                conf.set("fs.s3a.access.key", inputValues.get(Parameter.ACCESS_KEY_ID));
-                conf.set("fs.s3a.secret.key", inputValues.get(Parameter.SECRET_ACCESS_KEY));
-                conf.set("fs.s3a.aws.credentials.provider", Parameter.AWS_ASSUMED_ROLE_PROVIDER);
-                conf.set("fs.s3a.assumed.role.arn",inputValues.get(Parameter.IAM_ROLE_ASSUME));
-            } else if (inputValues.get(Parameter.ACCESS_KEY_ID) != null && inputValues.get(Parameter.SECRET_ACCESS_KEY) != null) {
-                conf.set("fs.s3a.access.key", inputValues.get(Parameter.ACCESS_KEY_ID));
-                conf.set("fs.s3a.secret.key", inputValues.get(Parameter.SECRET_ACCESS_KEY));
-            } else {
-                conf.set("fs.s3a.aws.credentials.provider", Parameter.AWS_CREDENTIALS_PROVIDER);
-            }
-
-            if (inputValues.get(Parameter.ENDPOINT) != null) {
-                conf.set("fs.s3a.endpoint", inputValues.get(Parameter.ENDPOINT));
-            }
-
-            final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
-            final Path path = new Path(parquetFilePath);
-            
-            final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
-
-            final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
-
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, null, null, includePathColumn, true, null);
-
-            final SchemaElement javaSchema = reader.getSchema(conf);
-            if(includePathColumn){
-                final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, false,
-                    CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false);
-                return (CustomWrapperSchemaParameter[]) ArrayUtils.add(VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements()),filePath);
-            }else {
-                return VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
-            }
-        } catch (final NoSuchElementException e) {
-            throw new CustomWrapperException("There are no files in " + inputValues.get(Parameter.PARQUET_FILE_PATH) 
-            + (StringUtils.isNotBlank(inputValues.get(Parameter.FILE_NAME_PATTERN)) 
-                ? " matching the provided file pattern: " + inputValues.get(Parameter.FILE_NAME_PATTERN)
-                : ""));
-        } catch (final Exception e) {
-            LOG.error("Error building wrapper schema", e);
-            throw new CustomWrapperException(e.getMessage(), e);
-        } finally {
-            try {
-                if (reader != null ) {
-                    reader.close();
-                }
-            } catch (final IOException e) {
-                LOG.error("Error releasing the reader", e);
-            }
+        final CustomWrapperInputParameterValue coreSitePathValue = getInputParameterValue(Parameter.CORE_SITE_PATH);
+        InputStream coreSiteIs = null;
+        if (coreSitePathValue != null) {
+            coreSiteIs = ((CustomWrapperInputParameterRouteValue) coreSitePathValue).getInputStream();
         }
-    }
 
-    @Override
-    public void doRun(final CustomWrapperConditionHolder condition, final List<CustomWrapperFieldExpression> projectedFields,
-        final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
+        final CustomWrapperInputParameterValue hdfsSitePathValue = getInputParameterValue(Parameter.HDFS_SITE_PATH);
+        InputStream hdfsSiteIs = null;
+        if (hdfsSitePathValue != null) {
+            hdfsSiteIs = ((CustomWrapperInputParameterRouteValue) hdfsSitePathValue).getInputStream();
 
-        final Configuration conf = getHadoopConfiguration(inputValues);
+        }
+
+        final Configuration conf = HadoopConfigurationUtils.getConfiguration(fileSystemURI, coreSiteIs, hdfsSiteIs);
 
         if (inputValues.get(Parameter.USE_EC2_IAM_CREDENTIALS) != null && Boolean.parseBoolean(inputValues.get(Parameter.USE_EC2_IAM_CREDENTIALS))) {
             conf.set("fs.s3a.aws.credentials.provider", Parameter.INSTANCE_PROFILE_CREDENTIALS_PROVIDER);
@@ -177,45 +141,13 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
         } else {
             conf.set("fs.s3a.aws.credentials.provider", Parameter.AWS_CREDENTIALS_PROVIDER);
         }
-        final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
-        final Path path = new Path(parquetFilePath);
-        final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
-        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
-        HDFSParquetFileReader reader = null;
-        try {
-            reader = new HDFSParquetFileReader(conf, path, fileNamePattern, null, projectedFields, condition, includePathColumn, false, null);
-            SchemaElement schema = null;
-            if (reader.getHasNullValueInConditions()) {
-                schema = reader.getSchema(conf);
-            }
-            FilterPredicate filterPredicate = reader.buildFilter(condition.getComplexCondition(), schema);
-            FilterCompat.Filter filter = null;
-            if (filterPredicate != null) {
-                ParquetInputFormat.setFilterPredicate(conf,filterPredicate);
-                filter = ParquetInputFormat.getFilter(conf);
-            }
-            reader.setFilter(filter);
-            int conditionSize = reader.getConditionFields().size();
-            LOG.trace("We get the condition fields (only for simple fields) excluding the repeated " +
-                "projected fields and get size to delete the last elements of the data array");
-            Object parquetData = reader.read();
-            while (parquetData != null && !isStopRequested()) {
-                result.addRow( (Object[])parquetData, projectedFields);
-                parquetData = reader.read();
-            }
-        } catch (final Exception e) {
-            LOG.error("Error accessing Parquet file", e);
-            throw new CustomWrapperException("Error accessing Parquet file: " + e.getMessage(), e);
 
-        } finally {
-            try {
-                if (reader != null ) {
-                    reader.close();
-                }
-            } catch (final IOException e) {
-                LOG.error("Error releasing the reader", e);
-            }
+        if (inputValues.get(Parameter.ENDPOINT) != null) {
+            conf.set("fs.s3a.endpoint", inputValues.get(Parameter.ENDPOINT));
         }
+
+        return conf;
     }
+
 
 }

@@ -37,7 +37,7 @@ public final class AvroTypeUtils {
 
     }
 
-    public static Class<?> toJava(Schema schema) {
+    public static Class<?> toJava(final Schema schema) {
 
         switch (schema.getType()) {
             case FIXED:   return ByteBuffer.class;
@@ -45,7 +45,7 @@ public final class AvroTypeUtils {
             case MAP:     return Map.class;
             case ARRAY:   return List.class;
             case UNION:
-                List<Schema> types = schema.getTypes();
+                final List<Schema> types = schema.getTypes();
                 if ((types.size() == 2) && types.contains(NULL_SCHEMA)) {
                     return toJava(types.get(types.get(0).equals(NULL_SCHEMA) ? 1 : 0));
                 }
@@ -66,9 +66,9 @@ public final class AvroTypeUtils {
     /**
      * Returns the first not null schema in the list. Null otherwise
      */
-    public static Schema getNotNull(List<Schema> schemas) {
+    public static Schema getNotNull(final List<Schema> schemas) {
 
-        for (Schema s : schemas) {
+        for (final Schema s : schemas) {
             if (!(Type.NULL).equals(s.getType())) {
                 return s;
             }
@@ -76,31 +76,31 @@ public final class AvroTypeUtils {
         return null;
     }
 
-    public static boolean isArray(Type type) {
+    public static boolean isArray(final Type type) {
         return type.equals(Type.ARRAY);
     }
 
-    public static boolean isEnum(Type type) {
+    public static boolean isEnum(final Type type) {
         return type.equals(Type.ENUM);
     }
 
-    public static boolean isFixed(Type type) {
+    public static boolean isFixed(final Type type) {
         return type.equals(Type.FIXED);
     }
 
-    public static boolean isMap(Type type) {
+    public static boolean isMap(final Type type) {
         return type.equals(Type.MAP);
     }
 
-    public static boolean isUnion(Type type) {
+    public static boolean isUnion(final Type type) {
         return type.equals(Type.UNION);
     }
 
-    public static boolean isRecord(Type type) {
+    public static boolean isRecord(final Type type) {
         return type.equals(Type.RECORD);
     }
 
-    public static boolean isSimple(Type type) {
+    public static boolean isSimple(final Type type) {
         return !(type.equals(Type.ARRAY) || type.equals(Type.ENUM)
             || type.equals(Type.RECORD) || type.equals(Type.MAP)
             || type.equals(Type.UNION) || type.equals(Type.FIXED));

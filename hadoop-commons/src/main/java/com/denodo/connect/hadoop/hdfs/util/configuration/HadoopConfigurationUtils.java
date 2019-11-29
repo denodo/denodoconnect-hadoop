@@ -25,13 +25,9 @@ import java.io.InputStream;
 import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 public final class HadoopConfigurationUtils {
 
-    private static final  Logger LOG = LoggerFactory.getLogger(HadoopConfigurationUtils.class);
 
     private HadoopConfigurationUtils() {
 
@@ -43,40 +39,49 @@ public final class HadoopConfigurationUtils {
      *        (fs.SCHEME.impl) naming the FileSystem implementation class.
      *        The uri's authority is used to determine the host, port, etc. for a filesystem.
      *        E.g. HDFS -> hdfs://ip:port
-     *             AMAZON S3 -> s3n://id:secret@bucket (Note that since the secret
-     *             access key can contain slashes, you must remember to escape them
-     *             by replacing each slash / with the string %2F.)
      * @return the basic hadoop configuration
      */
     public static Configuration getConfiguration(final String fileSystemURIString, final InputStream... customFiles) {
 
         final Configuration conf = new Configuration();
-        conf.set("fs.default.name", fileSystemURIString);
-        
-        // FileSystem.get returns the same object for every invocation with the same filesystem. 
-        // So if one is closed anywhere, they are all closed. (#41229 - error when joining files residing in a hdfs filesystem)
-        
-        // This setting prevents a FileSystem object from being shared by multiple clients, because it would prevent,
-        // for example, two callers of FileSystem#get() from closing each other's filesystem.
-        // This setting is required too as FileSystem#close() is necessary for #39931: Failed connections could require restarting VDP to refresh wrapper configuration files
-        final URI fileSystemURI = URI.create(fileSystemURIString);
-        final String disableCacheName = String.format("fs.%s.impl.disable.cache", fileSystemURI.getScheme());
-        conf.setBoolean(disableCacheName, true);
-        
-        // General pattern that avoids having to specify the server's Kerberos principal name when using Kerberos authentication
-        conf.set("dfs.namenode.kerberos.principal.pattern", "*");
+        conf.set("fs.defaultFS", fileSystemURIString);
 
-        LOG.debug("Returning configuration: " + conf
-            + " - value of 'fs.default.name' -> " + conf.get("fs.default.name"));
+        disableFileSystemCache(fileSystemURIString, conf);
+
+        allowGeneralKerberosPrincipals(conf);
+
         
         for (final InputStream customFile: customFiles) {
             if (customFile != null) {
                 conf.addResource(customFile);
             }
         }
-        
-        
+
         return conf;
     }
+
+    /*
+     * FileSystem.get returns the same object for every invocation with the same filesystem.
+     * So if one is closed anywhere, they are all closed. (#41229 - error when joining files residing in a hdfs filesystem)
+     * This setting prevents a FileSystem object from being shared by multiple clients, because it would prevent,
+     * for example, two callers of FileSystem#get() from closing each other's filesystem.
+     *
+     * This setting is required too as FileSystem#close() is necessary for #39931: Failed connections could require
+     *  restarting VDP to refresh wrapper configuration files.
+     */
+    private static void disableFileSystemCache(final String fileSystemURIString, final Configuration conf) {
+
+        final URI fileSystemURI = URI.create(fileSystemURIString);
+        final String disableCacheName = String.format("fs.%s.impl.disable.cache", fileSystemURI.getScheme());
+        conf.setBoolean(disableCacheName, true);
+    }
+
+    /*
+     * General pattern that avoids having to specify the server's Kerberos principal name when using Kerberos authentication
+     */
+    private static void allowGeneralKerberosPrincipals(final Configuration conf) {
+        conf.set("dfs.namenode.kerberos.principal.pattern", "*");
+    }
+
 
 }

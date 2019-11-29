@@ -1,9 +1,9 @@
 package com.denodo.connect.hadoop.hdfs.commons.schema;
 
-import org.apache.parquet.schema.PrimitiveType;
-
 import java.util.ArrayList;
 import java.util.Collection;
+
+import org.apache.parquet.schema.PrimitiveType;
 
 
 
@@ -15,27 +15,28 @@ public class SchemaElement {
     private Collection<SchemaElement> elements;
     private boolean isNullable = false;
 
-    public SchemaElement(String name, Class<?> type) {
+    public SchemaElement(final String name, final Class<?> type) {
 
         this.name = name;
         this.type = type;
-        this.elements = new ArrayList<SchemaElement>();
+        this.elements = new ArrayList<>();
     }
     
-    public SchemaElement(String name, Class<?> type, boolean isNullable) {
+    public SchemaElement(final String name, final Class<?> type, final boolean isNullable) {
 
         this.name = name;
         this.type = type;
-        this.elements = new ArrayList<SchemaElement>();
+        this.elements = new ArrayList<>();
         this.isNullable = isNullable;
     }
 
-    public SchemaElement(String name, Class<?> type, PrimitiveType.PrimitiveTypeName sourceType, boolean isNullable) {
+    public SchemaElement(
+        final String name, final Class<?> type, final PrimitiveType.PrimitiveTypeName sourceType, final boolean isNullable) {
 
         this.name = name;
         this.type = type;
         this.sourceType = sourceType;
-        this.elements = new ArrayList<SchemaElement>();
+        this.elements = new ArrayList<>();
         this.isNullable = isNullable;
     }
 
@@ -43,7 +44,7 @@ public class SchemaElement {
         return this.name;
     }
 
-    public void setName(String name) {
+    public void setName(final String name) {
         this.name = name;
     }
 
@@ -51,19 +52,19 @@ public class SchemaElement {
         return this.type;
     }
 
-    public void setType(Class<?> type) {
+    public void setType(final Class<?> type) {
         this.type = type;
     }
 
     public PrimitiveType.PrimitiveTypeName getSourceType() { return this.sourceType; }
 
-    public void setSourceType(PrimitiveType.PrimitiveTypeName sourceType) { this.sourceType = sourceType; }
+    public void setSourceType(final PrimitiveType.PrimitiveTypeName sourceType) { this.sourceType = sourceType; }
 
     public Collection<SchemaElement> getElements() {
         return this.elements;
     }
     
-    public void add(SchemaElement element) {
+    public void add(final SchemaElement element) {
         this.elements.add(element);
     }
 
@@ -71,7 +72,7 @@ public class SchemaElement {
         return this.isNullable;
     }
 
-    public void setNullable(boolean isNullable) {
+    public void setNullable(final boolean isNullable) {
         this.isNullable = isNullable;
     }
 

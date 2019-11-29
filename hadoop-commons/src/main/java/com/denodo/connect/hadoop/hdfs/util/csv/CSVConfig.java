@@ -21,8 +21,8 @@
  */
 package com.denodo.connect.hadoop.hdfs.util.csv;
 
-import org.apache.commons.lang.CharUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.CharUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class CSVConfig {
     
@@ -99,7 +99,7 @@ public class CSVConfig {
             return null;
         }
         
-        char c;
+        final char c;
         switch (sep) {
         case "\\t":
             c = '\t';

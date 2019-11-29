@@ -8,7 +8,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -25,15 +25,15 @@ public final class AvroSchemaUtils {
 
     }
 
-    public static Schema buildSchema(Map<String, String> inputValues, Configuration conf) throws IOException {
+    public static Schema buildSchema(final Map<String, String> inputValues, final Configuration conf) throws IOException {
 
         // The two input parameters AVSC_FILE_PATH and AVSC_JSON are mutually exclusive.
-        String schemaFilePath = inputValues.get(Parameter.AVRO_SCHEMA_PATH);
+        final String schemaFilePath = inputValues.get(Parameter.AVRO_SCHEMA_PATH);
         if (StringUtils.isNotBlank(schemaFilePath)) {
             return AvroSchemaUtils.buildSchema(conf, schemaFilePath);
         }
 
-        String schema = inputValues.get(Parameter.AVRO_SCHEMA_JSON);
+        final String schema = inputValues.get(Parameter.AVRO_SCHEMA_JSON);
         if (StringUtils.isNotBlank(schema)) {
             return AvroSchemaUtils.buildSchema(schema);
         }
@@ -43,13 +43,13 @@ public final class AvroSchemaUtils {
 
     }
 
-    public static Schema buildSchema(Configuration conf, String schemaFilePath) throws IOException {
+    private static Schema buildSchema(final Configuration conf, final String schemaFilePath) throws IOException {
 
         FSDataInputStream dataInputStream = null;
         try {
 
-            FileSystem fileSystem = FileSystem.get(conf);
-            Path avscPath = new Path(schemaFilePath);
+            final FileSystem fileSystem = FileSystem.get(conf);
+            final Path avscPath = new Path(schemaFilePath);
             dataInputStream = fileSystem.open(avscPath);
 
             return  new Schema.Parser().parse(dataInputStream);
@@ -60,7 +60,7 @@ public final class AvroSchemaUtils {
 
     }
 
-    public static Schema buildSchema(String schema) {
+    private static Schema buildSchema(final String schema) {
         return new Schema.Parser().parse(schema);
     }
 
@@ -90,35 +90,35 @@ public final class AvroSchemaUtils {
     * (<a href="http://avro.apache.org/docs/1.5.4/api/java/org/apache/avro/Schema.html">here</a>)
     * </p>
     */
-    public static SchemaElement buildSchema(Schema schema, String schemaName) {
+    public static SchemaElement buildSchema(final Schema schema, final String schemaName) {
 
-        Type schemaType = schema.getType();
-        Class<?> javaType = AvroTypeUtils.toJava(schema);
+        final Type schemaType = schema.getType();
+        final Class<?> javaType = AvroTypeUtils.toJava(schema);
         if (AvroTypeUtils.isSimple(schemaType) || AvroTypeUtils.isEnum(schemaType) || AvroTypeUtils.isFixed(schemaType)) {
             return new SchemaElement(schemaName, javaType);
 
         } else if (AvroTypeUtils.isArray(schemaType)) {
-            Schema arrayElement = schema.getElementType();
-            SchemaElement schemaElement = new SchemaElement(schemaName, javaType);
+            final Schema arrayElement = schema.getElementType();
+            final SchemaElement schemaElement = new SchemaElement(schemaName, javaType);
             schemaElement.add(buildSchema(arrayElement, arrayElement.getName()));
 
             return schemaElement;
         } else if (AvroTypeUtils.isUnion(schemaType)) {
             // Only support UNION types with two types, being one of them NULL
-            List<Schema> schemas = schema.getTypes();
-            Schema notNullSchema = AvroTypeUtils.getNotNull(schemas);
+            final List<Schema> schemas = schema.getTypes();
+            final Schema notNullSchema = AvroTypeUtils.getNotNull(schemas);
             return buildSchema(notNullSchema, schemaName);
         } else if (AvroTypeUtils.isRecord(schemaType)) {
-            String recordName = schema.getName();
-            SchemaElement schemaElement = new SchemaElement(recordName, javaType);
-            for (Field f : schema.getFields()) {
+            final String recordName = schema.getName();
+            final SchemaElement schemaElement = new SchemaElement(recordName, javaType);
+            for (final Field f : schema.getFields()) {
                 schemaElement.add(buildSchema(f.schema(), f.name()));
             }
             return schemaElement;
 
         } else if (AvroTypeUtils.isMap(schemaType)) {
             // map is a struct with two fields: key and value
-            SchemaElement schemaElement = new SchemaElement(schemaName, javaType);
+            final SchemaElement schemaElement = new SchemaElement(schemaName, javaType);
 
             schemaElement.add(new SchemaElement(Parameter.KEY, String.class));
             schemaElement.add(buildSchema(schema.getValueType(), Parameter.VALUE));
