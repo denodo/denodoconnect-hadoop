@@ -53,31 +53,28 @@ public class HDFSParquetFileReader implements HDFSFileReader {
     private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileReader.class);
 
     private ParquetReader<Group> dataFileReader;
-    private MessageType parquetSchema;
     private List<String> conditionFields;
 
-    private Path path;
-    private boolean includePathColumn;
+    private String pathValue;
+    private boolean includePathValue;
 
-    public HDFSParquetFileReader(final Configuration conf, final Path path,  final boolean includePathColumn,
+    public HDFSParquetFileReader(final Configuration conf, final Path path,  final boolean includePathValue,
         final FilterCompat.Filter filter, final MessageType parquetSchema, final List<String> conditionFields)
         throws IOException {
 
-        this.path = path;
-
-        this.includePathColumn = includePathColumn;
-        this.parquetSchema = parquetSchema;
-
+        this.pathValue = path.toString();
+        this.includePathValue = includePathValue;
         this.conditionFields = conditionFields;
 
-        openReader(path, conf, filter);
+        openReader(path, conf, filter, parquetSchema);
 
     }
 
-    private void openReader(final Path path, final Configuration configuration, final FilterCompat.Filter filter) throws IOException {
+    private void openReader(final Path path, final Configuration configuration, final FilterCompat.Filter filter,
+        final MessageType parquetSchema) throws IOException {
 
         try {
-            configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.parquetSchema.toString());
+            configuration.set(ReadSupport.PARQUET_READ_SCHEMA, parquetSchema.toString());
 
             final GroupReadSupport groupReadSupport = new GroupReadSupport();
             if (filter != null) {
@@ -87,9 +84,9 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             }
 
         } catch (final IOException e) {
-            throw new IOException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+            throw new IOException("'" + path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
         } catch (final RuntimeException e) {
-            throw new RuntimeException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+            throw new RuntimeException("'" + path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
         }
 
     }
@@ -101,8 +98,8 @@ public class HDFSParquetFileReader implements HDFSFileReader {
 
             Object data = doRead();
             if (data != null) {
-                if (this.includePathColumn){
-                    data = ArrayUtils.add((Object[]) data, this.path.toString());
+                if (this.includePathValue){
+                    data = ArrayUtils.add((Object[]) data, pathValue);
                 }
                 return data;
             }
@@ -112,10 +109,10 @@ public class HDFSParquetFileReader implements HDFSFileReader {
 
         } catch (final IOException e) {
             close();
-            throw new IOException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+            throw new IOException('\'' + pathValue + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
         } catch (final RuntimeException e) {
             close();
-            throw new RuntimeException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+            throw new RuntimeException('\'' + pathValue + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
         }
 
     }
@@ -144,26 +141,10 @@ public class HDFSParquetFileReader implements HDFSFileReader {
     }
 
     /**
-     * Method for read all the parquet types
-     * @return Record with the fields
-     */
-    private static Object[] readParquetLogicalTypes(final Group datum) throws IOException {
-
-        final List<Type> fields = datum.getType().getFields();
-        final Object[] vdpRecord = new Object[fields.size()];
-        int i = 0;
-        for (final Type field : fields) {
-            vdpRecord[i] = readTypes(datum, field);
-            i++;
-        }
-        return vdpRecord;
-    }
-
-    /**
      * Method for read all the parquet types excluding the conditionFields
      * @return Record with the fields
      */
-    private static Object[] readParquetLogicalTypes(final Group datum, List<String> conditionFields)
+    private static Object[] readParquetLogicalTypes(final Group datum, final List<String> conditionFields)
         throws IOException {
 
         final List<Type> fields = datum.getType().getFields();
@@ -189,14 +170,19 @@ public class HDFSParquetFileReader implements HDFSFileReader {
         
         if (ParquetTypeUtils.isGroup(valueList)) {
             return readGroup(datum, valueList);
-        } else if (ParquetTypeUtils.isMap(valueList)) {
-            return readMap(datum, valueList);
-        } else if (ParquetTypeUtils.isList(valueList)) {
-            return readList(datum, valueList);
-        } else {
-            LOG.error("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
-            throw new IOException("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
         }
+
+        if (ParquetTypeUtils.isMap(valueList)) {
+            return readMap(datum, valueList);
+        }
+
+        if (ParquetTypeUtils.isList(valueList)) {
+            return readList(datum, valueList);
+        }
+
+        LOG.error("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
+        throw new IOException("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
+
     }
 
     /**
@@ -356,5 +342,20 @@ public class HDFSParquetFileReader implements HDFSFileReader {
         return null;
     }
 
+    /**
+     * Method for read all the parquet types
+     * @return Record with the fields
+     */
+    private static Object[] readParquetLogicalTypes(final Group datum) throws IOException {
+
+        final List<Type> fields = datum.getType().getFields();
+        final Object[] vdpRecord = new Object[fields.size()];
+        int i = 0;
+        for (final Type field : fields) {
+            vdpRecord[i] = readTypes(datum, field);
+            i++;
+        }
+        return vdpRecord;
+    }
     
 }

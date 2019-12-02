@@ -72,10 +72,6 @@ import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParamete
 /**
  * HDFS file custom wrapper for reading Parquet files stored in HDFS (Hadoop
  * Distributed File System).
- * <p>
- *
- * The following parameters are required: file system URI, Avro
- * schema file path or Avro schema JSON. <br/>
  *
  */
 public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
@@ -145,23 +141,19 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         try {
 
             final Configuration conf = getHadoopConfiguration(inputValues);
-
-            final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
-            final Path path = new Path(parquetFilePath);
-            
+            final Path path = new Path(inputValues.get(Parameter.PARQUET_FILE_PATH));
             final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
-
             final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
 
             pathIterator = new PathIterator(conf, path, fileNamePattern, null);
             final ParquetSchemaBuilder schemaBuilder = new ParquetSchemaBuilder(conf, pathIterator.next(), null, null);
 
             final SchemaElement javaSchema = schemaBuilder.getSchema();
-            if(includePathColumn){
+            if (includePathColumn){
                 final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, false,
                     CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false);
-                return (CustomWrapperSchemaParameter[]) ArrayUtils.add(VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements()),filePath);
-            }else {
+                return (CustomWrapperSchemaParameter[]) ArrayUtils.add(VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements()), filePath);
+            } else {
                 return VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
             }
         } catch (final NoSuchElementException e) {
@@ -190,8 +182,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
         final Configuration conf = getHadoopConfiguration(inputValues);
-        final String parquetFilePath = inputValues.get(Parameter.PARQUET_FILE_PATH);
-        final Path path = new Path(parquetFilePath);
+        final Path path = new Path(inputValues.get(Parameter.PARQUET_FILE_PATH));
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
         final boolean readInParallel = Boolean.parseBoolean(inputValues.get(Parameter.READ_PARALLEL));
@@ -246,13 +237,11 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final int parallelism = readerManager.getParallelism();
 
         final Collection<ReaderTask> readers = new ArrayList<>(parallelism);
-
         while (pathIterator.hasNext()) {
             int i = 0;
-            while (pathIterator.hasNext() && i < parallelism && !isStopRequested()) {
+            while (pathIterator.hasNext() && i < parallelism && ! isStopRequested()) {
                 final HDFSParquetFileReader currentReader = new HDFSParquetFileReader(conf, pathIterator.next(),
                     includePathColumn, filter, schema, conditionFields);
-
                 readers.add(new ReaderTask(currentReader, projectedFields, result));
                 i++;
             }
@@ -273,7 +262,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 includePathColumn, filter, schema, conditionFields);
 
             Object parquetData = reader.read();
-            while (parquetData != null && !isStopRequested()) {
+            while (parquetData != null && ! isStopRequested()) {
                 result.addRow((Object[]) parquetData, projectedFields);
                 parquetData = reader.read();
             }
