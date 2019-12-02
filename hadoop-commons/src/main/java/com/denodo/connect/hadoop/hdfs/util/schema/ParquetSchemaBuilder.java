@@ -14,29 +14,18 @@ package com.denodo.connect.hadoop.hdfs.util.schema;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
-import org.apache.hadoop.fs.RemoteIterator;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
-import com.denodo.connect.hadoop.hdfs.util.io.FileFilter;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
@@ -46,9 +35,8 @@ import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 
-public class HDFSParquetSchemaReader implements Iterator {
+public class ParquetSchemaBuilder {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HDFSParquetSchemaReader.class);
 
     private List<CustomWrapperFieldExpression> projectedFields;
     private MessageType parquetSchema;
@@ -57,13 +45,23 @@ public class HDFSParquetSchemaReader implements Iterator {
 
     private Configuration configuration;
 
-    private Path outputPath;
-    private Path currentPath;
-    private RemoteIterator<LocatedFileStatus> fileIterator;
-    private FileSystem fileSystem;
-    private PathFilter fileFilter;
+    private Path path;
 
-    public boolean getHasNullValueInConditions() {
+
+    public ParquetSchemaBuilder(final Configuration conf, final Path path, final List<CustomWrapperFieldExpression> projectedFields,
+        final CustomWrapperConditionHolder condition) throws IOException {
+
+        this.configuration = conf;
+        this.path = path;
+
+        this.projectedFields = projectedFields;
+
+        this.hasNullValueInConditions = false;
+        this.conditionFields = condition != null ? this.getFieldsNameAndCheckNullConditions(condition.getComplexCondition()) : null;
+
+    }
+
+    public boolean hasNullValueInConditions() {
         return this.hasNullValueInConditions;
     }
 
@@ -71,44 +69,9 @@ public class HDFSParquetSchemaReader implements Iterator {
         return this.conditionFields;
     }
 
-    public HDFSParquetSchemaReader(final Configuration conf, final Path path, final String finalNamePattern, final String user,
-        final List<CustomWrapperFieldExpression> projectedFields, final CustomWrapperConditionHolder condition)
-        throws IOException, InterruptedException {
+    public SchemaElement getSchema() throws IOException {
 
-        try {
-            this.configuration = conf;
-            this.outputPath = path;
-
-            this.fileSystem = UserGroupInformation.isSecurityEnabled() ? FileSystem.get(this.configuration) : FileSystem
-                .get(FileSystem.getDefaultUri(this.configuration), this.configuration, user);
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("FileSystem is: " + this.fileSystem.getUri());
-                LOG.debug("Path is: " + path);
-            }
-
-            this.fileFilter = new FileFilter(finalNamePattern);
-
-            initFileIterator();
-
-            this.projectedFields = projectedFields;
-
-            this.hasNullValueInConditions = false;
-            this.conditionFields = condition != null ? this.getFieldsNameAndCheckNullConditions(condition.getComplexCondition()) : null;
-
-        } catch (final IOException | RuntimeException | InterruptedException e) {
-            if (this.fileSystem != null) {
-                this.fileSystem.close();
-            }
-
-            throw e;
-        }
-    }
-
-    public SchemaElement getSchema(final Configuration configuration) throws IOException {
-
-        final Path filePath = nextFilePath();
-        this.parquetSchema = getParquetSchema(configuration, filePath);
+        this.parquetSchema = getParquetSchema(this.configuration, this.path);
 
         final boolean isMandatory = this.parquetSchema.getRepetition() == Type.Repetition.REQUIRED;
         final SchemaElement schemaElement = new SchemaElement(this.parquetSchema.getName(), Object.class, isMandatory);
@@ -118,8 +81,10 @@ public class HDFSParquetSchemaReader implements Iterator {
     }
 
     private MessageType getParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
-        final ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
-        final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
+
+        final ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter()
+            .useDictionaryFilter().useRecordFilter().build();
+        final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath, configuration), parquetReadOptions);
 
         final ParquetMetadata readFooter = parquetFileReader.getFooter();
 
@@ -130,28 +95,17 @@ public class HDFSParquetSchemaReader implements Iterator {
         // Sets the expected schema so Parquet could validate that all files (e.g. in a directory) follow this schema.
         // If the schema is not set Parquet will use the schema contained in each Parquet file
         if (this.parquetSchema == null) {
-            this.parquetSchema = getProjectedParquetSchema(this.configuration, this.currentPath);
-        } else {
-            this.schemaWithProjectedAndConditionFields(this.parquetSchema);
+            this.parquetSchema = getParquetSchema(this.configuration, this.path);
         }
+
+        schemaWithProjectedAndConditionFields(this.parquetSchema);
+
         return this.parquetSchema;
     }
 
-    private MessageType getProjectedParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
-        final ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter().useDictionaryFilter().useRecordFilter().build();
-        final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath,configuration), parquetReadOptions);
-
-        final ParquetMetadata readFooter = parquetFileReader.getFooter();
-        final MessageType schema = readFooter.getFileMetaData().getSchema();
-
-        this.schemaWithProjectedAndConditionFields(schema);
-
-        return schema;
-    }
-
     private void schemaWithProjectedAndConditionFields(final MessageType schema) {
+
         if (this.projectedFields != null || this.conditionFields != null) {
-            final List<Integer> schemaFieldsToDelete  = new ArrayList<Integer>();
 
             final List<Type> schemaWithProjectionAndConditionFields = new ArrayList<Type>();
             for (final CustomWrapperFieldExpression projectedField : this.projectedFields) {
@@ -175,19 +129,12 @@ public class HDFSParquetSchemaReader implements Iterator {
         }
     }
 
-    private void initFileIterator() throws IOException {
-
-        this.fileIterator = this.fileSystem.listFiles(this.outputPath, true);
-        if (!this.fileIterator.hasNext()) {
-            throw new IOException("'" + this.outputPath + "' does not exist or it denotes an empty directory");
-        }
-    }
-
     /**
      * Get the condition field names excluding the projected field names and compound fields (compound fields is not included in projections).
      * This method also initialize the hasNullValueInConditions variable
      */
     private List<String> getFieldsNameAndCheckNullConditions(final CustomWrapperCondition condition) throws IOException {
+
         final List<String> conditionFields = new ArrayList<String>();
         if (condition != null) {
             if (condition.isAndCondition()) {
@@ -254,6 +201,7 @@ public class HDFSParquetSchemaReader implements Iterator {
      *
      */
     private boolean hasNullValueInSimpleCondition(final CustomWrapperSimpleCondition vdpCondition) {
+
         for (final CustomWrapperExpression expression : vdpCondition.getRightExpression()) {
             if (expression.isSimpleExpression()) {
                 final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) expression;
@@ -265,105 +213,4 @@ public class HDFSParquetSchemaReader implements Iterator {
         return false;
     }
 
-    public Path nextFilePath() throws IOException {
-
-        Path path = null;
-        boolean found = false;
-        while (this.fileIterator.hasNext() && !found) {
-
-            final FileStatus fileStatus = this.fileIterator.next();
-
-            if (this.fileFilter.accept(fileStatus.getPath())) {
-                if (fileStatus.isFile()) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Path of the file to read is: " + fileStatus.getPath());
-                    }
-
-                    path = fileStatus.getPath();
-                } else if (fileStatus.isSymlink()) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Path of the symbolic link to read is: " + fileStatus.getSymlink());
-                    }
-
-                    path = fileStatus.getSymlink();
-                } else {
-                    throw new IllegalArgumentException(
-                        "'" + fileStatus.getPath() + "' is neither a file nor symbolic link");
-                }
-                found = true;
-            }
-        }
-
-        if (path == null) {
-            throw new NoSuchElementException();
-        }
-        this.currentPath = path;
-        return path;
-    }
-
-    public void close() throws IOException {
-
-        if (this.fileSystem != null) {
-            this.fileSystem.close();
-            this.fileSystem = null;
-        }
-    }
-
-
-    public void delete() throws IOException {
-
-        if (this.fileSystem == null) {
-            this.fileSystem = FileSystem.get(this.configuration);
-        }
-        this.fileSystem.delete(this.outputPath, true);
-        this.fileSystem.close();
-        this.fileSystem = null;
-    }
-
-    @Override
-    public boolean hasNext() {
-        try {
-            return this.fileIterator.hasNext();
-        } catch (final IOException e) {
-            LOG.error("File Iterator error " + e.getMessage(), e);
-            return  false;
-        }
-    }
-
-    @Override
-    public Object next() {
-        Path path = null;
-        boolean found = false;
-        try {
-            while (this.fileIterator.hasNext() && !found) {
-
-                final FileStatus fileStatus = this.fileIterator.next();
-
-                if (this.fileFilter.accept(fileStatus.getPath())) {
-                    if (fileStatus.isFile()) {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Path of the file to read is: " + fileStatus.getPath());
-                        }
-
-                        path = fileStatus.getPath();
-                    } else if (fileStatus.isSymlink()) {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Path of the symbolic link to read is: " + fileStatus.getSymlink());
-                        }
-
-                        path = fileStatus.getSymlink();
-                    } else {
-                        throw new IllegalArgumentException(
-                            "'" + fileStatus.getPath() + "' is neither a file nor symbolic link");
-                    }
-                    found = true;
-                }
-            }
-            this.currentPath = path;
-        } catch (final IOException e) {
-            LOG.error("File Iterator error " + e.getMessage(), e);
-            return  null;
-        }
-        return path;
-    }
 }

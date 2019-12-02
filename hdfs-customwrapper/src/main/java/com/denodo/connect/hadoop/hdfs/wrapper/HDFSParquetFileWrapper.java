@@ -43,15 +43,18 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat;
+import org.apache.parquet.filter2.compat.FilterCompat.Filter;
 import org.apache.parquet.filter2.predicate.FilterPredicate;
 import org.apache.parquet.hadoop.ParquetInputFormat;
+import org.apache.parquet.schema.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
-import com.denodo.connect.hadoop.hdfs.util.schema.HDFSParquetSchemaReader;
+import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
+import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaBuilder;
 import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManager;
@@ -99,7 +102,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     private static final CustomWrapperInputParameter[] DATA_SOURCE_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.FILESYSTEM_URI,
-                "e.g. hdfs://<ip>:<port> or s3n://<id>:<secret>\\\\@<bucket>t ",
+                "e.g. hdfs://<ip>:<port> or s3a://<bucket> ",
                 true, true, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
@@ -138,7 +141,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
             throws CustomWrapperException {
 
-        HDFSParquetSchemaReader reader = null;
+        PathIterator pathIterator  = null;
         try {
 
             final Configuration conf = getHadoopConfiguration(inputValues);
@@ -150,9 +153,10 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
             final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
 
-            reader = new HDFSParquetSchemaReader(conf, path, fileNamePattern, null, null, null);
+            pathIterator = new PathIterator(conf, path, fileNamePattern, null);
+            final ParquetSchemaBuilder schemaBuilder = new ParquetSchemaBuilder(conf, pathIterator.next(), null, null);
 
-            final SchemaElement javaSchema = reader.getSchema(conf);
+            final SchemaElement javaSchema = schemaBuilder.getSchema();
             if(includePathColumn){
                 final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, false,
                     CustomWrapperSchemaParameter.NOT_SORTABLE, false, true, false);
@@ -170,8 +174,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             throw new CustomWrapperException(e.getMessage(), e);
         } finally {
             try {
-                if (reader != null ) {
-                    reader.close();
+                if (pathIterator != null ) {
+                    pathIterator.close();
                 }
             } catch (final IOException e) {
                 LOG.error("Error releasing the reader", e);
@@ -192,13 +196,14 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
         final boolean readInParallel = Boolean.parseBoolean(inputValues.get(Parameter.READ_PARALLEL));
 
-        HDFSParquetSchemaReader schemaReader = null;
-
+        PathIterator pathIterator = null;
         try {
-            schemaReader = new HDFSParquetSchemaReader(conf, path, fileNamePattern, null, projectedFields, condition);
+
+            pathIterator = new PathIterator(conf, path, fileNamePattern, null);
+            final ParquetSchemaBuilder schemaBuilder = new ParquetSchemaBuilder(conf, pathIterator.next(), projectedFields, condition);
             SchemaElement schema = null;
-            if (schemaReader.getHasNullValueInConditions()) {
-                schema = schemaReader.getSchema(conf);
+            if (schemaBuilder.hasNullValueInConditions()) {
+                schema = schemaBuilder.getSchema();
             }
 
             final FilterPredicate filterPredicate = ParquetSchemaUtils.buildFilter(condition.getComplexCondition(), schema);
@@ -208,12 +213,13 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 filter = ParquetInputFormat.getFilter(conf);
             }
 
+            pathIterator.reset();
             if (readInParallel) {
-                parallelRead(conf, projectedFields, includePathColumn, filter, result, schemaReader);
+                parallelRead(pathIterator, conf, schemaBuilder.getProjectedSchema(), projectedFields,
+                    schemaBuilder.getConditionFields(), filter, includePathColumn, result);
             } else {
-                final HDFSParquetFileReader reader = new HDFSParquetFileReader(conf, schemaReader.nextFilePath(), null, projectedFields,
-                    includePathColumn, filter, schemaReader.getProjectedSchema(), schemaReader.getConditionFields());
-                singleRead(result, reader, projectedFields);
+                singleRead(pathIterator, conf, schemaBuilder.getProjectedSchema(), projectedFields,
+                    schemaBuilder.getConditionFields(), filter, includePathColumn, result);
             }
 
         } catch (final Exception e) {
@@ -222,8 +228,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
         } finally {
             try {
-                if (schemaReader != null ) {
-                    schemaReader.close();
+                if (pathIterator != null ) {
+                    pathIterator.close();
                 }
             } catch (final IOException e) {
                 LOG.error("Error releasing the reader", e);
@@ -232,21 +238,20 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     }
 
 
-    private void parallelRead(final Configuration conf, final List<CustomWrapperFieldExpression> projectedFields,
-        final boolean includePathColumn, final FilterCompat.Filter filter,
-        final CustomWrapperResult result, final HDFSParquetSchemaReader schemaReader) throws IOException, InterruptedException,
-        ExecutionException {
+    private void parallelRead(final PathIterator pathIterator, final Configuration conf, final MessageType schema,
+        final List<CustomWrapperFieldExpression> projectedFields, final List<String> conditionFields, final Filter filter,
+        final boolean includePathColumn, final CustomWrapperResult result) throws IOException, ExecutionException {
 
         final ReaderManager readerManager = ReaderManager.getInstance();
         final int parallelism = readerManager.getParallelism();
 
         final Collection<ReaderTask> readers = new ArrayList<>(parallelism);
 
-        while (schemaReader.hasNext()) {
+        while (pathIterator.hasNext()) {
             int i = 0;
-            while (schemaReader.hasNext() && i < parallelism && !isStopRequested()) {
-                final HDFSParquetFileReader currentReader = new HDFSParquetFileReader(conf, schemaReader.nextFilePath(),
-                    null, projectedFields, includePathColumn, filter, schemaReader.getProjectedSchema(), schemaReader.getConditionFields());
+            while (pathIterator.hasNext() && i < parallelism && !isStopRequested()) {
+                final HDFSParquetFileReader currentReader = new HDFSParquetFileReader(conf, pathIterator.next(),
+                    includePathColumn, filter, schema, conditionFields);
 
                 readers.add(new ReaderTask(currentReader, projectedFields, result));
                 i++;
@@ -259,13 +264,19 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         }
     }
 
-    private void singleRead(final CustomWrapperResult result, final HDFSParquetFileReader reader,
-        final List<CustomWrapperFieldExpression> projectedFields) throws IOException {
+    private void singleRead(final PathIterator pathIterator, final Configuration conf, final MessageType schema,
+        final List<CustomWrapperFieldExpression> projectedFields, final List<String> conditionFields, final Filter filter,
+        final boolean includePathColumn, final CustomWrapperResult result) throws IOException {
 
-        Object parquetData = reader.read();
-        while (parquetData != null && !isStopRequested()) {
-            result.addRow((Object[]) parquetData, projectedFields);
-            parquetData = reader.read();
+        while (pathIterator.hasNext()) {
+            final HDFSParquetFileReader reader = new HDFSParquetFileReader(conf, pathIterator.next(),
+                includePathColumn, filter, schema, conditionFields);
+
+            Object parquetData = reader.read();
+            while (parquetData != null && !isStopRequested()) {
+                result.addRow((Object[]) parquetData, projectedFields);
+                parquetData = reader.read();
+            }
         }
     }
 }

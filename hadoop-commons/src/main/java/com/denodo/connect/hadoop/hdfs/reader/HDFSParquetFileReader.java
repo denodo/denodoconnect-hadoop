@@ -26,16 +26,11 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.hadoop.ParquetReader;
@@ -51,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.util.type.ParquetTypeUtils;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
 
 public class HDFSParquetFileReader implements HDFSFileReader {
@@ -59,98 +53,107 @@ public class HDFSParquetFileReader implements HDFSFileReader {
     private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileReader.class);
 
     private ParquetReader<Group> dataFileReader;
-    private List<CustomWrapperFieldExpression> projectedFields;
     private MessageType parquetSchema;
-    private FilterCompat.Filter filter;
     private List<String> conditionFields;
 
-    private Configuration configuration;
-
-    private FileSystem fileSystem;
-    private RemoteIterator<LocatedFileStatus> fileIterator;
-    private boolean firstReading;
     private Path path;
     private boolean includePathColumn;
 
-    public HDFSParquetFileReader(final Configuration conf, final Path path, final String user,
-    		final List<CustomWrapperFieldExpression> projectedFields, final boolean includePathColumn,
-            final FilterCompat.Filter filter, final MessageType parquetSchema, final List<String> conditionFields)
-            throws IOException, InterruptedException {
+    public HDFSParquetFileReader(final Configuration conf, final Path path,  final boolean includePathColumn,
+        final FilterCompat.Filter filter, final MessageType parquetSchema, final List<String> conditionFields)
+        throws IOException {
 
-        try {
-            this.configuration = conf;
-            this.path = path;
+        this.path = path;
 
-            if (!UserGroupInformation.isSecurityEnabled()) {
-                this.fileSystem = FileSystem.get(FileSystem.getDefaultUri(this.configuration), this.configuration,
-                    user);
-            } else {
-                this.fileSystem = FileSystem.get(this.configuration);
-            }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("FileSystem is: " + this.fileSystem.getUri());
-                LOG.debug("Path is: " + path);
-            }
+        this.includePathColumn = includePathColumn;
+        this.parquetSchema = parquetSchema;
 
-            initFileIterator();
+        this.conditionFields = conditionFields;
 
-            this.firstReading = true;
-            this.includePathColumn = includePathColumn;
-            this.parquetSchema = parquetSchema;
+        openReader(path, conf, filter);
 
-            this.projectedFields = projectedFields;
-            this.filter = filter;
-            this.conditionFields = conditionFields;
-
-        } catch (final IOException | InterruptedException | RuntimeException e) {
-            if (this.fileSystem != null) {
-                this.fileSystem.close();
-            }
-
-            throw e;
-        }
     }
 
-    private void doOpenReader(final Path path, final Configuration configuration) throws IOException {
+    private void openReader(final Path path, final Configuration configuration, final FilterCompat.Filter filter) throws IOException {
 
-        configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.parquetSchema.toString());
-        
-        final GroupReadSupport groupReadSupport = new GroupReadSupport();
-        if (this.filter != null) {
-            this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).withFilter(this.filter).build();
-        } else {
-            this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).build();
+        try {
+            configuration.set(ReadSupport.PARQUET_READ_SCHEMA, this.parquetSchema.toString());
+
+            final GroupReadSupport groupReadSupport = new GroupReadSupport();
+            if (filter != null) {
+                this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).withFilter(filter).build();
+            } else {
+                this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).build();
+            }
+
+        } catch (final IOException e) {
+            throw new IOException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        } catch (final RuntimeException e) {
+            throw new RuntimeException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
         }
+
+    }
+
+    @Override
+    public Object read() throws IOException {
+
+        try {
+
+            Object data = doRead();
+            if (data != null) {
+                if (this.includePathColumn){
+                    data = ArrayUtils.add((Object[]) data, this.path.toString());
+                }
+                return data;
+            }
+
+            close();
+            return null;
+
+        } catch (final IOException e) {
+            close();
+            throw new IOException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        } catch (final RuntimeException e) {
+            close();
+            throw new RuntimeException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+        }
+
     }
 
     private Object doRead() throws IOException {
         
         final Group data = this.dataFileReader.read();
         if (data != null) {
-            return readParquetLogicalTypes(data, this.projectedFields, this.conditionFields);
+            return readParquetLogicalTypes(data, this.conditionFields);
         }
 
         return null;
 
     }
 
-    private void closeReader() throws IOException {
+    @Override
+    public void close() throws IOException {
         if (this.dataFileReader != null) {
             this.dataFileReader.close();
         }
+    }
+
+    @Override
+    public void delete() throws IOException {
+
     }
 
     /**
      * Method for read all the parquet types
      * @return Record with the fields
      */
-    private static Object[] readParquetLogicalTypes(final Group datum, final List<CustomWrapperFieldExpression> projectedFields)
-            throws IOException {
+    private static Object[] readParquetLogicalTypes(final Group datum) throws IOException {
+
         final List<Type> fields = datum.getType().getFields();
         final Object[] vdpRecord = new Object[fields.size()];
         int i = 0;
         for (final Type field : fields) {
-            vdpRecord[i] = readTypes(datum, projectedFields, field);
+            vdpRecord[i] = readTypes(datum, field);
             i++;
         }
         return vdpRecord;
@@ -160,14 +163,15 @@ public class HDFSParquetFileReader implements HDFSFileReader {
      * Method for read all the parquet types excluding the conditionFields
      * @return Record with the fields
      */
-    private static Object[] readParquetLogicalTypes(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, List<String> conditionFields)
+    private static Object[] readParquetLogicalTypes(final Group datum, List<String> conditionFields)
         throws IOException {
+
         final List<Type> fields = datum.getType().getFields();
         final Object[] vdpRecord = new Object[fields.size() - conditionFields.size()];
         int i = 0;
         for (final Type field : fields) {
             if (!conditionFields.contains(field.getName()))  {
-                vdpRecord[i] = readTypes(datum, projectedFields, field);
+                vdpRecord[i] = readTypes(datum, field);
             }
             i++;
         }
@@ -177,19 +181,18 @@ public class HDFSParquetFileReader implements HDFSFileReader {
     /**
      * Method for read parquet types. The method does the validation to know what type needs to be read.
      */
-    private static Object readTypes(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Type valueList)
-            throws IOException {
+    private static Object readTypes(final Group datum, final Type valueList) throws IOException {
         
         if (valueList.isPrimitive()) {
             return readPrimitive(datum, valueList);
         }
         
         if (ParquetTypeUtils.isGroup(valueList)) {
-            return readGroup(datum, projectedFields, valueList);
+            return readGroup(datum, valueList);
         } else if (ParquetTypeUtils.isMap(valueList)) {
-            return readMap(datum, projectedFields, valueList);
+            return readMap(datum, valueList);
         } else if (ParquetTypeUtils.isList(valueList)) {
-            return readList(datum, projectedFields, valueList);
+            return readList(datum, valueList);
         } else {
             LOG.error("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
             throw new IOException("Type of the field " + valueList.toString() + ", does not supported by the custom wrapper ");
@@ -200,9 +203,11 @@ public class HDFSParquetFileReader implements HDFSFileReader {
      * Read method for parquet primitive types
      */
     private static Object readPrimitive(final Group datum, final Type field) throws IOException {
+
         if (datum.getFieldRepetitionCount(field.getName()) > 0) {
-            final PrimitiveTypeName   primitiveTypeName = field.asPrimitiveType().getPrimitiveTypeName();
-            try{
+            final PrimitiveTypeName primitiveTypeName = field.asPrimitiveType().getPrimitiveTypeName();
+            try {
+
                 if(primitiveTypeName.equals(PrimitiveTypeName.BINARY)) {
                     if(field.getOriginalType()!=null){
                         if(field.getOriginalType().equals(OriginalType.UTF8)){
@@ -273,9 +278,10 @@ public class HDFSParquetFileReader implements HDFSFileReader {
      * Read method for parquet group types
      * @return Record with the fields
      */
-    private static Object readGroup(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Type field) throws IOException {
+    private static Object readGroup(final Group datum, final Type field) throws IOException {
+
         if (datum.getFieldRepetitionCount(field.getName()) > 0) {
-            return readParquetLogicalTypes(datum.getGroup(field.getName(), 0), projectedFields);
+            return readParquetLogicalTypes(datum.getGroup(field.getName(), 0));
         } else if (field.getRepetition() == Repetition.REQUIRED) {
             //Is required tipe in schema
             throw new IOException("The field "+ field.toString()+" is Required");
@@ -288,7 +294,8 @@ public class HDFSParquetFileReader implements HDFSFileReader {
      * Read method for parquet list types
      * @return Array with the fields
      */
-    private static Object readList(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Type field) throws IOException {
+    private static Object readList(final Group datum, final Type field) throws IOException {
+
         //This only works with the last parquet version 1.5.0 Previous versions maybe don't have a valid format.
         if (datum.getFieldRepetitionCount(field.getName()) > 0) {
             try {
@@ -298,7 +305,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                     for (int j = 0; j < datumGroup.getFieldRepetitionCount(0); j++) {
                         final Group datumList = datumGroup.getGroup(0, j);
                         if (datumList != null && !datumList.getType().getFields().isEmpty()) {
-                            vdpArrayRecord[j][0] = readTypes(datumList, projectedFields, datumList.getType().getFields().get(0));
+                            vdpArrayRecord[j][0] = readTypes(datumList, datumList.getType().getFields().get(0));
                         } else {
                             throw new IOException("The list element " + field.getName() + " don't have a valid format");
                         }
@@ -320,7 +327,8 @@ public class HDFSParquetFileReader implements HDFSFileReader {
      * Read method for parquet map types
      * @return Array with the fields
      */
-    private static Object readMap(final Group datum, final List<CustomWrapperFieldExpression> projectedFields, final Type field) throws IOException {
+    private static Object readMap(final Group datum, final Type field) throws IOException {
+
         if (datum.getFieldRepetitionCount(field.getName()) > 0) {
             try {
                 final Group datumGroup = datum.getGroup(field.getName(), 0);
@@ -330,7 +338,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                         final Group datumMap = datumGroup.getGroup(0, j);
                         if (datumMap != null && datumMap.getType().getFields().size() > 1) {
                             vdpArrayRecord[j][0] = readPrimitive(datumMap,datumMap.getType().getFields().get(0));
-                            vdpArrayRecord[j][1] = readTypes(datumMap, projectedFields, datumMap.getType().getFields().get(0));
+                            vdpArrayRecord[j][1] = readTypes(datumMap, datumMap.getType().getFields().get(0));
                         } else {
                             throw new IOException("The list element " + field.getName() + " don't have a valid format");
                         }
@@ -348,80 +356,5 @@ public class HDFSParquetFileReader implements HDFSFileReader {
         return null;
     }
 
-    private void initFileIterator() throws IOException {
-
-        this.fileIterator = this.fileSystem.listFiles(this.path, true);
-        if (!this.fileIterator.hasNext()) {
-            throw new IOException("'" + this.path + "' does not exist or it denotes an empty directory");
-        }
-    }
-
-    private void openReader(final FileSystem fs, final Configuration conf) throws IOException {
-
-        try {
-            doOpenReader(this.path, conf);
-
-        } catch (final NoSuchElementException e) {
-            throw e;
-        } catch (final IOException e) {
-            throw new IOException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
-        } catch (final RuntimeException e) {
-            throw new RuntimeException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
-        }
-    }
-
-    @Override
-    public Object read() throws IOException {
-
-        try {
-
-            if (this.firstReading) {
-                openReader(this.fileSystem, this.configuration);
-                this.firstReading = false;
-            }
-
-            Object data = doRead();
-            if (data != null) {
-                if(this.includePathColumn){
-                    data= ArrayUtils.add((Object[])data, this.path.toString());
-                }
-                return data;
-            }
-
-            // This reader does not have anything read -> take next one
-            closeReader();
-
-            close();
-            return null;
-
-        } catch (final NoSuchElementException e) {
-            return null;
-        } catch (final IOException e) {
-            throw new IOException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
-        } catch (final RuntimeException e) {
-            throw new RuntimeException("'" + this.path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
-        }
-
-    }
-
-    @Override
-    public void close() throws IOException {
-        closeReader();
-        if (this.fileSystem != null) {
-            this.fileSystem.close();
-            this.fileSystem = null;
-        }
-    }
-
-    @Override
-    public void delete() throws IOException {
-
-        if (this.fileSystem == null) {
-            this.fileSystem = FileSystem.get(this.configuration);
-        }
-        this.fileSystem.delete(this.path, true);
-        this.fileSystem.close();
-        this.fileSystem = null;
-    }
     
 }

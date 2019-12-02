@@ -23,9 +23,7 @@ package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -35,18 +33,17 @@ public final class ReaderManager {
     private static final ReaderManager instance = new ReaderManager();
 
     private int parallelism;
-    private CompletionService<Void> completionService;
+    private ExecutorService threadPool;
 
 
     private ReaderManager() {
 
         this.parallelism = computeParallelism();
         final int poolSize = computePoolSize(this.parallelism);
-        final ExecutorService threadPool = Executors.newFixedThreadPool(poolSize);
-        this.completionService = new ExecutorCompletionService<>(threadPool);
+        this.threadPool = Executors.newFixedThreadPool(poolSize);
 
         // graceful shutdown when VDP stops
-        Runtime.getRuntime().addShutdownHook(new Thread(threadPool::shutdownNow));
+        Runtime.getRuntime().addShutdownHook(new Thread(this.threadPool::shutdownNow));
     }
 
     public static ReaderManager getInstance() {
@@ -57,19 +54,17 @@ public final class ReaderManager {
 
         final Collection<Future<Void>> futures = new ArrayList<>(readers.size());
         for (final ReaderTask reader : readers) {
-            futures.add(this.completionService.submit(reader));
+            futures.add(this.threadPool.submit(reader));
         }
 
-        int n = readers.size();
         try {
-            while (n > 0) {
-                n --;
-                this.completionService.take().get();
+            for (final Future<Void> future : futures) {
+                future.get();
             }
         } catch (final InterruptedException e) {
-            cancel(futures, n);
+            cancel(futures);
         } catch (final ExecutionException e) {
-            cancel(futures, n);
+            cancel(futures);
 
             throw e;
         }
@@ -77,18 +72,10 @@ public final class ReaderManager {
 
     }
 
-    private void cancel(final Collection<Future<Void>> futures, final int remainingTasks) {
+    private void cancel(final Collection<Future<Void>> futures) {
 
         for (final Future<Void> f : futures) {
             f.cancel(true);
-        }
-
-        for (int i = 0; i < remainingTasks; i ++) {
-            try {
-                this.completionService.take();  // remove interrupted tasks from the queue
-            } catch (final InterruptedException ignore) {
-
-            }
         }
     }
 
