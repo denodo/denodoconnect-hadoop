@@ -240,9 +240,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         while (pathIterator.hasNext()) {
             int i = 0;
             while (pathIterator.hasNext() && i < parallelism && ! isStopRequested()) {
-                final HDFSParquetFileReader currentReader = new HDFSParquetFileReader(conf, pathIterator.next(),
-                    includePathColumn, filter, schema, conditionFields);
-                readers.add(new ReaderTask(currentReader, projectedFields, result));
+
+                readers.add(new ReaderTask(conf, pathIterator.next(), schema, includePathColumn,  conditionFields, filter, projectedFields, result));
                 i++;
             }
 

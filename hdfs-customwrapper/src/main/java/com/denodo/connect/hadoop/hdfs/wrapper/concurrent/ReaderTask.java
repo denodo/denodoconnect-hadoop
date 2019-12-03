@@ -25,6 +25,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.parquet.filter2.compat.FilterCompat.Filter;
+import org.apache.parquet.schema.MessageType;
+
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
@@ -33,16 +38,27 @@ import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpressi
  * It is a Callable<Void> instead a Runnable because Callable can throw checked exceptions.
  *
  */
-public class ReaderTask implements Callable<Void> {
+public final class ReaderTask implements Callable<Void> {
 
-    private HDFSParquetFileReader reader;
-    private List<CustomWrapperFieldExpression> projectedFields;
-    private CustomWrapperResult result;
+    private final Configuration conf;
+    private final Path path;
+    private final MessageType schema;
+    private final boolean includePathColumn;
+    private final List<String> conditionFields;
+    private final Filter filter;
+    private final List<CustomWrapperFieldExpression> projectedFields;
+    private final CustomWrapperResult result;
 
-    public ReaderTask(final HDFSParquetFileReader reader, final List<CustomWrapperFieldExpression> projectedFields,
+    public ReaderTask(final Configuration conf, final Path path, final MessageType schema, final boolean includePathColumn,
+        final List<String> conditionFields, final Filter filter, final List<CustomWrapperFieldExpression> projectedFields,
         final CustomWrapperResult result) {
 
-        this.reader = reader;
+        this.conf = conf;
+        this.path = path;
+        this.schema = schema;
+        this.includePathColumn = includePathColumn;
+        this.conditionFields = conditionFields;
+        this.filter = filter;
         this.projectedFields = projectedFields;
         this.result = result;
     }
@@ -50,14 +66,16 @@ public class ReaderTask implements Callable<Void> {
     @Override
     public Void call() throws IOException {
 
-        Object parquetData = this.reader.read();
+        final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path,
+            this.includePathColumn, this.filter, this.schema, this.conditionFields);
+        Object parquetData = reader.read();
         while (parquetData != null ) {
 
-            synchronized (this) {
+            synchronized (this.result) {
                 this.result.addRow((Object[]) parquetData, this.projectedFields);
             }
 
-            parquetData = this.reader.read();
+            parquetData = reader.read();
         }
 
         return null;
