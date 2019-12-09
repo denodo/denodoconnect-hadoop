@@ -23,10 +23,7 @@ package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public final class ReaderManager {
 
@@ -50,10 +47,10 @@ public final class ReaderManager {
         return instance;
     }
 
-    public void execute(final Collection<ReaderTask> readers) throws ExecutionException {
+    public void execute(final Collection<Callable> readers) throws ExecutionException {
 
         final Collection<Future<Void>> futures = new ArrayList<>(readers.size());
-        for (final ReaderTask reader : readers) {
+        for (final Callable reader : readers) {
             futures.add(this.threadPool.submit(reader));
         }
 

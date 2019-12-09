@@ -36,6 +36,7 @@ import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.api.ReadSupport;
 import org.apache.parquet.hadoop.example.GroupReadSupport;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
@@ -58,13 +59,19 @@ public class HDFSParquetFileReader implements HDFSFileReader {
     private String pathValue;
     private boolean includePathValue;
 
+    private Long startingPos;
+    private Long endingPos;
+
     public HDFSParquetFileReader(final Configuration conf, final Path path,  final boolean includePathValue,
-        final FilterCompat.Filter filter, final MessageType parquetSchema, final List<String> conditionFields)
+        final FilterCompat.Filter filter, final MessageType parquetSchema, final List<String> conditionFields,
+        final Long startingPos, final Long endingPos)
         throws IOException {
 
         this.pathValue = path.toString();
         this.includePathValue = includePathValue;
         this.conditionFields = conditionFields;
+        this.startingPos = startingPos;
+        this.endingPos = endingPos;
 
         openReader(path, conf, filter, parquetSchema);
 
@@ -77,12 +84,14 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             configuration.set(ReadSupport.PARQUET_READ_SCHEMA, parquetSchema.toString());
 
             final GroupReadSupport groupReadSupport = new GroupReadSupport();
-            if (filter != null) {
-                this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).withFilter(filter).build();
-            } else {
-                this.dataFileReader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).build();
-            }
+            ParquetReader.Builder<Group> dataFileBuilder = ParquetReader.builder(groupReadSupport, path).withConf(configuration);
 
+            if (filter != null) {
+                dataFileBuilder.withFilter(filter);
+            } if (this.startingPos != null && this.endingPos != null) {
+                dataFileBuilder.withFileRange(this.startingPos, this.endingPos);
+            }
+            this.dataFileReader = dataFileBuilder.build();
         } catch (final IOException e) {
             throw new IOException("'" + path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
         } catch (final RuntimeException e) {

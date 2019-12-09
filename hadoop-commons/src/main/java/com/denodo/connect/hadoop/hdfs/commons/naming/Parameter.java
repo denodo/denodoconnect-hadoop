@@ -86,7 +86,7 @@ public final class Parameter {
     public static final String AVRO_FILE_PATH = "avroFilepath";
 
     public static final String PARQUET_FILE_PATH = "Parquet File path";
-    public static final String READ_PARALLEL = "Read in parallel";
+    public static final String READ_OPTIONS = "Read options";
 
     public static final String ACCESS_KEY_ID = "Access Key ID";
     public static final String SECRET_ACCESS_KEY = "Secret Access Key";

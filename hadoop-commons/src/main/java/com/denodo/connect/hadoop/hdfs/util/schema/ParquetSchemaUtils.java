@@ -43,13 +43,19 @@ import static org.apache.parquet.filter2.predicate.FilterApi.ltEq;
 import static org.apache.parquet.filter2.predicate.FilterApi.notEq;
 import static org.apache.parquet.filter2.predicate.FilterApi.or;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.predicate.FilterPredicate;
+import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.Type;
@@ -408,6 +414,15 @@ public class ParquetSchemaUtils {
             }
         }
         return filterPredicate;
+    }
+
+    public static List<BlockMetaData> getParquetRowGroups(final Configuration configuration, final Path filePath) throws IOException {
+        List<BlockMetaData> rowGroups  = null;
+        try (final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath, configuration))) {
+
+            rowGroups = parquetFileReader.getRowGroups();
+        }
+        return rowGroups;
     }
 
 }
