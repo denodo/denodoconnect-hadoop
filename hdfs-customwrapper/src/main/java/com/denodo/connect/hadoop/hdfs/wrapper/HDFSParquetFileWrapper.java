@@ -34,6 +34,7 @@ import java.sql.Types;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.RowGroupReaderTask;
 import org.apache.commons.lang.ArrayUtils;
@@ -277,27 +278,15 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     }
 
     private List<List<BlockMetaData>> generateRowGroupsList(List<BlockMetaData> rowGroups) {
-        int numberOfRowGroupsByRowGroup = rowGroups.size() / NUMBER_OF_TASKS;
-
         List<List<BlockMetaData>> rowGroupsList = new ArrayList<>();
-        List<BlockMetaData> rowGroupsDivided = new ArrayList<>();
+        int numberOfRowGroupsByRowGroup = rowGroups.size() / NUMBER_OF_TASKS;
+        final AtomicInteger counter = new AtomicInteger();
 
-        int i = 0;
         for (BlockMetaData rowGroup : rowGroups) {
-            if (i < numberOfRowGroupsByRowGroup || numberOfRowGroupsByRowGroup == 0){
-                rowGroupsDivided.add(rowGroup);
-                i++;
-            } else {
-                i = 1;
-                List<BlockMetaData> clonedRowGroupsDivided = (List<BlockMetaData>) ((ArrayList<BlockMetaData>) rowGroupsDivided).clone();
-                rowGroupsList.add(clonedRowGroupsDivided);
-                rowGroupsDivided.clear();
-                rowGroupsDivided.add(rowGroup);
+            if (counter.getAndIncrement() % numberOfRowGroupsByRowGroup == 0) {
+                rowGroupsList.add(new ArrayList<>());
             }
-        }
-        if (rowGroups.size() % NUMBER_OF_TASKS != 0 && i != 0) {
-            List<BlockMetaData> clonedRowGroupsDivided = (List<BlockMetaData>) ((ArrayList<BlockMetaData>) rowGroupsDivided).clone();
-            rowGroupsList.add(clonedRowGroupsDivided);
+            rowGroupsList.get(rowGroupsList.size() - 1).add(rowGroup);
         }
         return rowGroupsList;
     }
