@@ -21,18 +21,19 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 
-import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.Callable;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat.Filter;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.schema.MessageType;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.Callable;
+import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
 /**
  * It is a Callable<Void> instead a Runnable because Callable can throw checked exceptions.
@@ -68,9 +69,9 @@ public final class RowGroupReaderTask implements Callable<Void> {
     @Override
     public Void call() throws IOException {
 
-        int lastRowGroup = rowGroups.size() - 1;
-        Long startingPos = rowGroups.get(0).getStartingPos();
-        Long endingPos = rowGroups.get(lastRowGroup).getStartingPos() + rowGroups.get(lastRowGroup).getTotalByteSize();
+        final int lastRowGroup = this.rowGroups.size() - 1;
+        final Long startingPos = rowGroups.get(0).getStartingPos();
+        final Long endingPos = this.rowGroups.get(lastRowGroup).getStartingPos() + this.rowGroups.get(lastRowGroup).getTotalByteSize();
 
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path,
             this.includePathColumn, this.filter, this.schema, this.conditionFields, startingPos, endingPos);

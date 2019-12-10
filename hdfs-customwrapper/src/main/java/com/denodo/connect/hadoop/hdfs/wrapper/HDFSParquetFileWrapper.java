@@ -82,7 +82,11 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     private static final String FILE_PARALLEL = "File Parallel";
     private static final String ROW_PARALLEL = "Row Parallel";
     private static final String NOT_PARALLEL = "Not parallel";
-    private static final int NUMBER_OF_TASKS = 7;
+    private static final String NUM_FILES_PARALLEL = "NUM_FILES_PARALLEL";
+    private static final String INVOKE_ADDROW = "INVOKE_ADDROW";
+
+    private long count;
+
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
             new CustomWrapperInputParameter(Parameter.PARQUET_FILE_PATH,
@@ -96,9 +100,14 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 false, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
             new CustomWrapperInputParameter(Parameter.READ_OPTIONS,
                 "Read options ",
-                false, true, CustomWrapperInputParameterTypeFactory.enumStringType(new String[]{NOT_PARALLEL,FILE_PARALLEL, ROW_PARALLEL}))
-
-    };
+                true, true, CustomWrapperInputParameterTypeFactory.enumStringType(new String[]{ NOT_PARALLEL, FILE_PARALLEL, ROW_PARALLEL})),
+            new CustomWrapperInputParameter(NUM_FILES_PARALLEL,
+                "Num of files in parallel ",
+                false, true, CustomWrapperInputParameterTypeFactory.integerType()),
+            new CustomWrapperInputParameter(INVOKE_ADDROW,
+                "Invoke addRow? ",
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(false))
+        };
 
     private static final CustomWrapperInputParameter[] DATA_SOURCE_INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
@@ -111,7 +120,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             new CustomWrapperInputParameter(Parameter.HDFS_SITE_PATH,
                 "Local route of hdfs-site.xml configuration file ",
                 false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
-    };
+        };
 
     @Override
     public CustomWrapperInputParameter[] getInputParameters() {
@@ -139,7 +148,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     @Override
     public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
-            throws CustomWrapperException {
+        throws CustomWrapperException {
 
         PathIterator pathIterator  = null;
         try {
@@ -161,8 +170,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 return VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
             }
         } catch (final NoSuchElementException e) {
-            throw new CustomWrapperException("There are no files in " + inputValues.get(Parameter.PARQUET_FILE_PATH) 
-            + (StringUtils.isNotBlank(inputValues.get(Parameter.FILE_NAME_PATTERN)) 
+            throw new CustomWrapperException("There are no files in " + inputValues.get(Parameter.PARQUET_FILE_PATH)
+                + (StringUtils.isNotBlank(inputValues.get(Parameter.FILE_NAME_PATTERN))
                 ? " matching the provided file pattern: " + inputValues.get(Parameter.FILE_NAME_PATTERN)
                 : ""));
         } catch (final Exception e) {
@@ -183,13 +192,16 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     @Override
     public void doRun(final CustomWrapperConditionHolder condition, final List<CustomWrapperFieldExpression> projectedFields,
-            final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
+        final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
         final Configuration conf = getHadoopConfiguration(inputValues);
         final Path path = new Path(inputValues.get(Parameter.PARQUET_FILE_PATH));
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
         final String readOptions = inputValues.get(Parameter.READ_OPTIONS);
+        final int parallelism = Integer.parseInt(inputValues.get(NUM_FILES_PARALLEL));
+        final boolean invokeAddRow = Boolean.parseBoolean(inputValues.get(INVOKE_ADDROW));
+
 
         PathIterator pathIterator = null;
         try {
@@ -212,20 +224,21 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             switch (readOptions) {
                 case ROW_PARALLEL:
                     parallelReadByRowGroup(pathIterator, conf, schemaBuilder.getProjectedSchema(), projectedFields,
-                        schemaBuilder.getConditionFields(), filter, includePathColumn, result);
+                        schemaBuilder.getConditionFields(), filter, includePathColumn, result, parallelism);
                     break;
                 case FILE_PARALLEL:
                     parallelRead(pathIterator, conf, schemaBuilder.getProjectedSchema(), projectedFields,
-                        schemaBuilder.getConditionFields(), filter, includePathColumn, result);
+                        schemaBuilder.getConditionFields(), filter, includePathColumn, result, parallelism, invokeAddRow);
                     break;
                 case NOT_PARALLEL:
                     singleRead(pathIterator, conf, schemaBuilder.getProjectedSchema(), projectedFields,
-                        schemaBuilder.getConditionFields(), filter, includePathColumn, result);
+                        schemaBuilder.getConditionFields(), filter, includePathColumn, result, invokeAddRow);
                     break;
                 default:
                     singleRead(pathIterator, conf, schemaBuilder.getProjectedSchema(), projectedFields,
-                        schemaBuilder.getConditionFields(), filter, includePathColumn, result);
+                        schemaBuilder.getConditionFields(), filter, includePathColumn, result, invokeAddRow);
                     break;
+
             }
 
         } catch (final Exception e) {
@@ -245,23 +258,23 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     private void parallelReadByRowGroup(final PathIterator pathIterator, final Configuration conf, final MessageType schema,
         final List<CustomWrapperFieldExpression> projectedFields, final List<String> conditionFields, final Filter filter,
-        final boolean includePathColumn, final CustomWrapperResult result) throws IOException, ExecutionException {
+        final boolean includePathColumn, final CustomWrapperResult result, final int parallelism) throws IOException, ExecutionException {
 
         final ReaderManager readerManager = ReaderManager.getInstance();
-        final int parallelism = readerManager.getParallelism();
 
         final Collection<Callable> readers = new ArrayList<>(parallelism);
         int i = 0;
         while (pathIterator.hasNext() && ! isStopRequested()) {
 
-            Path currentPath = pathIterator.next();
-            List<BlockMetaData> rowGroups = ParquetSchemaUtils.getParquetRowGroups(conf, currentPath);
-            List<List<BlockMetaData>> rowGroupsList = this.generateRowGroupsList(rowGroups);
+            final Path currentPath = pathIterator.next();
+            final List<BlockMetaData> rowGroups = ParquetSchemaUtils.getParquetRowGroups(conf, currentPath);
+            final List<List<BlockMetaData>> rowGroupsList = this.generateRowGroupsList(rowGroups, parallelism);
 
-            Iterator<List<BlockMetaData>> rowGroupListIterator = rowGroupsList.iterator();
-            while (rowGroupListIterator.hasNext() && ! isStopRequested()){
+            final Iterator<List<BlockMetaData>> rowGroupListIterator = rowGroupsList.iterator();
+            while (rowGroupListIterator.hasNext() && ! isStopRequested()) {
                 while (rowGroupListIterator.hasNext() && i < parallelism && ! isStopRequested()) {
-                    readers.add(new RowGroupReaderTask(conf, currentPath, schema, includePathColumn,  conditionFields, filter, projectedFields, result, rowGroupListIterator.next()));
+                    readers.add(new RowGroupReaderTask(conf, currentPath, schema, includePathColumn,  conditionFields,
+                        filter, projectedFields, result, rowGroupListIterator.next()));
                     i++;
                 }
                 if (! (isStopRequested()) && ! (i < parallelism)) {
@@ -277,9 +290,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         }
     }
 
-    private List<List<BlockMetaData>> generateRowGroupsList(List<BlockMetaData> rowGroups) {
+    private List<List<BlockMetaData>> generateRowGroupsList(List<BlockMetaData> rowGroups, final int parallelism) {
         List<List<BlockMetaData>> rowGroupsList = new ArrayList<>();
-        int numberOfRowGroupsByRowGroup = rowGroups.size() / NUMBER_OF_TASKS;
+        int numberOfRowGroupsByRowGroup = rowGroups.size() / parallelism;
         final AtomicInteger counter = new AtomicInteger();
 
         for (BlockMetaData rowGroup : rowGroups) {
@@ -293,17 +306,25 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     private void parallelRead(final PathIterator pathIterator, final Configuration conf, final MessageType schema,
         final List<CustomWrapperFieldExpression> projectedFields, final List<String> conditionFields, final Filter filter,
-        final boolean includePathColumn, final CustomWrapperResult result) throws IOException, ExecutionException {
+        final boolean includePathColumn, final CustomWrapperResult result, final int parallelism, final boolean invokeAddRow)
+        throws ExecutionException {
 
         final ReaderManager readerManager = ReaderManager.getInstance();
-        final int parallelism = readerManager.getParallelism();
+
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Parallelism Level " + parallelism);
+        }
 
         final Collection<Callable> readers = new ArrayList<>(parallelism);
         while (pathIterator.hasNext()&& ! isStopRequested()) {
-            int i = 0;
-            while (pathIterator.hasNext() && i < parallelism && ! isStopRequested()) {
 
-                readers.add(new ReaderTask(conf, pathIterator.next(), schema, includePathColumn,  conditionFields, filter, projectedFields, result));
+            int i = 0;
+            while (pathIterator.hasNext() && i < parallelism) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("Reader task: " + i);
+                }
+                readers.add(new ReaderTask(conf, pathIterator.next(), schema, includePathColumn,  conditionFields, filter,
+                    projectedFields, result, invokeAddRow));
                 i++;
             }
 
@@ -316,7 +337,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     private void singleRead(final PathIterator pathIterator, final Configuration conf, final MessageType schema,
         final List<CustomWrapperFieldExpression> projectedFields, final List<String> conditionFields, final Filter filter,
-        final boolean includePathColumn, final CustomWrapperResult result) throws IOException {
+        final boolean includePathColumn, final CustomWrapperResult result, final boolean invokeAddRow) throws IOException {
 
         while (pathIterator.hasNext()) {
             final HDFSParquetFileReader reader = new HDFSParquetFileReader(conf, pathIterator.next(),
@@ -324,8 +345,16 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
             Object parquetData = reader.read();
             while (parquetData != null && ! isStopRequested()) {
-                result.addRow((Object[]) parquetData, projectedFields);
+                if (invokeAddRow) {
+                    result.addRow((Object[]) parquetData, projectedFields);
+                }  else {
+                    this.count += ((Object[]) parquetData).length;
+                }
                 parquetData = reader.read();
+            }
+
+            if (! invokeAddRow) {
+                LOG.error("TUPLES " + this.count);
             }
         }
     }

@@ -18,7 +18,6 @@ import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
@@ -82,13 +81,14 @@ public class ParquetSchemaBuilder {
 
     private MessageType getParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
 
-        final ParquetReadOptions parquetReadOptions = ParquetReadOptions.builder().useSignedStringMinMax().useStatsFilter()
-            .useDictionaryFilter().useRecordFilter().build();
-        final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath, configuration), parquetReadOptions);
+        MessageType schema = null;
+        try (final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath, configuration))) {
 
-        final ParquetMetadata readFooter = parquetFileReader.getFooter();
+            final ParquetMetadata readFooter = parquetFileReader.getFooter();
+            schema = readFooter.getFileMetaData().getSchema();
+        }
 
-        return readFooter.getFileMetaData().getSchema();
+        return schema;
     }
 
     public MessageType getProjectedSchema() throws IOException {

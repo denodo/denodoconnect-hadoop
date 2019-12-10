@@ -25,18 +25,24 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public final class ReaderManager {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ReaderManager.class);
 
     private static final ReaderManager instance = new ReaderManager();
 
-    private int parallelism;
+    // private int parallelism;
     private ExecutorService threadPool;
 
 
     private ReaderManager() {
 
-        this.parallelism = computeParallelism();
-        final int poolSize = computePoolSize(this.parallelism);
+        // this.parallelism = computeParallelism();
+        LOG.error("AVAILABLE PROCESSORS " + Runtime.getRuntime().availableProcessors());
+        final int poolSize = 20;//computePoolSize(this.parallelism);
         this.threadPool = Executors.newFixedThreadPool(poolSize);
 
         // graceful shutdown when VDP stops
@@ -90,8 +96,8 @@ public final class ReaderManager {
         return parallelism * 2;
     }
 
-    public int getParallelism() {
-        return this.parallelism;
-    }
+    // public int getParallelism() {
+    //     return this.parallelism;
+    // }
 
 }

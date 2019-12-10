@@ -36,7 +36,6 @@ import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.api.ReadSupport;
 import org.apache.parquet.hadoop.example.GroupReadSupport;
-import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
@@ -203,30 +202,25 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             final PrimitiveTypeName primitiveTypeName = field.asPrimitiveType().getPrimitiveTypeName();
             try {
 
-                if(primitiveTypeName.equals(PrimitiveTypeName.BINARY)) {
-                    if(field.getOriginalType()!=null){
-                        if(field.getOriginalType().equals(OriginalType.UTF8)){
-                            return datum.getString(field.getName(), 0);
-                        } else if(field.getOriginalType().equals(OriginalType.JSON)){
-                            return datum.getString(field.getName(), 0);
-                        } else if(field.getOriginalType().equals(OriginalType.BSON)){
-                            return datum.getString(field.getName(), 0);
-                        } else{
-                            return datum.getBinary(field.getName(), 0).getBytes();
-                        }
+                if (PrimitiveTypeName.BINARY.equals(primitiveTypeName)) {
+                    if (OriginalType.UTF8.equals(field.getOriginalType())
+                        || OriginalType.JSON.equals(field.getOriginalType())
+                        || OriginalType.BSON.equals(field.getOriginalType())) {
+                        return datum.getString(field.getName(), 0);
+                    } else {
+                        return datum.getBinary(field.getName(), 0).getBytes();
                     }
-                    return datum.getBinary(field.getName(), 0).getBytes();
-                    
-                }else if(primitiveTypeName.equals(PrimitiveTypeName.BOOLEAN)) {
+
+                } else if (PrimitiveTypeName.BOOLEAN.equals(primitiveTypeName)) {
                     return  datum.getBoolean(field.getName(), 0);
-                    
-                }else if(primitiveTypeName.equals(PrimitiveTypeName.DOUBLE)) {
+
+                } else if (PrimitiveTypeName.DOUBLE.equals(primitiveTypeName)) {
                     return datum.getDouble(field.getName(), 0);
-                    
-                }else if(primitiveTypeName.equals(PrimitiveTypeName.FLOAT)) {
+
+                } else if (PrimitiveTypeName.FLOAT.equals(primitiveTypeName)) {
                     return datum.getFloat(field.getName(), 0);
-                    
-                }else if(primitiveTypeName.equals(PrimitiveTypeName.INT32)) {
+
+                } else if (PrimitiveTypeName.INT32.equals(primitiveTypeName)) {
                     if (OriginalType.DECIMAL.equals(field.getOriginalType())) {
                         final int scale = field.asPrimitiveType().getDecimalMetadata().getScale();
                         return new BigDecimal(BigInteger.valueOf(datum.getInteger(field.getName(), 0)), scale);
@@ -234,37 +228,37 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                         //   DATE fields really holds the number of days since 1970-01-01
                         final int days = datum.getInteger(field.getName(),0);
                         // We need to add one day because the index start in 0.
-                        final long daysMillis = TimeUnit.DAYS.toMillis(days+1);
+                        final long daysMillis = TimeUnit.DAYS.toMillis(days + 1);
                         return new Date(daysMillis);
                     } else {
                         return datum.getInteger(field.getName(), 0);
                     }
-                    
-                } else if(primitiveTypeName.equals(PrimitiveTypeName.INT64)) {
-                    //we dont differentiate INT64 from TIMESTAMP_MILLIS original types
+
+                } else if (PrimitiveTypeName.INT64.equals(primitiveTypeName)) {
+                    // we dont differentiate INT64 from TIMESTAMP_MILLIS original types
                     return datum.getLong(field.getName(), 0);
-                    
-                } else if(primitiveTypeName.equals(PrimitiveTypeName.INT96)) {
+
+                } else if (PrimitiveTypeName.INT96.equals(primitiveTypeName)) {
                     final Binary binary = datum.getInt96(field.getName(), 0);
                     final long timestampMillis = ParquetTypeUtils.int96ToTimestampMillis(binary);
                     return new Date(timestampMillis);
-                    
-                } else if(primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
+
+                } else if (primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
                     if (OriginalType.DECIMAL.equals(field.getOriginalType())) {
                         final int scale = field.asPrimitiveType().getDecimalMetadata().getScale();
                         return new BigDecimal(new BigInteger(datum.getBinary(field.getName(), 0).getBytes()), scale);
                     }
                     return datum.getBinary(field.getName(), 0).getBytes();
-                } else{
-                    LOG.error("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
-                    throw new IOException("Type of the field "+ field.toString()+", does not supported by the custom wrapper ");
+                } else {
+                    LOG.error("Type of the field " + field + ", not supported by the custom wrapper ");
+                    throw new IOException("Type of the field " + field + ", not supported by the custom wrapper ");
                 }
-            } catch(final RuntimeException e){
-                LOG.warn("It was a error reading data", e);
+            } catch (final RuntimeException e) {
+                LOG.warn("Error reading data", e);
             }
         } else if (field.getRepetition() == Repetition.REQUIRED) {
             //Is required tipe in schema
-            throw new IOException("The field "+ field.toString()+" is Required");
+            throw new IOException("The field " + field + " is Required");
         }
         return null;
     }
@@ -279,9 +273,9 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             return readParquetLogicalTypes(datum.getGroup(field.getName(), 0));
         } else if (field.getRepetition() == Repetition.REQUIRED) {
             //Is required tipe in schema
-            throw new IOException("The field "+ field.toString()+" is Required");
+            throw new IOException("The field " + field + " is Required");
         }
-        LOG.trace("The group " + field.getName() + " doesn't exist in the data");
+        LOG.trace("The group " + field.getName() + " doesn't exist");
         return null;
     }
     
