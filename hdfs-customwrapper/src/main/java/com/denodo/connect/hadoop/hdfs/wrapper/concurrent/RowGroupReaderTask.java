@@ -34,12 +34,16 @@ import org.apache.parquet.schema.MessageType;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * It is a Callable<Void> instead a Runnable because Callable can throw checked exceptions.
  *
  */
 public final class RowGroupReaderTask implements Callable<Void> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RowGroupReaderTask.class);
 
     private final Configuration conf;
     private final Path path;
@@ -50,10 +54,12 @@ public final class RowGroupReaderTask implements Callable<Void> {
     private final List<CustomWrapperFieldExpression> projectedFields;
     private final CustomWrapperResult result;
     private final List<BlockMetaData> rowGroups;
+    private final boolean invokeAddRow;
+    private long count;
 
     public RowGroupReaderTask(final Configuration conf, final Path path, final MessageType schema, final boolean includePathColumn,
         final List<String> conditionFields, final Filter filter, final List<CustomWrapperFieldExpression> projectedFields,
-        final CustomWrapperResult result, final List<BlockMetaData> rowGroups) {
+        final CustomWrapperResult result, final List<BlockMetaData> rowGroups, final boolean invokeAddRow) {
 
         this.conf = conf;
         this.path = path;
@@ -64,6 +70,7 @@ public final class RowGroupReaderTask implements Callable<Void> {
         this.projectedFields = projectedFields;
         this.result = result;
         this.rowGroups = rowGroups;
+        this.invokeAddRow = invokeAddRow;
     }
 
     @Override
@@ -77,14 +84,26 @@ public final class RowGroupReaderTask implements Callable<Void> {
             this.includePathColumn, this.filter, this.schema, this.conditionFields, startingPos, endingPos);
 
         Object parquetData = reader.read();
-
+        long row = 0;
         while (parquetData != null ) {
 
             synchronized (this.result) {
-                this.result.addRow((Object[]) parquetData, this.projectedFields);
+                if (this.invokeAddRow) {
+                    this.result.addRow((Object[]) parquetData, this.projectedFields);
+                    row++;
+                }  else {
+                    this.count += ((Object[]) parquetData).length;
+                }
             }
 
             parquetData = reader.read();
+        }
+
+        if (LOG.isTraceEnabled()) {
+            if (!this.invokeAddRow) {
+                LOG.trace("TUPLES " + this.count);
+            }
+            LOG.trace("Ending task in " + Thread.currentThread().getName() + " ; total rows " + row);
         }
 
         return null;

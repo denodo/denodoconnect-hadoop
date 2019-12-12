@@ -94,11 +94,11 @@ public final class ReaderTask implements Callable<Void> {
             parquetData = reader.read();
         }
 
-        if (!this.invokeAddRow) {
-            LOG.error("TUPLES " + this.count);
-        }
 
         if (LOG.isTraceEnabled()) {
+            if (!this.invokeAddRow) {
+                LOG.trace("TUPLES " + this.count);
+            }
             LOG.trace("Ending task in " + Thread.currentThread().getName() + " ; total rows " + row);
         }
 

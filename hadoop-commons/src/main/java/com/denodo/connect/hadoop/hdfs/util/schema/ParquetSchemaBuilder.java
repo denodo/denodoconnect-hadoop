@@ -19,6 +19,7 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.schema.MessageType;
@@ -45,6 +46,7 @@ public class ParquetSchemaBuilder {
     private Configuration configuration;
 
     private Path path;
+    private List<BlockMetaData> rowGroups;
 
 
     public ParquetSchemaBuilder(final Configuration conf, final Path path, final List<CustomWrapperFieldExpression> projectedFields,
@@ -68,6 +70,10 @@ public class ParquetSchemaBuilder {
         return this.conditionFields;
     }
 
+    public List<BlockMetaData> getRowGroups() {
+        return this.rowGroups;
+    }
+
     public SchemaElement getSchema() throws IOException {
 
         this.parquetSchema = getParquetSchema(this.configuration, this.path);
@@ -86,6 +92,7 @@ public class ParquetSchemaBuilder {
 
             final ParquetMetadata readFooter = parquetFileReader.getFooter();
             schema = readFooter.getFileMetaData().getSchema();
+            this.rowGroups = parquetFileReader.getRowGroups();
         }
 
         return schema;
