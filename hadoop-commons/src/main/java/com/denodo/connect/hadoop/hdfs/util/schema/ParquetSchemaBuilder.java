@@ -34,6 +34,7 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleConditio
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
+import org.apache.parquet.schema.Types;
 
 public class ParquetSchemaBuilder {
 
@@ -47,6 +48,7 @@ public class ParquetSchemaBuilder {
 
     private Path path;
     private List<BlockMetaData> rowGroups;
+    private ParquetMetadata footer;
 
 
     public ParquetSchemaBuilder(final Configuration conf, final Path path, final List<CustomWrapperFieldExpression> projectedFields,
@@ -74,6 +76,10 @@ public class ParquetSchemaBuilder {
         return this.rowGroups;
     }
 
+    public ParquetMetadata getFooter() {
+        return this.footer;
+    }
+
     public SchemaElement getSchema() throws IOException {
 
         this.parquetSchema = getParquetSchema(this.configuration, this.path);
@@ -87,12 +93,12 @@ public class ParquetSchemaBuilder {
 
     private MessageType getParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
 
-        MessageType schema = null;
+        MessageType schema;
         try (final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath, configuration))) {
 
-            final ParquetMetadata readFooter = parquetFileReader.getFooter();
-            schema = readFooter.getFileMetaData().getSchema();
+            this.footer = parquetFileReader.getFooter();
             this.rowGroups = parquetFileReader.getRowGroups();
+            schema = this.footer.getFileMetaData().getSchema();
         }
 
         return schema;
@@ -105,35 +111,30 @@ public class ParquetSchemaBuilder {
             this.parquetSchema = getParquetSchema(this.configuration, this.path);
         }
 
-        schemaWithProjectedAndConditionFields(this.parquetSchema);
-
-        return this.parquetSchema;
+        return schemaWithProjectedAndConditionFields(this.parquetSchema);
     }
 
-    private void schemaWithProjectedAndConditionFields(final MessageType schema) {
+    private MessageType  schemaWithProjectedAndConditionFields(final MessageType schema) {
 
+        final Types.MessageTypeBuilder newSchema = Types.buildMessage();
         if (this.projectedFields != null || this.conditionFields != null) {
 
-            final List<Type> schemaWithProjectionAndConditionFields = new ArrayList<Type>();
             for (final CustomWrapperFieldExpression projectedField : this.projectedFields) {
                 for (final Type schemaField : schema.getFields()) {
                     if (schemaField.getName().equals(projectedField.getName())) {
-                        schemaWithProjectionAndConditionFields.add(schemaField);
+                        newSchema.addField(schemaField);
                     }
                 }
             }
             for (final String conditionField : this.conditionFields) {
                 for (final Type schemaField : schema.getFields()) {
                     if (schemaField.getName().equals(conditionField)) {
-                        schemaWithProjectionAndConditionFields.add(schemaField);
+                        newSchema.addField(schemaField);
                     }
                 }
             }
-            if (schema.getFields().size() != schemaWithProjectionAndConditionFields.size()) {
-                schema.getFields().removeAll(schema.getFields());
-                schema.getFields().addAll(schemaWithProjectionAndConditionFields);
-            }
         }
+        return newSchema.named("schema");
     }
 
     /**
@@ -142,7 +143,7 @@ public class ParquetSchemaBuilder {
      */
     private List<String> getFieldsNameAndCheckNullConditions(final CustomWrapperCondition condition) throws IOException {
 
-        final List<String> conditionFields = new ArrayList<String>();
+        final List<String> conditionFields = new ArrayList<>();
         if (condition != null) {
             if (condition.isAndCondition()) {
                 final CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) condition;

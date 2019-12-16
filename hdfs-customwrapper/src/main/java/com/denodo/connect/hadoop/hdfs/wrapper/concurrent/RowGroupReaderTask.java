@@ -29,6 +29,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat.Filter;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
@@ -56,10 +57,12 @@ public final class RowGroupReaderTask implements Callable<Void> {
     private final List<BlockMetaData> rowGroups;
     private final boolean invokeAddRow;
     private long count;
+    private ParquetMetadata parquetMetadata;
 
     public RowGroupReaderTask(final Configuration conf, final Path path, final MessageType schema, final boolean includePathColumn,
         final List<String> conditionFields, final Filter filter, final List<CustomWrapperFieldExpression> projectedFields,
-        final CustomWrapperResult result, final List<BlockMetaData> rowGroups, final boolean invokeAddRow) {
+        final CustomWrapperResult result, final List<BlockMetaData> rowGroups, final boolean invokeAddRow,
+        final ParquetMetadata parquetMetadata) {
 
         this.conf = conf;
         this.path = path;
@@ -71,6 +74,7 @@ public final class RowGroupReaderTask implements Callable<Void> {
         this.result = result;
         this.rowGroups = rowGroups;
         this.invokeAddRow = invokeAddRow;
+        this.parquetMetadata = parquetMetadata;
     }
 
     @Override
@@ -81,7 +85,7 @@ public final class RowGroupReaderTask implements Callable<Void> {
         final Long endingPos = this.rowGroups.get(lastRowGroup).getStartingPos() + this.rowGroups.get(lastRowGroup).getTotalByteSize();
 
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path,
-            this.includePathColumn, this.filter, this.schema, this.conditionFields, startingPos, endingPos);
+            this.includePathColumn, this.filter, this.schema, this.conditionFields, startingPos, endingPos, this.parquetMetadata);
 
         Object parquetData = reader.read();
         long row = 0;

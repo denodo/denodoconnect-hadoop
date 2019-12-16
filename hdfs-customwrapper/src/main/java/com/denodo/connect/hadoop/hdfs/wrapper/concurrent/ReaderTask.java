@@ -77,7 +77,7 @@ public final class ReaderTask implements Callable<Void> {
             LOG.trace("Starting task in " + Thread.currentThread().getName());
         }
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path,
-            this.includePathColumn, this.filter, this.schema, this.conditionFields, null, null);
+            this.includePathColumn, this.filter, this.schema, this.conditionFields, null, null, null);
         Object parquetData = reader.read();
         long row = 0;
         while (parquetData != null ) {
