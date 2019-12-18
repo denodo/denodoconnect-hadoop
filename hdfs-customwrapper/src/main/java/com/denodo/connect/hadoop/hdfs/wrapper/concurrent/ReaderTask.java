@@ -52,6 +52,7 @@ public final class ReaderTask implements Callable<Void> {
     private final Filter filter;
     private final List<CustomWrapperFieldExpression> projectedFields;
     private final CustomWrapperResult result;
+
     private final boolean invokeAddRow;
     private long count;
 
@@ -67,6 +68,7 @@ public final class ReaderTask implements Callable<Void> {
         this.filter = filter;
         this.projectedFields = projectedFields;
         this.result = result;
+
         this.invokeAddRow = invokeAddRow;
     }
 
@@ -76,10 +78,11 @@ public final class ReaderTask implements Callable<Void> {
         if (LOG.isTraceEnabled()) {
             LOG.trace("Starting task in " + Thread.currentThread().getName());
         }
+        long row = 0;
+
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path,
             this.includePathColumn, this.filter, this.schema, this.conditionFields, null, null, null);
         Object parquetData = reader.read();
-        long row = 0;
         while (parquetData != null ) {
 
             synchronized (this.result) {
@@ -93,7 +96,6 @@ public final class ReaderTask implements Callable<Void> {
             }
             parquetData = reader.read();
         }
-
 
         if (LOG.isTraceEnabled()) {
             if (!this.invokeAddRow) {

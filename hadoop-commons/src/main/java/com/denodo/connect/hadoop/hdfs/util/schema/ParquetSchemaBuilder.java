@@ -24,6 +24,7 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
+import org.apache.parquet.schema.Types;
 
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
@@ -34,7 +35,6 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleConditio
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
-import org.apache.parquet.schema.Types;
 
 public class ParquetSchemaBuilder {
 
@@ -43,6 +43,7 @@ public class ParquetSchemaBuilder {
     private MessageType parquetSchema;
     private boolean hasNullValueInConditions;
     private List<String> conditionFields;
+    private List<String> conditionsIncludingProjectedFields;
 
     private Configuration configuration;
 
@@ -70,6 +71,10 @@ public class ParquetSchemaBuilder {
 
     public List<String> getConditionFields() {
         return this.conditionFields;
+    }
+
+    public List<String> getConditionsIncludingProjectedFields() {
+        return this.conditionsIncludingProjectedFields;
     }
 
     public List<BlockMetaData> getRowGroups() {
@@ -102,6 +107,15 @@ public class ParquetSchemaBuilder {
         }
 
         return schema;
+    }
+
+    public MessageType getFileSchema() throws IOException {
+
+        if (this.parquetSchema == null) {
+            this.parquetSchema = getParquetSchema(this.configuration, this.path);
+        }
+
+        return this.parquetSchema;
     }
 
     public MessageType getProjectedSchema() throws IOException {
@@ -198,6 +212,9 @@ public class ParquetSchemaBuilder {
                 throw new IOException("Condition \"" + condition.toString() + "\" not allowed");
             }
         }
+
+        this.conditionsIncludingProjectedFields = new ArrayList<>(conditionFields);
+
         for (final CustomWrapperFieldExpression projectedField : this.projectedFields) {
             conditionFields.remove(projectedField.getName());
         }

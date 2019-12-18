@@ -65,7 +65,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
 
     public HDFSParquetFileReader(final Configuration conf, final Path path,  final boolean includePathValue,
         final FilterCompat.Filter filter, final MessageType parquetSchema, final List<String> conditionFields,
-        final Long startingPos, final Long endingPos, ParquetMetadata parquetMetadata)
+        final Long startingPos, final Long endingPos, final ParquetMetadata parquetMetadata)
         throws IOException {
 
         this.pathValue = path.toString();
@@ -86,7 +86,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             configuration.set(ReadSupport.PARQUET_READ_SCHEMA, parquetSchema.toString());
 
             final GroupReadSupport groupReadSupport = new GroupReadSupport();
-            ParquetReader.Builder<Group> dataFileBuilder = ParquetReader.builder(groupReadSupport, path).withConf(configuration);
+            final ParquetReader.Builder<Group> dataFileBuilder = ParquetReader.builder(groupReadSupport, path).withConf(configuration);
 
             if (filter != null) {
                 dataFileBuilder.withFilter(filter);
@@ -113,7 +113,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             Object data = doRead();
             if (data != null) {
                 if (this.includePathValue){
-                    data = ArrayUtils.add((Object[]) data, pathValue);
+                    data = ArrayUtils.add((Object[]) data, this.pathValue);
                 }
                 return data;
             }
@@ -216,16 +216,16 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                     } else {
                         return datum.getBinary(field.getName(), 0).getBytes();
                     }
-
+                    
                 } else if (PrimitiveTypeName.BOOLEAN.equals(primitiveTypeName)) {
                     return  datum.getBoolean(field.getName(), 0);
-
+                    
                 } else if (PrimitiveTypeName.DOUBLE.equals(primitiveTypeName)) {
                     return datum.getDouble(field.getName(), 0);
-
+                    
                 } else if (PrimitiveTypeName.FLOAT.equals(primitiveTypeName)) {
                     return datum.getFloat(field.getName(), 0);
-
+                    
                 } else if (PrimitiveTypeName.INT32.equals(primitiveTypeName)) {
                     if (OriginalType.DECIMAL.equals(field.getOriginalType())) {
                         final int scale = field.asPrimitiveType().getDecimalMetadata().getScale();
@@ -239,16 +239,16 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                     } else {
                         return datum.getInteger(field.getName(), 0);
                     }
-
+                    
                 } else if (PrimitiveTypeName.INT64.equals(primitiveTypeName)) {
                     // we dont differentiate INT64 from TIMESTAMP_MILLIS original types
                     return datum.getLong(field.getName(), 0);
-
+                    
                 } else if (PrimitiveTypeName.INT96.equals(primitiveTypeName)) {
                     final Binary binary = datum.getInt96(field.getName(), 0);
                     final long timestampMillis = ParquetTypeUtils.int96ToTimestampMillis(binary);
                     return new Date(timestampMillis);
-
+                    
                 } else if (primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
                     if (OriginalType.DECIMAL.equals(field.getOriginalType())) {
                         final int scale = field.asPrimitiveType().getDecimalMetadata().getScale();

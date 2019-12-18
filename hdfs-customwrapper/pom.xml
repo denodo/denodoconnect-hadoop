@@ -11,7 +11,7 @@
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20191119</version>
+    <version>201912-CURRENT</version>
 
     <properties>
         <aws.sdk.version>1.11.589</aws.sdk.version>
@@ -25,7 +25,7 @@
         <httpclient.version>4.5.2</httpclient.version>  <!-- min required by aws-sdk  -->
         <httpcore.version>4.4.4</httpcore.version>
         <log4j2.version>2.8.2</log4j2.version>
-        <parquet.version>1.10.1</parquet.version>
+        <parquet.version>1.11.0-denodo20191212</parquet.version>
         <slf4j.version>1.7.10</slf4j.version>     
         <vdp.version>7.0.5</vdp.version>
         <java.version>1.8</java.version>
@@ -574,12 +574,6 @@
             <groupId>org.apache.parquet</groupId>
             <artifactId>parquet-hadoop</artifactId>
             <version>${parquet.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>

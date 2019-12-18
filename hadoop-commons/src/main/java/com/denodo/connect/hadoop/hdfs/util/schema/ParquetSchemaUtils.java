@@ -76,12 +76,12 @@ public class ParquetSchemaUtils {
     /**
      * This is the list of names that can have the repeated element list
      */
-    private static final List<String> LIST_VALUES = new ArrayList<String>(Arrays.asList("list"));
+    private static final List<String> LIST_VALUES = new ArrayList<>(Arrays.asList("list"));
     
     /**
      * This is the list of names that can have the repeated element map 
      */
-    private static final List<String> MAP_VALUES = new ArrayList<String>(Arrays.asList("map", "key_value"));
+    private static final List<String> MAP_VALUES = new ArrayList<>(Arrays.asList("map", "key_value"));
 
     /**
      * This method build the parquet schema
@@ -202,7 +202,7 @@ public class ParquetSchemaUtils {
         if (vdpCondition != null) {
             if (vdpCondition.isAndCondition()) {
                 final CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) vdpCondition;
-                final List<FilterPredicate> filterPredicates  = new ArrayList<FilterPredicate>();
+                final List<FilterPredicate> filterPredicates  = new ArrayList<>();
                 for (final CustomWrapperCondition condition : andCondition.getConditions()) {
                     if (condition.isSimpleCondition()) {
                         final FilterPredicate filterPredicate = generateSimpleFilterPredicate(condition, schema);
@@ -223,7 +223,7 @@ public class ParquetSchemaUtils {
                 }
             } else if (vdpCondition.isOrCondition()) {
                 final CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) vdpCondition;
-                final List<FilterPredicate> filterPredicates  = new ArrayList<FilterPredicate>();
+                final List<FilterPredicate> filterPredicates  = new ArrayList<>();
                 for (final CustomWrapperCondition condition : orCondition.getConditions()) {
                     if (condition.isSimpleCondition()) {
                         final FilterPredicate filterPredicate = generateSimpleFilterPredicate(condition, schema);
@@ -416,7 +416,7 @@ public class ParquetSchemaUtils {
         return filterPredicate;
     }
 
-    public static List<BlockMetaData> getParquetRowGroups(final Configuration configuration, final Path filePath) throws IOException {
+    public static List<BlockMetaData> getRowGroups(final Configuration configuration, final Path filePath) throws IOException {
         List<BlockMetaData> rowGroups  = null;
         try (final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath, configuration))) {
 

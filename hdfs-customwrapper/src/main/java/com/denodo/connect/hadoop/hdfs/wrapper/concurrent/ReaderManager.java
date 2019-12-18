@@ -34,13 +34,13 @@ public final class ReaderManager {
 
     private static final ReaderManager instance = new ReaderManager();
 
-    // private int parallelism;
+   // private int parallelism;
     private ExecutorService threadPool;
 
 
     private ReaderManager() {
 
-        // this.parallelism = computeParallelism();
+       // this.parallelism = computeParallelism();
         LOG.error("AVAILABLE PROCESSORS " + Runtime.getRuntime().availableProcessors());
         final int poolSize = 20;//computePoolSize(this.parallelism);
         this.threadPool = Executors.newFixedThreadPool(poolSize);
@@ -96,8 +96,8 @@ public final class ReaderManager {
         return parallelism * 2;
     }
 
-    // public int getParallelism() {
-    //     return this.parallelism;
-    // }
+   // public int getParallelism() {
+   //     return this.parallelism;
+   // }
 
 }

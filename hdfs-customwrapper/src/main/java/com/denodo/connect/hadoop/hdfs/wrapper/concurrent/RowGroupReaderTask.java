@@ -31,12 +31,12 @@ import org.apache.parquet.filter2.compat.FilterCompat.Filter;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * It is a Callable<Void> instead a Runnable because Callable can throw checked exceptions.
