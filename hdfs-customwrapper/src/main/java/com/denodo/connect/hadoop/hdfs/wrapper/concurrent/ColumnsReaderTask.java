@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TransferQueue;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -44,10 +44,6 @@ public final class ColumnsReaderTask implements Callable<Void> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ColumnsReaderTask.class);
 
-/*    *//*
-     * Queues generally do not allow insertion of null element, use this object to represent null values
-     *//*
-    static final Object NULL_VALUE = new Object();*/
     /*
      * Last item placed on the queue to notify the RecordsAssemblerTask the Readers are done
      */
@@ -59,13 +55,13 @@ public final class ColumnsReaderTask implements Callable<Void> {
     private final List<String> conditionFields;
     private final Filter filter;
 
-    private final List<LinkedBlockingQueue<Object[]>> resultColumns;
+    private final List<TransferQueue<Object[]>> resultColumns;
     private final int readerTaskIndex;
     private final int skippedColumnIndex;
 
     public ColumnsReaderTask(final Configuration conf, final Path path, final MessageType readingSchema,
         final MessageType resultsSchema, final List<String> conditionFields, final Filter filter,
-        final List<LinkedBlockingQueue<Object[]>> resultColumns, final int readerTaskIndex) {
+        final List<TransferQueue<Object[]>> resultColumns, final int readerTaskIndex) {
 
         // make a copy of Conf because the reading schema is written as a property 'ReadSupport.PARQUET_READ_SCHEMA'
         // in Conf in HDFSParquetFileReader::openReader, and each ColumnsReaderTask have to read a different schema
@@ -82,12 +78,19 @@ public final class ColumnsReaderTask implements Callable<Void> {
     }
 
     private int getSkippedColumnsIndex(final MessageType readingSchema, final MessageType resultsSchema) {
-        return readingSchema.getFieldCount() - resultsSchema.getFieldCount();
+
+        int skippedColumnIndex = 0;
+        final int fieldDifference = readingSchema.getFieldCount() - resultsSchema.getFieldCount();
+        if (fieldDifference > 0) {
+            skippedColumnIndex = readingSchema.getFieldCount() - fieldDifference;
+        }
+
+        return skippedColumnIndex;
     }
 
 
     @Override
-    public Void call() throws IOException {
+    public Void call() throws IOException, InterruptedException {
 
         if (LOG.isTraceEnabled()) {
             LOG.trace("Starting task in " + Thread.currentThread().getName());
@@ -120,17 +123,17 @@ public final class ColumnsReaderTask implements Callable<Void> {
         return null;
     }
 
-    private void storeData(final Object[] parquetData) {
+    private void storeData(final Object[] parquetData) throws InterruptedException {
 
         Object[] values = parquetData;
         if (this.skippedColumnIndex != 0) {
             values = Arrays.copyOf(parquetData, this.skippedColumnIndex);
         }
-        this.resultColumns.get(this.readerTaskIndex).add(values);
+        this.resultColumns.get(this.readerTaskIndex).put(values);
     }
 
-    private void storeLastResult() {
-        this.resultColumns.get(this.readerTaskIndex).add(LAST_VALUE);
+    private void storeLastResult() throws InterruptedException {
+        this.resultColumns.get(this.readerTaskIndex).put(LAST_VALUE);
     }
 
 }

@@ -93,9 +93,9 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             } if (this.startingPos != null && this.endingPos != null) {
                 dataFileBuilder.withFileRange(this.startingPos, this.endingPos);
             }
-            /*if (parquetMetadata != null) {
+            if (parquetMetadata != null) {
                 dataFileBuilder.withFooter(this.parquetMetadata);
-            }*/
+            }
             this.dataFileReader = dataFileBuilder.build();
         } catch (final IOException e) {
             throw new IOException("'" + path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message

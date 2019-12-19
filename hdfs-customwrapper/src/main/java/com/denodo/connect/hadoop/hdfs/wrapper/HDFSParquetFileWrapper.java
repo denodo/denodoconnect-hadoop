@@ -39,7 +39,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -92,7 +93,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     private static final String ROW_PARALLEL = "Row Parallel";
     private static final String COLUMN_PARALLEL = "Column Parallel";
     private static final String NOT_PARALLEL = "Not parallel";
-    private static final String NUM_FILES_PARALLEL = "NUM_FILES_PARALLEL";
+    private static final String PARALLELISM_LEVEL = "NUM_FILES_PARALLEL";
     private static final String INVOKE_ADDROW = "INVOKE_ADDROW";
 
     private long count;
@@ -112,8 +113,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 "Read options ",
                 true, true, CustomWrapperInputParameterTypeFactory.enumStringType(
                     new String[] {NOT_PARALLEL, FILE_PARALLEL, ROW_PARALLEL, COLUMN_PARALLEL})),
-            new CustomWrapperInputParameter(NUM_FILES_PARALLEL,
-                "Num of files in parallel ",
+            new CustomWrapperInputParameter(PARALLELISM_LEVEL,
+                "Level of parallelism ",
                 false, true, CustomWrapperInputParameterTypeFactory.integerType()),
             new CustomWrapperInputParameter(INVOKE_ADDROW,
                 "Invoke addRow? ",
@@ -213,7 +214,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
         final String readOptions = inputValues.get(Parameter.READ_OPTIONS);
-        final int parallelism = Integer.parseInt(inputValues.get(NUM_FILES_PARALLEL));
+        final int parallelism = Integer.parseInt(inputValues.get(PARALLELISM_LEVEL));
 
         final boolean invokeAddRow = Boolean.parseBoolean(inputValues.get(INVOKE_ADDROW));
 
@@ -353,7 +354,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final List<MessageType> schemas = buildSchemas(projectedSchema.getName(), columnGroups);
         // TODO end
 
-        final List<LinkedBlockingQueue<Object[]>> resultColumns = buildResultColumns(schemas.size());
+        final List<TransferQueue<Object[]>> resultColumns = buildResultColumns(schemas.size());
 
         while (pathIterator.hasNext() && ! isStopRequested()) {
             final Path currentPath = pathIterator.next();
@@ -450,12 +451,12 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             return schemas;
     }
 
-    private List<LinkedBlockingQueue<Object[]>> buildResultColumns(int resultColumnsSize) {
+    private List<TransferQueue<Object[]>> buildResultColumns(int resultColumnsSize) {
 
 
-        final List<LinkedBlockingQueue<Object[]>> resultColumns = new ArrayList<>(resultColumnsSize);
+        final List<TransferQueue<Object[]>> resultColumns = new ArrayList<>(resultColumnsSize);
         for (int i = 0; i < resultColumnsSize; i ++) {
-            resultColumns.add(new LinkedBlockingQueue<>());
+            resultColumns.add(new LinkedTransferQueue<>());
         }
 
         return resultColumns;

@@ -25,7 +25,7 @@ import static com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ColumnsReaderTas
 
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TransferQueue;
 
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
@@ -39,12 +39,12 @@ public final class RecordsAssemblerTask implements Callable<Void> {
 
     private final CustomWrapperResult vdpResult;
     private final List<CustomWrapperFieldExpression> projectedFields;
-    private final List<LinkedBlockingQueue<Object[]>> resultColumns;
+    private final List<TransferQueue<Object[]>> resultColumns;
     private final String fullPathColumn;
     private final boolean invokeAddRow;
 
     public RecordsAssemblerTask(final CustomWrapperResult vdpResult, final List<CustomWrapperFieldExpression> projectedFields,
-        final List<LinkedBlockingQueue<Object[]>> resultColumns, final String fullPathColumn, final boolean invokeAddRow) {
+        final List<TransferQueue<Object[]>> resultColumns, final String fullPathColumn, final boolean invokeAddRow) {
 
         this.vdpResult = vdpResult;
         this.projectedFields = projectedFields;
@@ -62,13 +62,13 @@ public final class RecordsAssemblerTask implements Callable<Void> {
 
             final Object[] row = new Object[size];
             int i = 0;
-            for (final LinkedBlockingQueue<Object[]> resultColumn : this.resultColumns) {
+            for (final TransferQueue<Object[]> resultColumn : this.resultColumns) {
                 final Object[] values = resultColumn.take();
                 if (LAST_VALUE == values) {
                     return null;
                 }
-                for (int j = 0; j < values.length; j++) {
-                    row[i++] = values[j];
+                for (final Object value : values) {
+                    row[i++] = value;
                 }
 
             }
