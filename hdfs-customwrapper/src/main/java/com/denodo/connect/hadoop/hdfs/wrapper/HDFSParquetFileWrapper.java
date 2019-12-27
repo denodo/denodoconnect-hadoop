@@ -37,10 +37,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.TransferQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -249,7 +249,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
                     parallelReadByColumn(pathIterator, conf, schemaBuilder.getFileSchema(), projectedFields,
                         schemaBuilder.getConditionsIncludingProjectedFields(), schemaBuilder.getConditionFields(),
-                        filter, includePathColumn, result, parallelism, invokeAddRow);
+                        filter, includePathColumn, result, parallelism, invokeAddRow, schemaBuilder.getFooter());
                     break;
                 default:
                     singleRead(pathIterator, conf, schemaBuilder.getProjectedSchema(), projectedFields,
@@ -335,7 +335,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     private void parallelReadByColumn(final PathIterator pathIterator, final Configuration conf, final MessageType fileSchema,
         final List<CustomWrapperFieldExpression> projectedFields, final List<String> conditionIncludingProjectedFields,
         final List<String> conditionFields, final Filter filter, final boolean includePathColumn,
-        final CustomWrapperResult result, final int parallelism, final boolean invokeAddRow) throws ExecutionException {
+        final CustomWrapperResult result, final int parallelism, final boolean invokeAddRow,
+        final ParquetMetadata parquetMetadata) throws ExecutionException {
 
         final long start = System.currentTimeMillis();
         final ReaderManager readerManager = ReaderManager.getInstance();
@@ -354,23 +355,31 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final List<MessageType> schemas = buildSchemas(projectedSchema.getName(), columnGroups);
         // TODO end
 
-        final List<TransferQueue<Object[]>> resultColumns = buildResultColumns(schemas.size());
+        final List<BlockingQueue<Object[]>> resultColumns = buildResultColumns(schemas.size());
 
         while (pathIterator.hasNext() && ! isStopRequested()) {
             final Path currentPath = pathIterator.next();
             final Iterator<MessageType> schemasIterator = schemas.iterator();
 
             int i = 0;
+            final int [] columnOffsets = new int[schemasWithoutConditions.size()];
+            columnOffsets[i] = 0;
             while (schemasIterator.hasNext() && !isStopRequested()) {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("Reader task: " + i);
                 }
+
+                final MessageType resultsSchema = schemasWithoutConditions.get(i);
+                if ((i + 1) < columnOffsets.length) {
+                    columnOffsets[i + 1] = columnOffsets[i] + resultsSchema.getFieldCount();
+                }
+
                 readers.add(new ColumnsReaderTask(conf, currentPath, schemasIterator.next(),
-                    schemasWithoutConditions.get(i), conditionFields, filter, resultColumns, i));
+                    resultsSchema, conditionFields, filter, resultColumns, i, parquetMetadata));
                 i++;
             }
 
-            readers.add(new RecordsAssemblerTask(result, projectedFields, resultColumns,
+            readers.add(new RecordsAssemblerTask(result, projectedFields, resultColumns, columnOffsets,
                 includePathColumn ? currentPath.toString() : null, invokeAddRow));
 
             if (!isStopRequested()) {
@@ -451,12 +460,12 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             return schemas;
     }
 
-    private List<TransferQueue<Object[]>> buildResultColumns(int resultColumnsSize) {
+    private List<BlockingQueue<Object[]>> buildResultColumns(final int resultColumnsSize) {
 
 
-        final List<TransferQueue<Object[]>> resultColumns = new ArrayList<>(resultColumnsSize);
+        final List<BlockingQueue<Object[]>> resultColumns = new ArrayList<>(resultColumnsSize);
         for (int i = 0; i < resultColumnsSize; i ++) {
-            resultColumns.add(new LinkedTransferQueue<>());
+            resultColumns.add(new LinkedBlockingQueue<>(10000));
         }
 
         return resultColumns;

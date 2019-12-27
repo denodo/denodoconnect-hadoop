@@ -24,12 +24,13 @@ package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TransferQueue;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat.Filter;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,21 +48,23 @@ public final class ColumnsReaderTask implements Callable<Void> {
     /*
      * Last item placed on the queue to notify the RecordsAssemblerTask the Readers are done
      */
-    static final Object[] LAST_VALUE = new Object[0];
+    static final Object LAST_VALUE = new Object();
 
     private final Configuration conf;
     private final Path path;
     private final MessageType readingSchema;
     private final List<String> conditionFields;
     private final Filter filter;
+    private ParquetMetadata parquetMetadata;
 
-    private final List<TransferQueue<Object[]>> resultColumns;
+    private final List<BlockingQueue<Object[]>> resultColumns;
     private final int readerTaskIndex;
     private final int skippedColumnIndex;
 
+
     public ColumnsReaderTask(final Configuration conf, final Path path, final MessageType readingSchema,
         final MessageType resultsSchema, final List<String> conditionFields, final Filter filter,
-        final List<TransferQueue<Object[]>> resultColumns, final int readerTaskIndex) {
+        final List<BlockingQueue<Object[]>> resultColumns, final int readerTaskIndex, final ParquetMetadata parquetMetadata) {
 
         // make a copy of Conf because the reading schema is written as a property 'ReadSupport.PARQUET_READ_SCHEMA'
         // in Conf in HDFSParquetFileReader::openReader, and each ColumnsReaderTask have to read a different schema
@@ -71,6 +74,7 @@ public final class ColumnsReaderTask implements Callable<Void> {
         this.readingSchema = readingSchema;
         this.conditionFields = conditionFields;
         this.filter = filter;
+        this.parquetMetadata = parquetMetadata;
 
         this.resultColumns = resultColumns;
         this.readerTaskIndex = readerTaskIndex;
@@ -101,15 +105,17 @@ public final class ColumnsReaderTask implements Callable<Void> {
         // includePathValues is always false, it is returned to VDP by the RecordsAssemblerTask as it has always
         // the same value for each file
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path, false,
-            this.filter, this.readingSchema, this.conditionFields, null, null, null);
+            this.filter, this.readingSchema, this.conditionFields, null, null, this.parquetMetadata);
         Object parquetData = reader.read();
         while (parquetData != null ) {
 
             storeData((Object[]) parquetData);
+
             rowCount++;
 
             parquetData = reader.read();
         }
+
 
         storeLastResult();
 
@@ -133,7 +139,18 @@ public final class ColumnsReaderTask implements Callable<Void> {
     }
 
     private void storeLastResult() throws InterruptedException {
-        this.resultColumns.get(this.readerTaskIndex).put(LAST_VALUE);
+
+        int size = this.skippedColumnIndex;
+        if (this.skippedColumnIndex == 0) {
+            size = this.readingSchema.getFieldCount();
+        }
+
+        final Object[] lastValueArray = new Object[size];
+        for (int i = 0; i < size; i ++) {
+            lastValueArray[i] = LAST_VALUE;
+        }
+
+        this.resultColumns.get(this.readerTaskIndex).put(lastValueArray);
     }
 
 }
