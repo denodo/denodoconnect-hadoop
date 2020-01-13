@@ -123,7 +123,7 @@ public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
                         CustomWrapperSchemaParameter.NOT_SORTABLE, !updateable, nullable, !mandatory),
                 new CustomWrapperSchemaParameter(Parameter.PERMISSIONS, java.sql.Types.VARCHAR, null, !searchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE, !updateable, nullable, !mandatory),
-                new CustomWrapperSchemaParameter(Parameter.SIZE, java.sql.Types.INTEGER, null, !searchable,
+                new CustomWrapperSchemaParameter(Parameter.SIZE, java.sql.Types.BIGINT, null, !searchable,
                         CustomWrapperSchemaParameter.NOT_SORTABLE, !updateable, nullable, !mandatory),
                 new CustomWrapperSchemaParameter(Parameter.RECURSIVE, java.sql.Types.BOOLEAN, null, !searchable,
                         CustomWrapperSchemaParameter.ASC_AND_DESC_SORT, !updateable, nullable, mandatory)
