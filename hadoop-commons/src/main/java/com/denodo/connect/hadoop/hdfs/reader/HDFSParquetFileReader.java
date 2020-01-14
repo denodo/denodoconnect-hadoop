@@ -94,7 +94,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                 dataFileBuilder.withFileRange(this.startingPos, this.endingPos);
             }
             if (parquetMetadata != null) {
-                dataFileBuilder.withFooter(this.parquetMetadata);
+      //          dataFileBuilder.withFooter(this.parquetMetadata);
             }
             this.dataFileReader = dataFileBuilder.build();
         } catch (final IOException e) {

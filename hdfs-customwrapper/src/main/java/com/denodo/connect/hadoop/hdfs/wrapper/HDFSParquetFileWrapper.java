@@ -465,7 +465,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
         final List<BlockingQueue<Object[]>> resultColumns = new ArrayList<>(resultColumnsSize);
         for (int i = 0; i < resultColumnsSize; i ++) {
-            resultColumns.add(new LinkedBlockingQueue<>(10000));
+            resultColumns.add(new LinkedBlockingQueue<>(100000));
         }
 
         return resultColumns;
