@@ -21,22 +21,20 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 
-import static com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ColumnsReaderTask.LAST_VALUE;
-
 import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.denodo.connect.hadoop.hdfs.wrapper.HDFSParquetFileWrapper;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
+import org.apache.commons.lang.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * It is a Callable<Void> instead a Runnable because Callable can throw checked exceptions.
@@ -44,171 +42,189 @@ import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpressi
  */
 public final class RecordsAssemblerTask implements Callable<Void> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RecordsAssemblerTask.class);
+
 
     private final CustomWrapperResult vdpResult;
     private final List<CustomWrapperFieldExpression> projectedFields;
-    private final List<BlockingQueue<Object[]>> resultColumns;
+    private final List<ColumnGroupReadingStructure> readingStructures;
     private int[] columnOffsets;
     private final String fullPathColumn;
     private final boolean invokeAddRow;
 
+    private final AtomicBoolean stopRequested;
+
+
     public RecordsAssemblerTask(final CustomWrapperResult vdpResult, final List<CustomWrapperFieldExpression> projectedFields,
-        final List<BlockingQueue<Object[]>> resultColumns, final int[] columnOffsets, final String fullPathColumn,
-        final boolean invokeAddRow) {
+        final List<ColumnGroupReadingStructure> readingStructures, final int[] columnOffsets, final String fullPathColumn,
+        final boolean invokeAddRow, final AtomicBoolean stopRequested) {
 
         this.vdpResult = vdpResult;
         this.projectedFields = projectedFields;
-        this.resultColumns = resultColumns;
+        this.readingStructures = readingStructures;
         this.columnOffsets = columnOffsets;
         this.fullPathColumn = fullPathColumn;
         this.invokeAddRow = invokeAddRow;
+        this.stopRequested = stopRequested;
+
     }
-/*
-    @Override
-    public Void call() throws InterruptedException {
 
-        final int size = this.projectedFields.size();
 
-        while (true) {
-
-            final Object[] row = new Object[size];
-            int i = 0;
-            for (final BlockingQueue<Object[]> resultColumn : this.resultColumns) {
-                final Object[] values = resultColumn.take();
-                if (LAST_VALUE == values) {
-                    return null;
-                }
-                for (final Object value : values) {
-                    row[i++] = value;
-                }
-
+    private static String logIntArray(final int[] array) {
+        final StringBuilder formatBuilder = new StringBuilder();
+        formatBuilder.append("[");
+        for (int i = 0; i < array.length; i++) {
+            if (i > 0) {
+                formatBuilder.append(",");
             }
-
-            if (this.fullPathColumn != null) {
-                row[i] = this.fullPathColumn;
-            }
-
-            if (this.invokeAddRow) {
-                this.vdpResult.addRow(row, this.projectedFields);
-            }
-
+            formatBuilder.append("%10d");
         }
-
+        formatBuilder.append("]");
+        return String.format(formatBuilder.toString(), ArrayUtils.toObject(array));
     }
-*/
+
+    private static String logBoolArray(final boolean[] array) {
+        final StringBuilder formatBuilder = new StringBuilder();
+        formatBuilder.append("[");
+        for (int i = 0; i < array.length; i++) {
+            if (i > 0) {
+                formatBuilder.append(",");
+            }
+            formatBuilder.append("%10s");
+        }
+        formatBuilder.append("]");
+        return String.format(formatBuilder.toString(), ArrayUtils.toObject(array));
+    }
+
 
     @Override
     public Void call() throws InterruptedException {
 
         final int rowSize = this.projectedFields.size();
 
-        final Collection<Object[]> buffer = new ArrayList<>();
-        final List<Object[]> rows = new ArrayList<>();
-        final List<BitSet> completeRowFlags = new ArrayList<>();
+        final Object[][] rows = new Object[HDFSParquetFileWrapper.READING_CHUNK_SIZE][];
 
-        while (true) {
+        final int numReaders = this.readingStructures.size();
 
-            int columnIndex = 0;
-            for (final BlockingQueue<Object[]> resultColumn : this.resultColumns) {
-                blockingDrain(resultColumn, buffer);
+        while (!allFinished(this.readingStructures) && !this.stopRequested.get()) {
 
-                int rowIndex = 0;
-                for (final Object[] partialRow : buffer) {
+            int numRead = 0;
 
-                    final Map<Integer, Object[]> result = findRow(rows, rowIndex, columnIndex, completeRowFlags);
-                    final Object[] row;
-                    if (result.isEmpty()) {
-                        row = new Object[rowSize];
-                        rowIndex = rows.size();
-                        rows.add(row);
-                        // initialize completeRow flag: one bit for each resultColumn,
-                        // when all bits are set, then the row is complete and can be sent to VDP
-                        completeRowFlags.add(new BitSet(this.resultColumns.size()));
-                    } else {
-                        final Entry<Integer, Object[]> entry = result.entrySet().iterator().next();
-                        row = entry.getValue();
-                        rowIndex = entry.getKey();
-                    }
+            for (int readerIndex = 0; readerIndex < numReaders && !this.stopRequested.get(); readerIndex++) {
 
-                    int cellIndex = this.columnOffsets[columnIndex];
-                    for (final Object cellValue : partialRow) {
-                        row[cellIndex ++] = cellValue;
-                    }
+                final ColumnGroupReadingStructure readingStructure = this.readingStructures.get(readerIndex);
 
-                    completeRowFlags.get(rowIndex).set(columnIndex);
-
-                    rowIndex ++;
+                if (readingStructure.isFinished()) {
+                    // No need to check for new values on a queue that no one is writing to
+                    continue;
                 }
 
-                buffer.clear();
-                columnIndex ++;
+                // Try to obtain data, using a timeout, and check for stop requests while trying
+                Object[][] data = null;
+                do {
+                    data = readingStructure.acquireDataChunk();
+                } while (data == null && !this.stopRequested.get());
+
+                if (data != null) {
+
+                    int numReadByReader = 0;
+                    Object[] partialRow;
+                    for (int i = 0; i < data.length && (partialRow = data[i]) != null; i++) {
+
+                        Object[] row = rows[i];
+                        if (row == null) {
+                            row = new Object[rowSize];
+                            rows[i] = row;
+                        }
+
+                        System.arraycopy(partialRow, 0, row, this.columnOffsets[readerIndex], partialRow.length);
+
+                        numReadByReader++;
+
+                    }
+
+                    // Return the data chunk, but checking for stop requests using a timeout
+                    while(!readingStructure.returnDataChunk(data) && !this.stopRequested.get());
+
+                    if (LOG.isTraceEnabled() && numReadByReader > 0) {
+                        LOG.trace("Read " + numReadByReader + " from reader number " + readerIndex);
+                        if (readingStructure.isFinished()) {
+                            LOG.trace("Finished reading all rows from reader number " + readerIndex);
+                        }
+                    }
+
+                    if (numRead == 0) {
+                        numRead = numReadByReader;
+                    } else if (numRead != numReadByReader) {
+                        // TODO Stop all other threads!
+                        throw new RuntimeException("Some readers returned" + numRead + " while others returned " + numReadByReader);
+                    }
+
+                }
 
             }
 
-        /*
+            /*
             TODO
             if (this.fullPathColumn != null) {
                 row[i] = this.fullPathColumn;
             }
-        */
-                final Iterator<Object[]> rowsIterator = rows.iterator();
-                final Iterator<BitSet> flagsIterator = completeRowFlags.iterator();
-                while (rowsIterator.hasNext() && flagsIterator.hasNext() ) {
-                    final Object[] row = rowsIterator.next();
-                    final BitSet flag = flagsIterator.next();
-                    if (flag.cardinality() == this.resultColumns.size()) { // check complete_row flag
-                        if (LAST_VALUE == row[0]) {
-                            return null;
-                        }
-                        if (this.invokeAddRow) {
-                            this.vdpResult.addRow(row, this.projectedFields);
-                        }
-                        rowsIterator.remove(); // remove row when sent to VDP
-                        flagsIterator.remove();
+            */
+
+            if (this.stopRequested.get()) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("ROW ASSEMBLER CANCELLED ON USER REQUEST");
+                }
+                return null;
+            }
+
+
+            if (numRead > 0) {
+
+                if (this.invokeAddRow) {
+                    for (int i = 0; i < numRead; i++) {
+                        this.vdpResult.addRow(rows[i], this.projectedFields);
                     }
                 }
 
+                Arrays.fill(rows, null);
 
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("Rows output in this row assembling cycle: " + numRead);
+                }
+
+            } else if (LOG.isTraceEnabled()) {
+                    LOG.trace("No rows output in this assembling cycle");
+            }
 
         }
 
+        return null;
+
     }
 
-    private Map<Integer, Object[]> findRow(final List<Object[]> rows, final int index, final int columnIndex,
-        final List<BitSet> completeRowFlags) {
 
-        Map<Integer, Object[]> result = new HashMap<>();
-        Object[] row = null;
-        int rowIndex = index;
-        while (row == null && rowIndex < rows.size()) {
-            row = rows.get(rowIndex);
 
-            if (completeRowFlags.get(rowIndex).get(columnIndex)) {
-                row = null;
-                rowIndex ++;
+
+    private static boolean allFinished(final List<ColumnGroupReadingStructure> readingStructures) {
+        for (final ColumnGroupReadingStructure readingStructure : readingStructures) {
+            if (!readingStructure.isFinished()) {
+                return false;
             }
         }
-
-        if (row != null) {
-            result.put(rowIndex, row);
-        }
-
-        return result;
+        return true;
     }
 
-    private static <E> void blockingDrain(final BlockingQueue<E> queue, final Collection<? super E> buffer)
-        throws InterruptedException {
 
-        final int added = queue.drainTo(buffer);
-        if (added == 0) {
-           // final E element = queue.take();
-            final E element = queue.poll(1, TimeUnit.MILLISECONDS);
-            if (element != null) {
-                buffer.add(element);
-                queue.drainTo(buffer);
-
+    private static int min(final int[] values) {
+        int val = Integer.MAX_VALUE;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] < val) {
+                val = values[i];
             }
         }
-
+        return val;
     }
+
+
 }

@@ -24,9 +24,10 @@ package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat.Filter;
@@ -34,8 +35,6 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 
 /**
  * It is a Callable<Void> instead a Runnable because Callable can throw checked exceptions.
@@ -45,11 +44,7 @@ public final class ColumnsReaderTask implements Callable<Void> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ColumnsReaderTask.class);
 
-    /*
-     * Last item placed on the queue to notify the RecordsAssemblerTask the Readers are done
-     */
-    static final Object LAST_VALUE = new Object();
-
+    private final int readerIndex;
     private final Configuration conf;
     private final Path path;
     private final MessageType readingSchema;
@@ -57,14 +52,21 @@ public final class ColumnsReaderTask implements Callable<Void> {
     private final Filter filter;
     private ParquetMetadata parquetMetadata;
 
-    private final List<BlockingQueue<Object[]>> resultColumns;
-    private final int readerTaskIndex;
+    private final ColumnGroupReadingStructure readingStructure;
     private final int skippedColumnIndex;
 
+    private final AtomicBoolean stopRequested;
 
-    public ColumnsReaderTask(final Configuration conf, final Path path, final MessageType readingSchema,
-        final MessageType resultsSchema, final List<String> conditionFields, final Filter filter,
-        final List<BlockingQueue<Object[]>> resultColumns, final int readerTaskIndex, final ParquetMetadata parquetMetadata) {
+
+    public ColumnsReaderTask(final int readerIndex,
+                             final Configuration conf, final Path path, final MessageType readingSchema,
+                             final MessageType resultsSchema, final List<String> conditionFields,
+                             final Filter filter, final ColumnGroupReadingStructure readingStructure,
+                             final ParquetMetadata parquetMetadata, final AtomicBoolean stopRequested) {
+
+        super();
+
+        this.readerIndex = readerIndex;
 
         // make a copy of Conf because the reading schema is written as a property 'ReadSupport.PARQUET_READ_SCHEMA'
         // in Conf in HDFSParquetFileReader::openReader, and each ColumnsReaderTask have to read a different schema
@@ -76,9 +78,11 @@ public final class ColumnsReaderTask implements Callable<Void> {
         this.filter = filter;
         this.parquetMetadata = parquetMetadata;
 
-        this.resultColumns = resultColumns;
-        this.readerTaskIndex = readerTaskIndex;
+        this.readingStructure = readingStructure;
         this.skippedColumnIndex = getSkippedColumnsIndex(readingSchema, resultsSchema);
+
+        this.stopRequested = stopRequested;
+
     }
 
     private int getSkippedColumnsIndex(final MessageType readingSchema, final MessageType resultsSchema) {
@@ -106,51 +110,67 @@ public final class ColumnsReaderTask implements Callable<Void> {
         // the same value for each file
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path, false,
             this.filter, this.readingSchema, this.conditionFields, null, null, this.parquetMetadata);
-        Object parquetData = reader.read();
-        while (parquetData != null ) {
 
-            storeData((Object[]) parquetData);
-
-            rowCount++;
-
-            parquetData = reader.read();
+        if (this.stopRequested.get()) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace(String.format("READER[%d] READING CANCELLED ON USER REQUEST", this.readerIndex));
+            }
+            return null;
         }
 
+        Object parquetData = reader.read();
+        while (parquetData != null && !this.stopRequested.get()) {
 
-        storeLastResult();
+            // Try to obtain a buffer chunk, using a timeout, and check for stop requests while trying
+            Object[][] chunk = null;
+            do {
+                chunk = this.readingStructure.acquireBufferChunk();
+            } while (chunk == null && !this.stopRequested.get());
+
+            if (chunk != null) {
+
+                int chunkIndex = 0;
+                while (parquetData != null && chunkIndex < chunk.length && !this.stopRequested.get()) {
+
+                    Object[] columnValues = (Object[]) parquetData;
+                    if (this.skippedColumnIndex != 0) {
+                        columnValues = Arrays.copyOf(columnValues, this.skippedColumnIndex);
+                    }
+
+                    chunk[chunkIndex++] = columnValues;
+
+                    rowCount++;
+
+                    parquetData = reader.read();
+
+                }
+
+                // Publish data, but checking for stop requests using a timeout
+                while(!this.readingStructure.publishDataChunk(chunk) && !this.stopRequested.get());
+
+            }
+
+        }
+
+        if (this.stopRequested.get()) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace(String.format("READER[%d] READING CANCELLED ON USER REQUEST", this.readerIndex));
+            }
+            return null;
+        }
+
+        this.readingStructure.signalNoMoreData();
 
         final long end = System.currentTimeMillis();
 
         if (LOG.isTraceEnabled()) {
-            LOG.trace("Elapsed time " + (end - start) + " thread" + Thread.currentThread().getName());
-            LOG.trace("Ending task in " + Thread.currentThread().getName() + " ; total rows " + rowCount);
+            LOG.trace(
+                    String.format(
+                        "READER[%d] FINISHED IN %dms. TOTAL RETURNED: %d.",
+                        this.readerIndex, (end-start), rowCount));
         }
 
         return null;
-    }
-
-    private void storeData(final Object[] parquetData) throws InterruptedException {
-
-        Object[] values = parquetData;
-        if (this.skippedColumnIndex != 0) {
-            values = Arrays.copyOf(parquetData, this.skippedColumnIndex);
-        }
-        this.resultColumns.get(this.readerTaskIndex).put(values);
-    }
-
-    private void storeLastResult() throws InterruptedException {
-
-        int size = this.skippedColumnIndex;
-        if (this.skippedColumnIndex == 0) {
-            size = this.readingSchema.getFieldCount();
-        }
-
-        final Object[] lastValueArray = new Object[size];
-        for (int i = 0; i < size; i ++) {
-            lastValueArray[i] = LAST_VALUE;
-        }
-
-        this.resultColumns.get(this.readerTaskIndex).put(lastValueArray);
     }
 
 }

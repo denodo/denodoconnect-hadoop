@@ -22,13 +22,6 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GT;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LE;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LT;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_NE;
-
 import java.io.IOException;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -41,8 +34,31 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
+import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
+import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
+import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
+import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaBuilder;
+import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
+import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
+import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ColumnGroupReadingStructure;
+import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ColumnsReaderTask;
+import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManager;
+import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderTask;
+import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.RecordsAssemblerTask;
+import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.RowGroupReaderTask;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
+import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
+import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -58,27 +74,12 @@ import org.apache.parquet.schema.Types.MessageTypeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
-import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
-import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
-import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaBuilder;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
-import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
-import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ColumnsReaderTask;
-import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManager;
-import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderTask;
-import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.RecordsAssemblerTask;
-import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.RowGroupReaderTask;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
-import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
-import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GT;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LE;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LT;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_NE;
 
 /**
  * HDFS file custom wrapper for reading Parquet files stored in HDFS (Hadoop Distributed File System).
@@ -88,6 +89,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileWrapper.class);
 
+    public static final int READING_CHUNK_SIZE = 20000;
+    public static final int READING_CHUNK_QUEUE_SIZE = 3;
 
     private static final String FILE_PARALLEL = "File Parallel";
     private static final String ROW_PARALLEL = "Row Parallel";
@@ -97,6 +100,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     private static final String INVOKE_ADDROW = "INVOKE_ADDROW";
 
     private long count;
+    private final AtomicBoolean stopRequested = new AtomicBoolean(false);
 
     private static final CustomWrapperInputParameter[] INPUT_PARAMETERS =
         new CustomWrapperInputParameter[] {
@@ -208,6 +212,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     @Override
     public void doRun(final CustomWrapperConditionHolder condition, final List<CustomWrapperFieldExpression> projectedFields,
             final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
+
+        this.stopRequested.set(false);
 
         final Configuration conf = getHadoopConfiguration(inputValues);
         final Path path = new Path(inputValues.get(Parameter.PARQUET_FILE_PATH));
@@ -355,7 +361,10 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final List<MessageType> schemas = buildSchemas(projectedSchema.getName(), columnGroups);
         // TODO end
 
-        final List<BlockingQueue<Object[]>> resultColumns = buildResultColumns(schemas.size());
+        final List<ColumnGroupReadingStructure> readingStructures = new ArrayList<>(schemas.size());
+        for (int i = 0; i < schemas.size(); i++) {
+            readingStructures.add(new ColumnGroupReadingStructure(READING_CHUNK_SIZE, READING_CHUNK_QUEUE_SIZE));
+        }
 
         while (pathIterator.hasNext() && ! isStopRequested()) {
             final Path currentPath = pathIterator.next();
@@ -374,13 +383,13 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                     columnOffsets[i + 1] = columnOffsets[i] + resultsSchema.getFieldCount();
                 }
 
-                readers.add(new ColumnsReaderTask(conf, currentPath, schemasIterator.next(),
-                    resultsSchema, conditionFields, filter, resultColumns, i, parquetMetadata));
+                readers.add(new ColumnsReaderTask(i, conf, currentPath, schemasIterator.next(),
+                    resultsSchema, conditionFields, filter, readingStructures.get(i), parquetMetadata, this.stopRequested));
                 i++;
             }
 
-            readers.add(new RecordsAssemblerTask(result, projectedFields, resultColumns, columnOffsets,
-                includePathColumn ? currentPath.toString() : null, invokeAddRow));
+            readers.add(new RecordsAssemblerTask(result, projectedFields, readingStructures, columnOffsets,
+                includePathColumn ? currentPath.toString() : null, invokeAddRow, this.stopRequested));
 
             if (!isStopRequested()) {
                 readerManager.execute(readers);
@@ -409,10 +418,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
     private List<List<Type>> splitSchema(final MessageType schema, final int parallelism) {
 
         final int columns = schema.getFieldCount();
-        final int numberColumnGroups = columns / parallelism;
-        final int sizeColumnGroups = columns % parallelism == 0 ? numberColumnGroups : numberColumnGroups + 1;
+        final int sizeColumnGroups = columns % parallelism == 0 ? (columns / parallelism) : (columns / parallelism) + 1;
 
-        final List<List<Type>> columnGroups = new ArrayList<>(numberColumnGroups);
+        final List<List<Type>> columnGroups = new ArrayList<>(parallelism);
 
         final AtomicInteger counter = new AtomicInteger();
         for (final Type type : schema.getFields()) {
@@ -458,17 +466,6 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             }
 
             return schemas;
-    }
-
-    private List<BlockingQueue<Object[]>> buildResultColumns(final int resultColumnsSize) {
-
-
-        final List<BlockingQueue<Object[]>> resultColumns = new ArrayList<>(resultColumnsSize);
-        for (int i = 0; i < resultColumnsSize; i ++) {
-            resultColumns.add(new LinkedBlockingQueue<>(100000));
-        }
-
-        return resultColumns;
     }
 
     private void parallelRead(final PathIterator pathIterator, final Configuration conf, final MessageType schema,
@@ -530,5 +527,12 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 }
             }
         }
+    }
+
+
+    @Override
+    public boolean stop() {
+        this.stopRequested.set(true);
+        return super.stop();
     }
 }

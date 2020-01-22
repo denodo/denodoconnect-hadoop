@@ -41,7 +41,9 @@ public final class ReaderManager {
     private ReaderManager() {
 
        // this.parallelism = computeParallelism();
-        LOG.error("AVAILABLE PROCESSORS " + Runtime.getRuntime().availableProcessors());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("AVAILABLE PROCESSORS " + Runtime.getRuntime().availableProcessors());
+        }
         final int poolSize = 20;//computePoolSize(this.parallelism);
         this.threadPool = Executors.newFixedThreadPool(poolSize);
 
