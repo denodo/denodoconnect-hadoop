@@ -134,13 +134,6 @@ public final class RecordsAssemblerTask implements Callable<Void> {
 
             }
 
-            /*
-            TODO
-            if (this.fullPathColumn != null) {
-                row[i] = this.fullPathColumn;
-            }
-            */
-
             if (this.stopRequested.get()) {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("ROW ASSEMBLER CANCELLED ON USER REQUEST");
@@ -153,6 +146,9 @@ public final class RecordsAssemblerTask implements Callable<Void> {
 
                 if (this.invokeAddRow) {
                     for (int i = 0; i < numRead; i++) {
+                        if (this.fullPathColumn != null) {
+                            rows[i][rowSize - 1] = this.fullPathColumn;
+                        }
                         this.vdpResult.addRow(rows[i], this.projectedFields);
                     }
                 }

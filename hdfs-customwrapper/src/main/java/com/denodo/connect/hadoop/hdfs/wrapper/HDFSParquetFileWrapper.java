@@ -217,7 +217,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final Configuration conf = getHadoopConfiguration(inputValues);
         final Path path = new Path(inputValues.get(Parameter.PARQUET_FILE_PATH));
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
-        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
+        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN)) && isProjected(Parameter.FULL_PATH, projectedFields);
         final String readOptions = inputValues.get(Parameter.READ_OPTIONS);
         final int parallelism = Integer.parseInt(inputValues.get(PARALLELISM_LEVEL));
 
@@ -276,6 +276,17 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 LOG.error("Error releasing the reader", e);
             }
         }
+    }
+
+    private boolean isProjected(final String field, final List<CustomWrapperFieldExpression> projectedFields) {
+
+        for (final CustomWrapperFieldExpression projectedField : projectedFields) {
+            if (field.equals(projectedField.getName())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void parallelReadByRowGroup(final PathIterator pathIterator, final Configuration conf, final MessageType schema,
