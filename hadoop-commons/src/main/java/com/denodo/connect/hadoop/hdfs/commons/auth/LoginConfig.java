@@ -14,9 +14,9 @@ public class LoginConfig extends Configuration {
 	}
 
 	@Override
-	public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+	public AppConfigurationEntry[] getAppConfigurationEntry(final String name) {
 
-	    Map<String, String> options = new HashMap<String, String>();
+	    final Map<String, String> options = new HashMap<>();
 	    
 	    // Is is set to true the configuration values will be refreshed before the login method of the Krb5LoginModule is called.
 	    // When switching Kerberos configurations, it is REQUIRED that refreshKrb5Config should be set to true. 

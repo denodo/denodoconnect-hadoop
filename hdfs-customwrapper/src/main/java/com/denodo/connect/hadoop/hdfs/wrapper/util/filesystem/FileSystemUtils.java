@@ -21,7 +21,6 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper.util.filesystem;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedList;
 
@@ -46,10 +45,10 @@ public final class FileSystemUtils {
      * to include statuses of directories.
      */
     public static RemoteIterator<LocatedFileStatus> listFiles(final FileSystem fileSystem,
-            final Path f, final boolean recursive) throws FileNotFoundException, IOException {
+            final Path f, final boolean recursive) throws IOException {
           
         return new RemoteIterator<LocatedFileStatus>() {
-            private LinkedList<RemoteIterator<LocatedFileStatus>> itors = new LinkedList<RemoteIterator<LocatedFileStatus>>();
+            private LinkedList<RemoteIterator<LocatedFileStatus>> itors = new LinkedList<>();
             private RemoteIterator<LocatedFileStatus> curItor = fileSystem.listLocatedStatus(f);
             private LocatedFileStatus curFile;
             

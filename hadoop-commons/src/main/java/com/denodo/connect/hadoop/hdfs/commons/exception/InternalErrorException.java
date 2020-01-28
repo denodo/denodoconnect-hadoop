@@ -31,15 +31,15 @@ public class InternalErrorException extends NestableRuntimeException {
         super();
     }
 
-    public InternalErrorException(String msg, Throwable nested) {
+    public InternalErrorException(final String msg, final Throwable nested) {
         super(msg, nested);
     }
 
-    public InternalErrorException(String msg) {
+    public InternalErrorException(final String msg) {
         super(msg);
     }
 
-    public InternalErrorException(Throwable nested) {
+    public InternalErrorException(final Throwable nested) {
         super(nested);
     }
 

@@ -63,8 +63,8 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
         final Configuration configuration) throws IOException {
 
         final FsInput inputFile = new FsInput(path, configuration);
-        final DatumReader<Object> reader = new GenericDatumReader<Object>(this.schema);
-        this.dataFileReader = new DataFileReader<Object>(inputFile, reader);
+        final DatumReader<Object> reader = new GenericDatumReader<>(this.schema);
+        this.dataFileReader = new DataFileReader<>(inputFile, reader);
 
     }
 
@@ -91,7 +91,7 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
         }
     }
 
-    public static Object read(final Schema schema, final Object datum) {
+    private static Object read(final Schema schema, final Object datum) {
 
         Object result = null;
 
@@ -160,7 +160,7 @@ public class HDFSAvroFileReader extends AbstractHDFSFileReader {
 
     private static Object readString(final Object datum) {
 
-        Object result;
+        final Object result;
         if (datum instanceof Utf8) {
             result = datum.toString();
         } else {

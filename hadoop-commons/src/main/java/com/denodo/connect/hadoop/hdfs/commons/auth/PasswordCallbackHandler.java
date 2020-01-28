@@ -32,17 +32,17 @@ public class PasswordCallbackHandler implements CallbackHandler {
 
     private String password;
 
-    public PasswordCallbackHandler(String password) {
+    public PasswordCallbackHandler(final String password) {
         this.password = password;
     }
 
     @Override
-    public void handle(Callback[] callbacks) throws IOException,
+    public void handle(final Callback[] callbacks) throws IOException,
         UnsupportedCallbackException {
 
         for (int i = 0; i < callbacks.length; i++) {
             if (callbacks[i] instanceof PasswordCallback) {
-                PasswordCallback passwordCallback = (PasswordCallback) callbacks[i];
+                final PasswordCallback passwordCallback = (PasswordCallback) callbacks[i];
                 passwordCallback.setPassword(this.password.toCharArray());
             } else {
                 throw new UnsupportedCallbackException(callbacks[i]);

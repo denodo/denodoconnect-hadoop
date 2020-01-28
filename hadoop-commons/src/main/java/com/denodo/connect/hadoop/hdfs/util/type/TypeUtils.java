@@ -169,7 +169,7 @@ public final class TypeUtils {
             return null;
         }
         if (Text.class.getName().equalsIgnoreCase(hadoopClass)) {
-            return ((Text) value).toString();
+            return value.toString();
         }
         if (ShortWritable.class.getName().equalsIgnoreCase(hadoopClass)) {
             return Short.valueOf(((ShortWritable) value).get());
@@ -204,11 +204,11 @@ public final class TypeUtils {
         // If it ends with [] -> It's an array
         if (StringUtils.endsWith(hadoopClass, "[]")) {
             final ArrayWritable aw = (ArrayWritable) value;
-            final List<Object> data = new ArrayList<Object>();
+            final List<Object> data = new ArrayList<>();
             for (final Writable item : aw.get()) {
                 data.add(getValue(StringUtils.substringBeforeLast(hadoopClass, "[]"), item));
             }
-            return data.toArray(new Object[data.size()]);
+            return data.toArray(new Object[0]);
         }
 
         LOG.warn("Class '" + hadoopClass + "' is not supported. Returning its writable.toString() value");

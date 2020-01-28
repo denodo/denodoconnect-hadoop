@@ -278,74 +278,140 @@ public class ParquetSchemaUtils {
                 final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression)expression;
                 final boolean simpleExpressionValueIsNull = simpleExpression.getValue() == null;
                 if (simpleExpression.getValue() instanceof Integer || (simpleExpressionValueIsNull && element != null && element.getType().equals(Integer.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field),null) : eq(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field),null) : notEq(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field),null) : lt(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field),null) : ltEq(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field),null) : gt(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field),null) : gtEq(intColumn(field),Integer.parseInt(simpleExpression.getValue().toString()));
+                    switch (operator) {
+                        case OPERATOR_EQ:
+                            filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field), null)
+                                : eq(intColumn(field), Integer.parseInt(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_NE:
+                            filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field), null)
+                                : notEq(intColumn(field), Integer.parseInt(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LT:
+                            filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field), null)
+                                : lt(intColumn(field), Integer.parseInt(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LE:
+                            filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field), null)
+                                : ltEq(intColumn(field), Integer.parseInt(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GT:
+                            filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field), null)
+                                : gt(intColumn(field), Integer.parseInt(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GE:
+                            filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field), null)
+                                : gtEq(intColumn(field), Integer.parseInt(simpleExpression.getValue().toString()));
+                            break;
                     }
                 } else if (simpleExpression.getValue() instanceof Long || (simpleExpressionValueIsNull && element != null && element.getType().equals(Long.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(longColumn(field),null) : eq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(longColumn(field),null) : notEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(longColumn(field),null) : lt(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(longColumn(field),null) : ltEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(longColumn(field),null) : gt(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(longColumn(field),null) : gtEq(longColumn(field),Long.parseLong(simpleExpression.getValue().toString()));
+                    switch (operator) {
+                        case OPERATOR_EQ:
+                            filterPredicate = simpleExpressionValueIsNull ? eq(longColumn(field), null)
+                                : eq(longColumn(field), Long.parseLong(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_NE:
+                            filterPredicate = simpleExpressionValueIsNull ? notEq(longColumn(field), null)
+                                : notEq(longColumn(field), Long.parseLong(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LT:
+                            filterPredicate = simpleExpressionValueIsNull ? lt(longColumn(field), null)
+                                : lt(longColumn(field), Long.parseLong(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LE:
+                            filterPredicate = simpleExpressionValueIsNull ? ltEq(longColumn(field), null)
+                                : ltEq(longColumn(field), Long.parseLong(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GT:
+                            filterPredicate = simpleExpressionValueIsNull ? gt(longColumn(field), null)
+                                : gt(longColumn(field), Long.parseLong(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GE:
+                            filterPredicate = simpleExpressionValueIsNull ? gtEq(longColumn(field), null)
+                                : gtEq(longColumn(field), Long.parseLong(simpleExpression.getValue().toString()));
+                            break;
                     }
                 } else if (simpleExpression.getValue() instanceof Double || (simpleExpressionValueIsNull && element != null && element.getType().equals(Double.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(doubleColumn(field),null) : eq(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(doubleColumn(field),null) : notEq(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(doubleColumn(field),null) : lt(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(doubleColumn(field),null) : ltEq(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(doubleColumn(field),null) : gt(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(doubleColumn(field),null) : gtEq(doubleColumn(field),Double.parseDouble(simpleExpression.getValue().toString()));
+                    switch (operator) {
+                        case OPERATOR_EQ:
+                            filterPredicate = simpleExpressionValueIsNull ? eq(doubleColumn(field), null)
+                                : eq(doubleColumn(field), Double.parseDouble(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_NE:
+                            filterPredicate = simpleExpressionValueIsNull ? notEq(doubleColumn(field), null)
+                                : notEq(doubleColumn(field),
+                                    Double.parseDouble(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LT:
+                            filterPredicate = simpleExpressionValueIsNull ? lt(doubleColumn(field), null)
+                                : lt(doubleColumn(field), Double.parseDouble(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LE:
+                            filterPredicate = simpleExpressionValueIsNull ? ltEq(doubleColumn(field), null)
+                                : ltEq(doubleColumn(field), Double.parseDouble(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GT:
+                            filterPredicate = simpleExpressionValueIsNull ? gt(doubleColumn(field), null)
+                                : gt(doubleColumn(field), Double.parseDouble(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GE:
+                            filterPredicate = simpleExpressionValueIsNull ? gtEq(doubleColumn(field), null)
+                                : gtEq(doubleColumn(field), Double.parseDouble(simpleExpression.getValue().toString()));
+                            break;
                     }
                 } else if (simpleExpression.getValue() instanceof Float || (simpleExpressionValueIsNull && element != null && element.getType().equals(Float.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(floatColumn(field),null) : eq(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(floatColumn(field),null) : notEq(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(floatColumn(field),null) : lt(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(floatColumn(field),null) : ltEq(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(floatColumn(field),null) : gt(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(floatColumn(field),null) : gtEq(floatColumn(field),Float.parseFloat(simpleExpression.getValue().toString()));
+                    switch (operator) {
+                        case OPERATOR_EQ:
+                            filterPredicate = simpleExpressionValueIsNull ? eq(floatColumn(field), null)
+                                : eq(floatColumn(field), Float.parseFloat(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_NE:
+                            filterPredicate = simpleExpressionValueIsNull ? notEq(floatColumn(field), null)
+                                : notEq(floatColumn(field), Float.parseFloat(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LT:
+                            filterPredicate = simpleExpressionValueIsNull ? lt(floatColumn(field), null)
+                                : lt(floatColumn(field), Float.parseFloat(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LE:
+                            filterPredicate = simpleExpressionValueIsNull ? ltEq(floatColumn(field), null)
+                                : ltEq(floatColumn(field), Float.parseFloat(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GT:
+                            filterPredicate = simpleExpressionValueIsNull ? gt(floatColumn(field), null)
+                                : gt(floatColumn(field), Float.parseFloat(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GE:
+                            filterPredicate = simpleExpressionValueIsNull ? gtEq(floatColumn(field), null)
+                                : gtEq(floatColumn(field), Float.parseFloat(simpleExpression.getValue().toString()));
+                            break;
                     }
                 } else if (simpleExpression.getValue() instanceof String || (simpleExpressionValueIsNull && element != null && element.getType().equals(String.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(binaryColumn(field),null) : eq(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(binaryColumn(field),null) : notEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(binaryColumn(field),null) : lt(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(binaryColumn(field),null) : ltEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(binaryColumn(field),null) : gt(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(binaryColumn(field),null) : gtEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
+                    switch (operator) {
+                        case OPERATOR_EQ:
+                            filterPredicate = simpleExpressionValueIsNull ? eq(binaryColumn(field), null)
+                                : eq(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_NE:
+                            filterPredicate = simpleExpressionValueIsNull ? notEq(binaryColumn(field), null)
+                                : notEq(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LT:
+                            filterPredicate = simpleExpressionValueIsNull ? lt(binaryColumn(field), null)
+                                : lt(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LE:
+                            filterPredicate = simpleExpressionValueIsNull ? ltEq(binaryColumn(field), null)
+                                : ltEq(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GT:
+                            filterPredicate = simpleExpressionValueIsNull ? gt(binaryColumn(field), null)
+                                : gt(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GE:
+                            filterPredicate = simpleExpressionValueIsNull ? gtEq(binaryColumn(field), null)
+                                : gtEq(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
                     }
                 } else if (simpleExpression.getValue() instanceof Boolean || (simpleExpressionValueIsNull && element != null && element.getType().equals(Boolean.class))) {
                     if (operator.equals(OPERATOR_EQ)) {
@@ -354,61 +420,125 @@ public class ParquetSchemaUtils {
                         filterPredicate = simpleExpressionValueIsNull ? notEq(booleanColumn(field),null) : notEq(booleanColumn(field),Boolean.valueOf(simpleExpression.getValue().toString()));
                     }
                 } else if (simpleExpression.getValue() instanceof Date || (simpleExpressionValueIsNull && element != null && element.getType().equals(Date.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        //We add 1 day because the 1970-01-01 counter starts at 0
-                        filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field),null) : eq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field),null) : notEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field),null) : lt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field),null) : ltEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field),null) : gt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field),null) : gtEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                    switch (operator) {
+                        case OPERATOR_EQ:
+                            //We add 1 day because the 1970-01-01 counter starts at 0
+                            filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field), null)
+                                : eq(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_NE:
+                            filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field), null)
+                                : notEq(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_LT:
+                            filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field), null)
+                                : lt(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_LE:
+                            filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field), null)
+                                : ltEq(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_GT:
+                            filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field), null)
+                                : gt(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_GE:
+                            filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field), null)
+                                : gtEq(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
                     }
                 } else if (simpleExpression.getValue() instanceof java.sql.Date || (simpleExpressionValueIsNull && element != null && element.getType().equals(java.sql.Date.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field),null) : eq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field),null) : notEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field),null) : lt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field),null) : ltEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field),null) : gt(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field),null) : gtEq(intColumn(field),Math.toIntExact(((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                    switch (operator) {
+                        case OPERATOR_EQ:
+                            filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field), null)
+                                : eq(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_NE:
+                            filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field), null)
+                                : notEq(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_LT:
+                            filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field), null)
+                                : lt(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_LE:
+                            filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field), null)
+                                : ltEq(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_GT:
+                            filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field), null)
+                                : gt(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
+                        case OPERATOR_GE:
+                            filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field), null)
+                                : gtEq(intColumn(field), Math.toIntExact(
+                                    ((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
+                            break;
                     }
                 } else if (simpleExpression.getValue() instanceof Short || (simpleExpressionValueIsNull && element != null && element.getType().equals(Short.class))) {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field),null) : eq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field),null) : notEq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field),null) : lt(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field),null) : ltEq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field),null) : gt(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field),null) : gtEq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
+                    switch (operator) {
+                        case OPERATOR_EQ:
+                            filterPredicate = simpleExpressionValueIsNull ? eq(intColumn(field), null)
+                                : eq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
+                            break;
+                        case OPERATOR_NE:
+                            filterPredicate = simpleExpressionValueIsNull ? notEq(intColumn(field), null)
+                                : notEq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
+                            break;
+                        case OPERATOR_LT:
+                            filterPredicate = simpleExpressionValueIsNull ? lt(intColumn(field), null)
+                                : lt(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
+                            break;
+                        case OPERATOR_LE:
+                            filterPredicate = simpleExpressionValueIsNull ? ltEq(intColumn(field), null)
+                                : ltEq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
+                            break;
+                        case OPERATOR_GT:
+                            filterPredicate = simpleExpressionValueIsNull ? gt(intColumn(field), null)
+                                : gt(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
+                            break;
+                        case OPERATOR_GE:
+                            filterPredicate = simpleExpressionValueIsNull ? gtEq(intColumn(field), null)
+                                : gtEq(intColumn(field), ((Short) simpleExpression.getValue()).intValue());
+                            break;
                     }
                 } else {
-                    if (operator.equals(OPERATOR_EQ)) {
-                        filterPredicate = simpleExpressionValueIsNull ? eq(binaryColumn(field),null) : eq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_NE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? notEq(binaryColumn(field),null) : notEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? lt(binaryColumn(field),null) : lt(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_LE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? ltEq(binaryColumn(field),null) : ltEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GT)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gt(binaryColumn(field),null) : gt(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
-                    } else if (operator.equals(OPERATOR_GE)) {
-                        filterPredicate = simpleExpressionValueIsNull ? gtEq(binaryColumn(field),null) : gtEq(binaryColumn(field),Binary.fromString(simpleExpression.getValue().toString()));
+                    switch (operator) {
+                        case OPERATOR_EQ:
+                            filterPredicate = simpleExpressionValueIsNull ? eq(binaryColumn(field), null)
+                                : eq(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_NE:
+                            filterPredicate = simpleExpressionValueIsNull ? notEq(binaryColumn(field), null)
+                                : notEq(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LT:
+                            filterPredicate = simpleExpressionValueIsNull ? lt(binaryColumn(field), null)
+                                : lt(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_LE:
+                            filterPredicate = simpleExpressionValueIsNull ? ltEq(binaryColumn(field), null)
+                                : ltEq(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GT:
+                            filterPredicate = simpleExpressionValueIsNull ? gt(binaryColumn(field), null)
+                                : gt(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
+                        case OPERATOR_GE:
+                            filterPredicate = simpleExpressionValueIsNull ? gtEq(binaryColumn(field), null)
+                                : gtEq(binaryColumn(field), Binary.fromString(simpleExpression.getValue().toString()));
+                            break;
                     }
                 }
             }

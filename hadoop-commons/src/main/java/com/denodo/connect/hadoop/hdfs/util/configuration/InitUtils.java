@@ -41,10 +41,10 @@ public final class InitUtils {
      * @param hadoopKeyClass class of the Writable
      * @return the Writable of class hadoopKeyClass initialized
      */
-    public static Writable getInitKey(String hadoopKeyClass, Configuration configuration) {
+    public static Writable getInitKey(final String hadoopKeyClass, final Configuration configuration) {
         try {
             return (Writable) ReflectionUtils.newInstance(Class.forName(hadoopKeyClass), configuration);
-        } catch (ClassNotFoundException e) {
+        } catch (final ClassNotFoundException e) {
             throw new IllegalArgumentException("Key class name '" + hadoopKeyClass
                 + "' not found", e);
         }
@@ -57,13 +57,13 @@ public final class InitUtils {
      * class in hadoopValueClass.
      */
     @SuppressWarnings("unchecked")
-    public static Writable getInitValue(String hadoopValueClass, Configuration configuration) {
+    public static Writable getInitValue(final String hadoopValueClass, final Configuration configuration) {
         try {
             if (StringUtils.endsWith(hadoopValueClass, "[]")) {
                 return new ArrayWritable((Class<? extends Writable>) Class.forName(StringUtils.substringBeforeLast(hadoopValueClass, "[]")));
             }
             return (Writable) ReflectionUtils.newInstance(Class.forName(hadoopValueClass), configuration);
-        } catch (ClassNotFoundException e) {
+        } catch (final ClassNotFoundException e) {
             throw new IllegalArgumentException("Value class name '" + hadoopValueClass
                 + "' not found", e);
         }

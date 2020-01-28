@@ -128,16 +128,16 @@ public final class ParquetTypeUtils {
      * @param bytes INT96 parquet timestamp
      * @return timestamp in millis, GMT timezone
      */
-    public static long int96ToTimestampMillis(Binary bytes) {
-        ByteBuffer buf = bytes.toByteBuffer();
+    public static long int96ToTimestampMillis(final Binary bytes) {
+        final ByteBuffer buf = bytes.toByteBuffer();
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        long timeOfDayNanos = buf.getLong();
-        int julianDay = buf.getInt();
+        final long timeOfDayNanos = buf.getLong();
+        final int julianDay = buf.getInt();
 
         return julianDayToMillis(julianDay) + (timeOfDayNanos / NANOS_PER_MILLISECOND);
     }
 
-    private static long julianDayToMillis(int julianDay) {
+    private static long julianDayToMillis(final int julianDay) {
         return (julianDay - JULIAN_EPOCH_OFFSET_DAYS) * MILLIS_IN_DAY;
     }
 }

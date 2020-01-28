@@ -98,7 +98,7 @@ public class ParquetSchemaBuilder {
 
     private MessageType getParquetSchema(final Configuration configuration, final Path filePath) throws IOException {
 
-        MessageType schema;
+        final MessageType schema;
         try (final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath, configuration))) {
 
             this.footer = parquetFileReader.getFooter();

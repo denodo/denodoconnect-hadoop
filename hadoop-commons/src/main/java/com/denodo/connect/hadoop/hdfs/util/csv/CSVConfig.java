@@ -99,7 +99,7 @@ public class CSVConfig {
             return null;
         }
         
-        char c;
+        final char c;
         switch (sep) {
         case "\\t":
             c = '\t';

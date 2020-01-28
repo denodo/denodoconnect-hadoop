@@ -60,7 +60,7 @@ public abstract class AbstractHDFSKeyValueFileReader extends AbstractHDFSFileRea
 
     public static Collection<SchemaElement> getSchema(final String hadoopKeyClass, final String hadoopValueClass) {
 
-        final Collection<SchemaElement> schema = new ArrayList<SchemaElement>();
+        final Collection<SchemaElement> schema = new ArrayList<>();
 
         final Class<?> keyJavaClass = TypeUtils.toJava(hadoopKeyClass);
         final SchemaElement keyElement = new SchemaElement(Parameter.KEY, keyJavaClass);

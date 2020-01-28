@@ -210,7 +210,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         }
     }
 
-    public boolean loginWithKerberosTicket() {
+    private boolean loginWithKerberosTicket() {
         return this.userPrincipal == null;
     }
 
@@ -222,7 +222,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
         }
     }
 
-    public boolean isSecurityEnabled() {
+    private boolean isSecurityEnabled() {
         return this.securityEnabled;
     }
 

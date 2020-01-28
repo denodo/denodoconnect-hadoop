@@ -21,19 +21,17 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.denodo.connect.hadoop.hdfs.wrapper.HDFSParquetFileWrapper;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
-import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.denodo.connect.hadoop.hdfs.wrapper.HDFSParquetFileWrapper;
+import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
 
 /**
@@ -68,34 +66,6 @@ public final class RecordsAssemblerTask implements Callable<Void> {
         this.stopRequested = stopRequested;
 
     }
-
-
-    private static String logIntArray(final int[] array) {
-        final StringBuilder formatBuilder = new StringBuilder();
-        formatBuilder.append("[");
-        for (int i = 0; i < array.length; i++) {
-            if (i > 0) {
-                formatBuilder.append(",");
-            }
-            formatBuilder.append("%10d");
-        }
-        formatBuilder.append("]");
-        return String.format(formatBuilder.toString(), ArrayUtils.toObject(array));
-    }
-
-    private static String logBoolArray(final boolean[] array) {
-        final StringBuilder formatBuilder = new StringBuilder();
-        formatBuilder.append("[");
-        for (int i = 0; i < array.length; i++) {
-            if (i > 0) {
-                formatBuilder.append(",");
-            }
-            formatBuilder.append("%10s");
-        }
-        formatBuilder.append("]");
-        return String.format(formatBuilder.toString(), ArrayUtils.toObject(array));
-    }
-
 
     @Override
     public Void call() throws InterruptedException {
@@ -204,8 +174,6 @@ public final class RecordsAssemblerTask implements Callable<Void> {
     }
 
 
-
-
     private static boolean allFinished(final List<ColumnGroupReadingStructure> readingStructures) {
         for (final ColumnGroupReadingStructure readingStructure : readingStructures) {
             if (!readingStructure.isFinished()) {
@@ -214,17 +182,5 @@ public final class RecordsAssemblerTask implements Callable<Void> {
         }
         return true;
     }
-
-
-    private static int min(final int[] values) {
-        int val = Integer.MAX_VALUE;
-        for (int i = 0; i < values.length; i++) {
-            if (values[i] < val) {
-                val = values[i];
-            }
-        }
-        return val;
-    }
-
 
 }

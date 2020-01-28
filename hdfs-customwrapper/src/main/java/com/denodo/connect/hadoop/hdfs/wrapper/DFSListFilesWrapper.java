@@ -22,7 +22,6 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
-import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.util.filesystem.FileSystemUtils;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
@@ -52,8 +50,6 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolde
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
 
@@ -90,8 +86,7 @@ public class DFSListFilesWrapper extends AbstractSecureHadoopWrapper {
     
     
     @Override
-    public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues)
-            throws CustomWrapperException {
+    public CustomWrapperSchemaParameter[] doGetSchemaParameters(final Map<String, String> inputValues) {
         
         final boolean searchable = true;
         final boolean updateable = true;

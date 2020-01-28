@@ -22,7 +22,6 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Types;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,6 @@ import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSAvroFileReader;
 import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
-import com.denodo.connect.hadoop.hdfs.util.configuration.HadoopConfigurationUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.AvroSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
@@ -51,8 +49,6 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolde
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterRouteValue;
-import com.denodo.vdb.engine.customwrapper.input.value.CustomWrapperInputParameterValue;
 
 /**
  * HDFS file custom wrapper for reading Avro files stored in HDFS (Hadoop
@@ -140,7 +136,7 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
             final Configuration conf = getHadoopConfiguration(inputValues);
             final Schema avroSchema = AvroSchemaUtils.buildSchema(inputValues, conf);
             final SchemaElement javaSchema = HDFSAvroFileReader.getSchema(avroSchema);
-            boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
+            final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
             if(includePathColumn){
                 final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH, Types.VARCHAR, null, !isSearchable,
                     CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, isNullable, !isMandatory);
@@ -159,7 +155,7 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
     public void doRun(final CustomWrapperConditionHolder condition, final List<CustomWrapperFieldExpression> projectedFields,
         final CustomWrapperResult result, final Map<String, String> inputValues) throws CustomWrapperException {
 
-        final Configuration conf = getHadoopConfiguration(inputValues);;
+        final Configuration conf = getHadoopConfiguration(inputValues);
 
         final boolean delete = Boolean.parseBoolean(inputValues.get(Parameter.DELETE_AFTER_READING));
 
@@ -184,7 +180,7 @@ public class HDFSAvroFileWrapper extends AbstractSecureHadoopWrapper {
             Object avroData = reader.read();
             while (avroData != null && !isStopRequested()) {
                 if(includePathColumn){
-                    Object[] avroArray = (Object[]) avroData;
+                    final Object[] avroArray = (Object[]) avroData;
                     rowData[1]= ArrayUtils.subarray(avroArray,0,avroArray.length-1);
                     rowData[2]= avroArray[avroArray.length-1];
                 }else {

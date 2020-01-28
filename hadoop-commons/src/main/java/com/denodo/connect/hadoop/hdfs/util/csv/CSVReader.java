@@ -121,7 +121,7 @@ public class CSVReader implements Iterator<List<String>> {
     
     private static List<String> toList(final CSVRecord record) {
         
-        final List<String> asList = new ArrayList<String>(record.size());
+        final List<String> asList = new ArrayList<>(record.size());
         for (final String item : record) {
             asList.add(item);
         }

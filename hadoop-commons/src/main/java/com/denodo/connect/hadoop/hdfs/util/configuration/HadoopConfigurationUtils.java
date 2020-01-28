@@ -70,7 +70,7 @@ public final class HadoopConfigurationUtils {
      * This setting is required too as FileSystem#close() is necessary for #39931: Failed connections could require
      *  restarting VDP to refresh wrapper configuration files.
      */
-    private static void disableFileSystemCache(String fileSystemURIString, Configuration conf) {
+    private static void disableFileSystemCache(final String fileSystemURIString, final Configuration conf) {
 
         final URI fileSystemURI = URI.create(fileSystemURIString);
         final String disableCacheName = String.format("fs.%s.impl.disable.cache", fileSystemURI.getScheme());
@@ -80,7 +80,7 @@ public final class HadoopConfigurationUtils {
     /*
      * General pattern that avoids having to specify the server's Kerberos principal name when using Kerberos authentication
      */
-    private static void allowGeneralKerberosPrincipals(Configuration conf) {
+    private static void allowGeneralKerberosPrincipals(final Configuration conf) {
         conf.set("dfs.namenode.kerberos.principal.pattern", "*");
     }
 

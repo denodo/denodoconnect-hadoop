@@ -93,7 +93,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             } if (this.startingPos != null && this.endingPos != null) {
                 dataFileBuilder.withFileRange(this.startingPos, this.endingPos);
             }
-            if (parquetMetadata != null) {
+            if (this.parquetMetadata != null) {
       //          dataFileBuilder.withFooter(this.parquetMetadata);
             }
             this.dataFileReader = dataFileBuilder.build();
@@ -123,10 +123,10 @@ public class HDFSParquetFileReader implements HDFSFileReader {
 
         } catch (final IOException e) {
             close();
-            throw new IOException('\'' + pathValue + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+            throw new IOException('\'' + this.pathValue + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
         } catch (final RuntimeException e) {
             close();
-            throw new RuntimeException('\'' + pathValue + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
+            throw new RuntimeException('\'' + this.pathValue + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
         }
 
     }

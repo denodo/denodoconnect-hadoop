@@ -22,6 +22,13 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GT;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LE;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LT;
+import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_NE;
+
 import java.io.IOException;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -30,12 +37,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.parquet.filter2.compat.FilterCompat;
+import org.apache.parquet.filter2.compat.FilterCompat.Filter;
+import org.apache.parquet.filter2.predicate.FilterPredicate;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.Type;
+import org.apache.parquet.schema.Types.MessageTypeBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
@@ -59,27 +79,6 @@ import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolde
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory.RouteType;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.parquet.filter2.compat.FilterCompat;
-import org.apache.parquet.filter2.compat.FilterCompat.Filter;
-import org.apache.parquet.filter2.predicate.FilterPredicate;
-import org.apache.parquet.hadoop.metadata.BlockMetaData;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.Type;
-import org.apache.parquet.schema.Types.MessageTypeBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GT;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LE;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LT;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_NE;
 
 /**
  * HDFS file custom wrapper for reading Parquet files stored in HDFS (Hadoop Distributed File System).
@@ -288,7 +287,6 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final ReaderManager readerManager = ReaderManager.getInstance();
 
         final Collection<Callable> readers = new ArrayList<>(parallelism);
-        int i = 0;
         List<BlockMetaData> fileRowGroups = null;
         while (pathIterator.hasNext() && ! isStopRequested()) {
 
@@ -300,21 +298,14 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
             final Iterator<List<BlockMetaData>> rowGroupListIterator = rowGroupsList.iterator();
             while (rowGroupListIterator.hasNext() && ! isStopRequested()) {
-                while (rowGroupListIterator.hasNext() && i < parallelism && ! isStopRequested()) {
-                    readers.add(new RowGroupReaderTask(conf, currentPath, schema, includePathColumn,  conditionFields,
-                        filter, projectedFields, result, rowGroupListIterator.next(), invokeAddRow, parquetMetadata));
-                    i++;
-                }
-                if (! (isStopRequested()) && ! (i < parallelism)) {
-                    readerManager.execute(readers);
-                    readers.clear();
-                    i = 0;
-                }
+                readers.add(new RowGroupReaderTask(conf, currentPath, schema, includePathColumn,  conditionFields,
+                    filter, projectedFields, result, rowGroupListIterator.next(), invokeAddRow, parquetMetadata));
             }
-        }
-        if (! isStopRequested()) {
-            readerManager.execute(readers);
-            readers.clear();
+
+            if (! (isStopRequested())) {
+                readerManager.execute(readers);
+                readers.clear();
+            }
         }
     }
 
@@ -322,14 +313,14 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
         final List<List<BlockMetaData>> rowGroupsList = new ArrayList<>();
 
-        int numberOfRowGroups = rowGroups.size();
+        final int numberOfRowGroups = rowGroups.size();
 
-        int numberOfRowGroupsByRowGroupList =  numberOfRowGroups > parallelism ? numberOfRowGroups / parallelism : 1;
-        int numberOfRowGroupsByRowGroupListWithOffset = numberOfRowGroups % parallelism == 0 || numberOfRowGroups <= parallelism ? numberOfRowGroupsByRowGroupList : numberOfRowGroupsByRowGroupList + 1;
+        final int numberOfRowGroupsByRowGroupList =  numberOfRowGroups > parallelism ? numberOfRowGroups / parallelism : 1;
+        final int numberOfRowGroupsByRowGroupListWithOffset = numberOfRowGroups % parallelism == 0 || numberOfRowGroups <= parallelism ? numberOfRowGroupsByRowGroupList : numberOfRowGroupsByRowGroupList + 1;
 
         final AtomicInteger counter = new AtomicInteger();
 
-        for (BlockMetaData rowGroup : rowGroups) {
+        for (final BlockMetaData rowGroup : rowGroups) {
             if (counter.getAndIncrement() % numberOfRowGroupsByRowGroupListWithOffset == 0) {
                 rowGroupsList.add(new ArrayList<>());
             }

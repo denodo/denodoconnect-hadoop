@@ -81,7 +81,7 @@ public final class RowGroupReaderTask implements Callable<Void> {
     public Void call() throws IOException {
 
         final int lastRowGroup = this.rowGroups.size() - 1;
-        final Long startingPos = rowGroups.get(0).getStartingPos();
+        final Long startingPos = this.rowGroups.get(0).getStartingPos();
         final Long endingPos = this.rowGroups.get(lastRowGroup).getStartingPos() + this.rowGroups.get(lastRowGroup).getTotalByteSize();
 
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path,

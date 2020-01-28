@@ -12,11 +12,11 @@ public final class S3Utils {
 
     }
 
-    public static boolean isAmazonS3(String host) {
+    public static boolean isAmazonS3(final String host) {
         return host.contains(AMAZON_WEB_SERVICE);
     }
 
-    public static String getAmazonS3Bucket(String host) {
+    public static String getAmazonS3Bucket(final String host) {
 
         if (!host.contains(".")) {
             throw new IllegalArgumentException("Host should be of the form <bucket>.s3.amazonaws.com or <bucket>.s3<region>.amazonaws.com");
@@ -25,7 +25,7 @@ public final class S3Utils {
         return StringUtils.substringBefore(host, ".");
     }
 
-    public static String getAmazonS3AccessKey(String user) {
+    public static String getAmazonS3AccessKey(final String user) {
 
         if (!user.contains(":")) {
             throw new IllegalArgumentException("User should be of the form <accessKey>:<secretKey>");
@@ -34,7 +34,7 @@ public final class S3Utils {
         return StringUtils.substringBefore(user, ":");
     }
 
-    public static String getAmazonS3SecretKey(String user) {
+    public static String getAmazonS3SecretKey(final String user) {
 
         if (!user.contains(":")) {
             throw new IllegalArgumentException("User should be of the form <accessKey>:<secretKey>");
