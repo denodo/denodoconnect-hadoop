@@ -32,27 +32,38 @@ public final class ReaderManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReaderManager.class);
 
-    private static final ReaderManager instance = new ReaderManager();
+    private static final int DEFAULT_POOL_SIZE = 20;
 
-   // private int parallelism;
-    private ExecutorService threadPool;
+    private ThreadPoolExecutor threadPool;
 
 
-    private ReaderManager() {
+    public ReaderManager(final int threadPoolSize) {
 
-       // this.parallelism = computeParallelism();
         if (LOG.isDebugEnabled()) {
             LOG.debug("AVAILABLE PROCESSORS " + Runtime.getRuntime().availableProcessors());
         }
-        final int poolSize = 20;//computePoolSize(this.parallelism);
-        this.threadPool = Executors.newFixedThreadPool(poolSize);
+        final int poolSize = threadPoolSize > 0 ? threadPoolSize : DEFAULT_POOL_SIZE;
+        this.threadPool = new ThreadPoolExecutor(0, // try to reduce the pool size to 0 if threads are idle long enough
+            poolSize, 60L, TimeUnit.SECONDS, // terminate thread after 60s idle
+            new SynchronousQueue<Runnable>());
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Created thread pool " + this.threadPool);
+        }
 
         // graceful shutdown when VDP stops
         Runtime.getRuntime().addShutdownHook(new Thread(this.threadPool::shutdownNow));
     }
 
-    public static ReaderManager getInstance() {
-        return instance;
+    public void resizePool(final int threadPoolSize) {
+
+        if (threadPoolSize > 0 && this.threadPool.getMaximumPoolSize() != threadPoolSize) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Resizing thread pool " + this.threadPool + " to: " + threadPoolSize);
+            }
+            this.threadPool.setMaximumPoolSize(threadPoolSize);
+        }
+
     }
 
     public void execute(final Collection<Callable> readers) throws ExecutionException {
@@ -84,22 +95,5 @@ public final class ReaderManager {
         }
     }
 
-    private static int computeParallelism() {
-
-        int parallelism = Runtime.getRuntime().availableProcessors() - 1;
-        if (parallelism <= 0) {
-            parallelism = 1;
-        }
-
-        return parallelism;
-    }
-
-    private static int computePoolSize(final int parallelism) {
-        return parallelism * 2;
-    }
-
-   // public int getParallelism() {
-   //     return this.parallelism;
-   // }
 
 }

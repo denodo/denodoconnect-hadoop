@@ -65,7 +65,10 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
                 false, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
-                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP}))
+                false, true, CustomWrapperInputParameterTypeFactory.routeType(new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
+            new CustomWrapperInputParameter(Parameter.THREADPOOL_SIZE,
+                "Number of threads in the pool (default is 20)",
+                false, true, CustomWrapperInputParameterTypeFactory.integerType())
     };
 
 
