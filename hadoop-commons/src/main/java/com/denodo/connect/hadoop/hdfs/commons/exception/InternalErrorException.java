@@ -21,15 +21,10 @@
  */
 package com.denodo.connect.hadoop.hdfs.commons.exception;
 
-import org.apache.commons.lang.exception.NestableRuntimeException;
 
-public class InternalErrorException extends NestableRuntimeException {
+public class InternalErrorException extends RuntimeException {
 
     private static final long serialVersionUID = 732593813938456066L;
-
-    public InternalErrorException() {
-        super();
-    }
 
     public InternalErrorException(final String msg, final Throwable nested) {
         super(msg, nested);
@@ -37,10 +32,6 @@ public class InternalErrorException extends NestableRuntimeException {
 
     public InternalErrorException(final String msg) {
         super(msg);
-    }
-
-    public InternalErrorException(final Throwable nested) {
-        super(nested);
     }
 
 }

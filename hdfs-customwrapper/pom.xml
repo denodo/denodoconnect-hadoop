@@ -11,14 +11,14 @@
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20200116-dev</version>
+    <version>202002-dev</version>
 
     <properties>
         <aws.sdk.version>1.11.589</aws.sdk.version>
         <avro.version>1.8.2</avro.version>
         <commons-codec.version>1.10</commons-codec.version>
         <commons-io.version>2.6</commons-io.version>
-        <commons-lang.version>2.6</commons-lang.version>
+        <commons-lang.version>3.8.1</commons-lang.version>
         <gcs.version>hadoop3-1.9.10</gcs.version>
         <hadoop.version>3.2.1</hadoop.version> <!-- Requires java 8 -->
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version>   
@@ -602,8 +602,8 @@
       </dependency>
             
       <dependency>
-        <groupId>commons-lang</groupId>
-        <artifactId>commons-lang</artifactId>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
         <version>${commons-lang.version}</version>
       </dependency>        
 

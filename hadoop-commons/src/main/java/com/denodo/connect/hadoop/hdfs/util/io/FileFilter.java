@@ -21,7 +21,7 @@
  */
 package com.denodo.connect.hadoop.hdfs.util.io;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 

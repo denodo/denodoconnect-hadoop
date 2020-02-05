@@ -21,7 +21,7 @@
  */
 package com.denodo.connect.hadoop.hdfs.util.configuration;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.Writable;

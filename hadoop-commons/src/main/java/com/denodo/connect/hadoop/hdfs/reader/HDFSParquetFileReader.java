@@ -28,7 +28,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.example.data.Group;
@@ -93,9 +93,9 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             } if (this.startingPos != null && this.endingPos != null) {
                 dataFileBuilder.withFileRange(this.startingPos, this.endingPos);
             }
-            if (this.parquetMetadata != null) {
-      //          dataFileBuilder.withFooter(this.parquetMetadata);
-            }
+       //     if (this.parquetMetadata != null) {
+       //          dataFileBuilder.withFooter(this.parquetMetadata);
+       //     }
             this.dataFileReader = dataFileBuilder.build();
         } catch (final IOException e) {
             throw new IOException("'" + path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message
