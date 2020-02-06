@@ -32,8 +32,6 @@ public final class ReaderManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReaderManager.class);
 
-    private static final int DEFAULT_POOL_SIZE = 20;
-
     private ThreadPoolExecutor threadPool;
 
 
@@ -42,10 +40,10 @@ public final class ReaderManager {
         if (LOG.isDebugEnabled()) {
             LOG.debug("AVAILABLE PROCESSORS " + Runtime.getRuntime().availableProcessors());
         }
-        final int poolSize = threadPoolSize > 0 ? threadPoolSize : DEFAULT_POOL_SIZE;
+
         this.threadPool = new ThreadPoolExecutor(0, // try to reduce the pool size to 0 if threads are idle long enough
-            poolSize, 60L, TimeUnit.SECONDS, // terminate thread after 60s idle
-            new SynchronousQueue<Runnable>());
+            threadPoolSize, 60L, TimeUnit.SECONDS, // terminate thread after 60s idle
+            new SynchronousQueue<>());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Created thread pool " + this.threadPool);

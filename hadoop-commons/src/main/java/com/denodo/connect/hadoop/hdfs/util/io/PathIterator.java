@@ -154,4 +154,8 @@ public class PathIterator implements Iterator<Path> {
         initFileIterator();
         this.cursor = null;
     }
+
+    public boolean isRootDirectory() throws IOException {
+        return this.fileSystem.getFileStatus(this.path).isDirectory();
+    }
 }

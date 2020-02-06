@@ -91,7 +91,9 @@ public final class Parameter {
     public static final String ROW_PARALLEL = "Row Parallel";
     public static final String COLUMN_PARALLEL = "Column Parallel";
     public static final String NOT_PARALLEL = "Not parallel";
+    public static final String AUTOMATIC_PARALLELISM = "Automatic";
     public static final String PARALLELISM_LEVEL = "NUM_FILES_PARALLEL";
+    public static final String CLUSTERING_FIELD = "Cluster/partition field";
     public static final String THREADPOOL_SIZE = "Thread Pool size";
 
     public static final String ACCESS_KEY_ID = "Access Key ID";

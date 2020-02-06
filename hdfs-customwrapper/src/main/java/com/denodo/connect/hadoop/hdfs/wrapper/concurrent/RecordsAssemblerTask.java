@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.denodo.connect.hadoop.hdfs.wrapper.HDFSParquetFileWrapper;
+import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy.ColumnReadingStrategy;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
@@ -72,7 +72,7 @@ public final class RecordsAssemblerTask implements Callable<Void> {
 
         final int rowSize = this.projectedFields.size();
 
-        final Object[][] rows = new Object[HDFSParquetFileWrapper.READING_CHUNK_SIZE][];
+        final Object[][] rows = new Object[ColumnReadingStrategy.READING_CHUNK_SIZE][];
 
         final int numReaders = this.readingStructures.size();
 
