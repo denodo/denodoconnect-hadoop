@@ -67,7 +67,6 @@ public class ColumnReadingStrategy implements ReadingStrategy {
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
     private final int parallelism;
-    private final boolean invokeAddRow;
     private final ParquetMetadata parquetMetadata;
     private final ReaderManager readerManager;
     private final AtomicBoolean stopRequested;
@@ -76,8 +75,7 @@ public class ColumnReadingStrategy implements ReadingStrategy {
     public ColumnReadingStrategy(final PathIterator pathIterator, final Configuration conf,
         final ParquetSchemaBuilder schemaBuilder, final List<CustomWrapperFieldExpression> projectedFields,
         final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelism,
-        final boolean invokeAddRow, final ReaderManager readerManager, final AtomicBoolean stopRequested)
-        throws IOException {
+        final ReaderManager readerManager, final AtomicBoolean stopRequested) throws IOException {
 
         this.pathIterator = pathIterator;
         this.conf = conf;
@@ -89,7 +87,6 @@ public class ColumnReadingStrategy implements ReadingStrategy {
         this.includePathColumn = includePathColumn;
         this.result = result;
         this.parallelism = parallelism;
-        this.invokeAddRow = invokeAddRow;
         this.parquetMetadata = schemaBuilder.getFooter();
         this.readerManager = readerManager;
         this.stopRequested = stopRequested;
@@ -141,7 +138,7 @@ public class ColumnReadingStrategy implements ReadingStrategy {
             }
 
             readers.add(new RecordsAssemblerTask(this.result, this.projectedFields, readingStructures, columnOffsets,
-                this.includePathColumn ? currentPath.toString() : null, this.invokeAddRow, this.stopRequested));
+                this.includePathColumn ? currentPath.toString() : null, this.stopRequested));
 
             if (!this.stopRequested.get()) {
                 this.readerManager.execute(readers);

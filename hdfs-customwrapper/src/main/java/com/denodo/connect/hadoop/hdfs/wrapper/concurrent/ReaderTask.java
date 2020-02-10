@@ -53,12 +53,10 @@ public final class ReaderTask implements Callable<Void> {
     private final List<CustomWrapperFieldExpression> projectedFields;
     private final CustomWrapperResult result;
 
-    private final boolean invokeAddRow;
-    private long count;
 
     public ReaderTask(final Configuration conf, final Path path, final MessageType schema, final boolean includePathColumn,
         final List<String> conditionFields, final Filter filter, final List<CustomWrapperFieldExpression> projectedFields,
-        final CustomWrapperResult result, final boolean invokeAddRow) {
+        final CustomWrapperResult result) {
 
         this.conf = conf;
         this.path = path;
@@ -68,8 +66,6 @@ public final class ReaderTask implements Callable<Void> {
         this.filter = filter;
         this.projectedFields = projectedFields;
         this.result = result;
-
-        this.invokeAddRow = invokeAddRow;
     }
 
     @Override
@@ -86,21 +82,14 @@ public final class ReaderTask implements Callable<Void> {
         while (parquetData != null ) {
 
             synchronized (this.result) {
-                if (this.invokeAddRow) {
-                    this.result.addRow((Object[]) parquetData, this.projectedFields);
-                    row++;
-                } else {
-                    this.count += ((Object[]) parquetData).length;
-                }
+                this.result.addRow((Object[]) parquetData, this.projectedFields);
+                row++;
 
             }
             parquetData = reader.read();
         }
 
         if (LOG.isTraceEnabled()) {
-            if (!this.invokeAddRow) {
-                LOG.trace("TUPLES " + this.count);
-            }
             LOG.trace("Ending task in " + Thread.currentThread().getName() + " ; total rows " + row);
         }
 

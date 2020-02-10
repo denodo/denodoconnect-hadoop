@@ -56,14 +56,13 @@ public class FileReadingStrategy implements ReadingStrategy {
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
     private final int parallelism;
-    private final boolean invokeAddRow;
     private final ReaderManager readerManager;
     private final AtomicBoolean stopRequested;
 
     public FileReadingStrategy(final PathIterator pathIterator, final Configuration conf,
         final ParquetSchemaBuilder schemaBuilder, final List<CustomWrapperFieldExpression> projectedFields,
         final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelism,
-        final boolean invokeAddRow, final ReaderManager readerManager, final AtomicBoolean stopRequested) throws IOException {
+        final ReaderManager readerManager, final AtomicBoolean stopRequested) throws IOException {
 
         this.pathIterator = pathIterator;
         this.conf = conf;
@@ -74,7 +73,6 @@ public class FileReadingStrategy implements ReadingStrategy {
         this.includePathColumn = includePathColumn;
         this.result = result;
         this.parallelism = parallelism;
-        this.invokeAddRow = invokeAddRow;
         this.readerManager = readerManager;
         this.stopRequested = stopRequested;
     }
@@ -97,7 +95,7 @@ public class FileReadingStrategy implements ReadingStrategy {
                     LOG.trace("Reader task: " + i);
                 }
                 readers.add(new ReaderTask(this.conf, this.pathIterator.next(), this.schema, this.includePathColumn,
-                    this.conditionFields, this.filter, this.projectedFields, this.result, this.invokeAddRow));
+                    this.conditionFields, this.filter, this.projectedFields, this.result));
                 i++;
             }
 

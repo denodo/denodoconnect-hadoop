@@ -63,7 +63,6 @@ public class RowGroupReadingStrategy implements ReadingStrategy {
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
     private final int parallelism;
-    private final boolean invokeAddRow;
     private final List<BlockMetaData> rowGroups;
     private final ParquetMetadata parquetMetadata;
     private final ReaderManager readerManager;
@@ -72,8 +71,7 @@ public class RowGroupReadingStrategy implements ReadingStrategy {
     public RowGroupReadingStrategy(final PathIterator pathIterator, final Configuration conf,
         final ParquetSchemaBuilder schemaBuilder, final List<CustomWrapperFieldExpression> projectedFields,
         final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelism,
-        final boolean invokeAddRow, final ReaderManager readerManager, final AtomicBoolean stopRequested)
-        throws IOException {
+        final ReaderManager readerManager, final AtomicBoolean stopRequested) throws IOException {
 
         this.pathIterator = pathIterator;
         this.conf = conf;
@@ -84,7 +82,6 @@ public class RowGroupReadingStrategy implements ReadingStrategy {
         this.includePathColumn = includePathColumn;
         this.result = result;
         this.parallelism = parallelism;
-        this.invokeAddRow = invokeAddRow;
         this.rowGroups = schemaBuilder.getRowGroups();
         this.parquetMetadata = schemaBuilder.getFooter();
         this.readerManager = readerManager;
@@ -117,8 +114,7 @@ public class RowGroupReadingStrategy implements ReadingStrategy {
                 final Iterator<List<BlockMetaData>> rowGroupListIterator = rowGroupsList.iterator();
                 while (rowGroupListIterator.hasNext() && !this.stopRequested.get()) {
                     readers.add(new RowGroupReaderTask(this.conf, currentPath, this.schema, this.includePathColumn,
-                        this.conditionFields,
-                        this.filter, this.projectedFields, this.result, rowGroupListIterator.next(), this.invokeAddRow,
+                        this.conditionFields, this.filter, this.projectedFields, this.result, rowGroupListIterator.next(),
                         this.parquetMetadata));
                 }
 

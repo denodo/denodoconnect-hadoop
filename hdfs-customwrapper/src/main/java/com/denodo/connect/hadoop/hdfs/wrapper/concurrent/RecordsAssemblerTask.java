@@ -48,21 +48,18 @@ public final class RecordsAssemblerTask implements Callable<Void> {
     private final List<ColumnGroupReadingStructure> readingStructures;
     private int[] columnOffsets;
     private final String fullPathColumn;
-    private final boolean invokeAddRow;
-
     private final AtomicBoolean stopRequested;
 
 
     public RecordsAssemblerTask(final CustomWrapperResult vdpResult, final List<CustomWrapperFieldExpression> projectedFields,
         final List<ColumnGroupReadingStructure> readingStructures, final int[] columnOffsets, final String fullPathColumn,
-        final boolean invokeAddRow, final AtomicBoolean stopRequested) {
+        final AtomicBoolean stopRequested) {
 
         this.vdpResult = vdpResult;
         this.projectedFields = projectedFields;
         this.readingStructures = readingStructures;
         this.columnOffsets = columnOffsets;
         this.fullPathColumn = fullPathColumn;
-        this.invokeAddRow = invokeAddRow;
         this.stopRequested = stopRequested;
 
     }
@@ -144,14 +141,13 @@ public final class RecordsAssemblerTask implements Callable<Void> {
 
             if (numRead > 0) {
 
-                if (this.invokeAddRow) {
-                    for (int i = 0; i < numRead; i++) {
-                        if (this.fullPathColumn != null) {
-                            rows[i][rowSize - 1] = this.fullPathColumn;
-                        }
-                        this.vdpResult.addRow(rows[i], this.projectedFields);
+                for (int i = 0; i < numRead; i++) {
+                    if (this.fullPathColumn != null) {
+                        rows[i][rowSize - 1] = this.fullPathColumn;
                     }
+                    this.vdpResult.addRow(rows[i], this.projectedFields);
                 }
+
 
                 Arrays.fill(rows, null);
 

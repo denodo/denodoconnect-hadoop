@@ -60,7 +60,6 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
     private final int parallelism;
-    private final boolean invokeAddRow;
     private final String fileSystemURI;
     private final int threadPoolSize;
 
@@ -76,9 +75,8 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
     public AutomaticReadingStrategy(final PathIterator pathIterator, final Configuration conf,
         final ParquetSchemaBuilder schemaBuilder, final List<CustomWrapperFieldExpression> projectedFields,
         final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelism,
-        final boolean invokeAddRow, final String fileSystemURI, final int threadPoolSize,
-        final String clusteringField, final boolean rootIsDir, final CustomWrapperCondition wrapperCondition,
-        final AtomicBoolean stopRequested) throws IOException {
+        final String fileSystemURI, final int threadPoolSize, final String clusteringField, final boolean rootIsDir,
+        final CustomWrapperCondition wrapperCondition, final AtomicBoolean stopRequested) throws IOException {
 
         this.pathIterator = pathIterator;
         this.conf = conf;
@@ -88,7 +86,6 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
         this.includePathColumn = includePathColumn;
         this.result = result;
         this.parallelism = parallelism;
-        this.invokeAddRow = invokeAddRow;
         this.fileSystemURI = fileSystemURI;
         this.threadPoolSize = threadPoolSize;
 
@@ -118,26 +115,26 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
         if (this.clusteringField != null && isRequiredCondition(this.clusteringField, this.wrapperCondition)  && this.numCols > COLS_THRESHOLD) {
             readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
-                this.invokeAddRow, ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
+                ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else if (this.rootIsDir) { // rootIsDir: naive approach to check if num_files > 1, because 'file name pattern' would affect to the total count
             readingStrategy = new FileReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
-                this.invokeAddRow, ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
+                ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else if (this.numRowGroups > 1 && (findAnyGt(this.rowGroups, ROWGROUP_ROWS_THRESHOLD) || this.numRowGroups > ROWGROUPS_THRESHOLD)) {
             readingStrategy = new RowGroupReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
-                this.invokeAddRow, ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
+                ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else if (this.numCols > COLS_THRESHOLD) {
             readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
-                this.invokeAddRow, ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
+                ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else {
             readingStrategy = new NonConcurrentReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
-                this.projectedFields, this.filter, this.includePathColumn, this.result, this.invokeAddRow, this.stopRequested);
+                this.projectedFields, this.filter, this.includePathColumn, this.result, this.stopRequested);
         }
 
         if (LOG.isTraceEnabled()) {

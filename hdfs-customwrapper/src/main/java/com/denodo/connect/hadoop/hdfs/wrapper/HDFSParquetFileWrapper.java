@@ -32,7 +32,7 @@ import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.INCLUDE_PA
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.NOT_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_LEVEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARQUET_FILE_PATH;
-import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.READ_OPTIONS;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALELLISM_TYPE;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.ROW_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.THREADPOOL_SIZE;
 import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
@@ -89,7 +89,6 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     private static final  Logger LOG = LoggerFactory.getLogger(HDFSParquetFileWrapper.class);
 
-    private static final String INVOKE_ADDROW = "INVOKE_ADDROW";
 
     private static final int DEFAULT_PARALLELISM = computeParallelism();
     private static final int DEFAULT_POOL_SIZE = DEFAULT_PARALLELISM * 2;
@@ -107,8 +106,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             new CustomWrapperInputParameter(INCLUDE_PATH_COLUMN,
                 "Include path column? ",
                 false, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
-            new CustomWrapperInputParameter(READ_OPTIONS,
-                "Read options ",
+            new CustomWrapperInputParameter(PARALELLISM_TYPE,
+                "Type of parallelism, if any ",
                 true, true, CustomWrapperInputParameterTypeFactory.enumStringType(
                     new String[] {NOT_PARALLEL, AUTOMATIC_PARALLELISM, FILE_PARALLEL, ROW_PARALLEL, COLUMN_PARALLEL})),
             new CustomWrapperInputParameter(PARALLELISM_LEVEL,
@@ -116,10 +115,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 false, true, CustomWrapperInputParameterTypeFactory.integerType()),
             new CustomWrapperInputParameter(CLUSTERING_FIELD,
                 "File/s sorted by this field ",
-                false, true, CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(INVOKE_ADDROW,
-                "Invoke addRow? ",
-                false, true, CustomWrapperInputParameterTypeFactory.booleanType(false))
+                false, true, CustomWrapperInputParameterTypeFactory.stringType())
     };
 
     private static final CustomWrapperInputParameter[] DATA_SOURCE_INPUT_PARAMETERS =
@@ -232,14 +228,12 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final String fileNamePattern = inputValues.get(FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(INCLUDE_PATH_COLUMN))
             && isProjected(Parameter.FULL_PATH, projectedFields);
-        final String readOptions = inputValues.get(READ_OPTIONS);
+        final String readOptions = inputValues.get(PARALELLISM_TYPE);
         final int parallelism = inputValues.get(PARALLELISM_LEVEL) == null ? DEFAULT_PARALLELISM
             : Integer.parseInt(inputValues.get(PARALLELISM_LEVEL));
         final String fileSystemURI = inputValues.get(FILESYSTEM_URI);
         final int threadPoolSize = inputValues.get(THREADPOOL_SIZE) == null ? DEFAULT_POOL_SIZE
             : Integer.parseInt(inputValues.get(THREADPOOL_SIZE));
-
-        final boolean invokeAddRow = Boolean.parseBoolean(inputValues.get(INVOKE_ADDROW));
 
         PathIterator pathIterator = null;
         try {
@@ -265,31 +259,31 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 case AUTOMATIC_PARALLELISM:
                     final String clusteringField = inputValues.get(CLUSTERING_FIELD);
                     readingStrategy = new AutomaticReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields,
-                        filter, includePathColumn, result, parallelism, invokeAddRow, fileSystemURI, threadPoolSize,
+                        filter, includePathColumn, result, parallelism, fileSystemURI, threadPoolSize,
                         clusteringField, pathIterator.isRootDirectory(), condition.getComplexCondition(), this.stopRequested);
 
                     break;
                 case ROW_PARALLEL:
                     readingStrategy = new RowGroupReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields,
-                        filter, includePathColumn, result, parallelism, invokeAddRow,
-                        ReaderManagerFactory.get(fileSystemURI, threadPoolSize), this.stopRequested);
+                        filter, includePathColumn, result, parallelism, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
+                        this.stopRequested);
 
                     break;
                 case FILE_PARALLEL:
                     readingStrategy = new FileReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields, filter,
-                        includePathColumn, result, parallelism, invokeAddRow,
-                        ReaderManagerFactory.get(fileSystemURI, threadPoolSize), this.stopRequested);
+                        includePathColumn, result, parallelism, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
+                        this.stopRequested);
 
                     break;
                 case COLUMN_PARALLEL:
                     readingStrategy = new ColumnReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields,
-                        filter, includePathColumn, result, parallelism, invokeAddRow,
-                        ReaderManagerFactory.get(fileSystemURI, threadPoolSize), this.stopRequested);
+                        filter, includePathColumn, result, parallelism, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
+                        this.stopRequested);
 
                     break;
                 default:
                     readingStrategy = new NonConcurrentReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields,
-                        filter, includePathColumn, result, invokeAddRow, this.stopRequested);
+                        filter, includePathColumn, result, this.stopRequested);
 
                     break;
 
@@ -320,7 +314,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     private static void validateConcurrentConfiguration(final Map<String, String> inputValues) {
 
-        if (! NOT_PARALLEL.equals(inputValues.get(READ_OPTIONS))) {
+        if (! NOT_PARALLEL.equals(inputValues.get(PARALELLISM_TYPE))) {
             final int threadPoolSize = inputValues.get(THREADPOOL_SIZE) == null ? DEFAULT_POOL_SIZE
                 : Integer.parseInt(inputValues.get(THREADPOOL_SIZE));
             final int parallelism = inputValues.get(PARALLELISM_LEVEL) == null ? DEFAULT_PARALLELISM
@@ -331,7 +325,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                     + THREADPOOL_SIZE + " (" + threadPoolSize + ')');
             }
 
-            final int minimumParalellismLevel = COLUMN_PARALLEL.equals(inputValues.get(READ_OPTIONS)) ? 3 : 2;
+            final int minimumParalellismLevel = COLUMN_PARALLEL.equals(inputValues.get(PARALELLISM_TYPE)) ? 3 : 2;
             if (parallelism < minimumParalellismLevel) {
                 throw new IllegalArgumentException(minimumParalellismLevel
                     + " is the minimum level of parallelism that is accepted for the read option selected");

@@ -50,14 +50,11 @@ public class NonConcurrentReadingStrategy implements ReadingStrategy {
     private final Filter filter;
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
-    private final boolean invokeAddRow;
     private final AtomicBoolean stopRequested;
-
-    private long count;
 
     public NonConcurrentReadingStrategy(final PathIterator pathIterator, final Configuration conf,
         final ParquetSchemaBuilder schemaBuilder, final List<CustomWrapperFieldExpression> projectedFields,
-        final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final boolean invokeAddRow,
+        final Filter filter, final boolean includePathColumn, final CustomWrapperResult result,
         final AtomicBoolean stopRequested) throws IOException {
 
         this.pathIterator = pathIterator;
@@ -68,7 +65,6 @@ public class NonConcurrentReadingStrategy implements ReadingStrategy {
         this.filter = filter;
         this.includePathColumn = includePathColumn;
         this.result = result;
-        this.invokeAddRow = invokeAddRow;
         this.stopRequested = stopRequested;
     }
 
@@ -84,11 +80,7 @@ public class NonConcurrentReadingStrategy implements ReadingStrategy {
 
             Object parquetData = reader.read();
             while (parquetData != null && !this.stopRequested.get()) {
-                if (this.invokeAddRow) {
-                    this.result.addRow((Object[]) parquetData, this.projectedFields);
-                }  else {
-                    this.count += ((Object[]) parquetData).length;
-                }
+                this.result.addRow((Object[]) parquetData, this.projectedFields);
                 parquetData = reader.read();
             }
 
@@ -96,9 +88,6 @@ public class NonConcurrentReadingStrategy implements ReadingStrategy {
 
             if (LOG.isTraceEnabled()) {
                 LOG.trace("Elapsed time " + (end - start) + " ms.");
-                if (!this.invokeAddRow) {
-                    LOG.trace("TUPLES " + this.count);
-                }
             }
         }
     }

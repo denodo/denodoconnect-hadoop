@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat.Filter;
@@ -35,6 +34,8 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 
 /**
  * It is a Callable<Void> instead a Runnable because Callable can throw checked exceptions.
@@ -58,8 +59,7 @@ public final class ColumnsReaderTask implements Callable<Void> {
     private final AtomicBoolean stopRequested;
 
 
-    public ColumnsReaderTask(final int readerIndex,
-                             final Configuration conf, final Path path, final MessageType readingSchema,
+    public ColumnsReaderTask(final int readerIndex, final Configuration conf, final Path path, final MessageType readingSchema,
                              final MessageType resultsSchema, final List<String> conditionFields,
                              final Filter filter, final ColumnGroupReadingStructure readingStructure,
                              final ParquetMetadata parquetMetadata, final AtomicBoolean stopRequested) {
