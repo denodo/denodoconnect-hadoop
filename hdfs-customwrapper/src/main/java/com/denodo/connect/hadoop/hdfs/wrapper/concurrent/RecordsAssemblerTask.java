@@ -93,7 +93,7 @@ public final class RecordsAssemblerTask implements Callable<Void> {
                 Object[][] data = null;
                 do {
                     data = readingStructure.acquireDataChunk();
-                } while (data == null && !this.stopRequested.get());
+                } while (data == null && !readingStructure.isFinished() && !this.stopRequested.get());
 
                 if (data != null) {
 

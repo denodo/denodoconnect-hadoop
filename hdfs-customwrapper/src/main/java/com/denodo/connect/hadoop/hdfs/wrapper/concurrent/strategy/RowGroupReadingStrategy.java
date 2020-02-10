@@ -110,19 +110,22 @@ public class RowGroupReadingStrategy implements ReadingStrategy {
             //We reuse rowGroups value initialized in the schema in the first file of the path
             fileRowGroups = (fileRowGroups == null) ? this.rowGroups
                 : ParquetSchemaUtils.getRowGroups(this.conf, currentPath);
-            final List<List<BlockMetaData>> rowGroupsList = generateRowGroupsList(fileRowGroups, this.parallelism);
 
-            final Iterator<List<BlockMetaData>> rowGroupListIterator = rowGroupsList.iterator();
-            while (rowGroupListIterator.hasNext() && !this.stopRequested.get()) {
-                readers.add(new RowGroupReaderTask(this.conf, currentPath, this.schema, this.includePathColumn,
-                    this.conditionFields,
-                    this.filter, this.projectedFields, this.result, rowGroupListIterator.next(), this.invokeAddRow,
-                    this.parquetMetadata));
-            }
+            if (! fileRowGroups.isEmpty()) {
+                final List<List<BlockMetaData>> rowGroupsList = generateRowGroupsList(fileRowGroups, this.parallelism);
 
-            if (!this.stopRequested.get()) {
-                this.readerManager.execute(readers);
-                readers.clear();
+                final Iterator<List<BlockMetaData>> rowGroupListIterator = rowGroupsList.iterator();
+                while (rowGroupListIterator.hasNext() && !this.stopRequested.get()) {
+                    readers.add(new RowGroupReaderTask(this.conf, currentPath, this.schema, this.includePathColumn,
+                        this.conditionFields,
+                        this.filter, this.projectedFields, this.result, rowGroupListIterator.next(), this.invokeAddRow,
+                        this.parquetMetadata));
+                }
+
+                if (!this.stopRequested.get()) {
+                    this.readerManager.execute(readers);
+                    readers.clear();
+                }
             }
 
         }
