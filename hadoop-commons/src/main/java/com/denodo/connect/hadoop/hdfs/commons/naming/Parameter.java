@@ -86,13 +86,13 @@ public final class Parameter {
     public static final String AVRO_FILE_PATH = "avroFilepath";
 
     public static final String PARQUET_FILE_PATH = "Parquet File path";
-    public static final String PARALELLISM_TYPE = "Paralellism type";
-    public static final String FILE_PARALLEL = "Paralellism by File";
+    public static final String PARALLELISM_TYPE = "Parallelism type";
+    public static final String FILE_PARALLEL = "Parallelism by File";
     public static final String ROW_PARALLEL = "Parallelism by Row Group";
     public static final String COLUMN_PARALLEL = "Parallelism by Column";
     public static final String NOT_PARALLEL = "No Parallelism";
     public static final String AUTOMATIC_PARALLELISM = "Automatic";
-    public static final String PARALLELISM_LEVEL = "Paralellism level";
+    public static final String PARALLELISM_LEVEL = "Parallelism level";
     public static final String CLUSTERING_FIELD = "Cluster/partition field";
     public static final String THREADPOOL_SIZE = "Thread Pool size";
 

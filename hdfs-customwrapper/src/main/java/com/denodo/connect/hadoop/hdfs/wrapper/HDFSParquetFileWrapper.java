@@ -30,7 +30,7 @@ import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_NAME_
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.INCLUDE_PATH_COLUMN;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.NOT_PARALLEL;
-import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALELLISM_TYPE;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_TYPE;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_LEVEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARQUET_FILE_PATH;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.ROW_PARALLEL;
@@ -106,7 +106,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             new CustomWrapperInputParameter(INCLUDE_PATH_COLUMN,
                 "Include path column? ",
                 false, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
-            new CustomWrapperInputParameter(PARALELLISM_TYPE,
+            new CustomWrapperInputParameter(PARALLELISM_TYPE,
                 "Type of parallelism, if any ",
                 true, true, CustomWrapperInputParameterTypeFactory.enumStringType(
                     new String[] {NOT_PARALLEL, AUTOMATIC_PARALLELISM, FILE_PARALLEL, ROW_PARALLEL, COLUMN_PARALLEL})),
@@ -234,7 +234,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final String fileNamePattern = inputValues.get(FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(INCLUDE_PATH_COLUMN))
             && isProjected(Parameter.FULL_PATH, projectedFields);
-        final String readOptions = inputValues.get(PARALELLISM_TYPE);
+        final String readOptions = inputValues.get(PARALLELISM_TYPE);
         final int parallelism = inputValues.get(PARALLELISM_LEVEL) == null ? DEFAULT_PARALLELISM
             : Integer.parseInt(inputValues.get(PARALLELISM_LEVEL));
         final String fileSystemURI = inputValues.get(FILESYSTEM_URI);
@@ -320,7 +320,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
     private static void validateConcurrentConfiguration(final Map<String, String> inputValues) {
 
-        if (! NOT_PARALLEL.equals(inputValues.get(PARALELLISM_TYPE))) {
+        if (! NOT_PARALLEL.equals(inputValues.get(PARALLELISM_TYPE))) {
             final int threadPoolSize = inputValues.get(THREADPOOL_SIZE) == null ? DEFAULT_POOL_SIZE
                 : Integer.parseInt(inputValues.get(THREADPOOL_SIZE));
             final int parallelism = inputValues.get(PARALLELISM_LEVEL) == null ? DEFAULT_PARALLELISM
@@ -331,9 +331,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                     + THREADPOOL_SIZE + " (" + threadPoolSize + ')');
             }
 
-            final int minimumParalellismLevel = COLUMN_PARALLEL.equals(inputValues.get(PARALELLISM_TYPE)) ? 3 : 2;
-            if (parallelism < minimumParalellismLevel) {
-                throw new IllegalArgumentException(minimumParalellismLevel
+            final int minimumParallelismLevel = COLUMN_PARALLEL.equals(inputValues.get(PARALLELISM_TYPE)) ? 3 : 2;
+            if (parallelism < minimumParallelismLevel) {
+                throw new IllegalArgumentException(minimumParallelismLevel
                     + " is the minimum level of parallelism that is accepted for the read option selected");
             }
         }
