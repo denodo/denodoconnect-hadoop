@@ -30,9 +30,9 @@ import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_NAME_
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.INCLUDE_PATH_COLUMN;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.NOT_PARALLEL;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALELLISM_TYPE;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_LEVEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARQUET_FILE_PATH;
-import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALELLISM_TYPE;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.ROW_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.THREADPOOL_SIZE;
 import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
@@ -179,19 +179,25 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             final Path path = new Path(inputValues.get(PARQUET_FILE_PATH));
             final String fileNamePattern = inputValues.get(FILE_NAME_PATTERN);
             final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(INCLUDE_PATH_COLUMN));
+            final String clusteringField = inputValues.get(CLUSTERING_FIELD);
 
             pathIterator = new PathIterator(conf, path, fileNamePattern, null);
             final ParquetSchemaBuilder schemaBuilder = new ParquetSchemaBuilder(conf, pathIterator.next(), null, null);
 
             final SchemaElement javaSchema = schemaBuilder.getSchema();
+            final CustomWrapperSchemaParameter[] schemaParameters = VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
+            if (clusteringField != null && !isSchemaField(clusteringField, schemaParameters)) {
+                throw new IllegalArgumentException('\'' + clusteringField + "' is not a valid field from the schema: "
+                    + toString(schemaParameters));
+            }
+
             if (includePathColumn) {
                 final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH,
                     Types.VARCHAR, null, false, CustomWrapperSchemaParameter.NOT_SORTABLE,
                     false, true, false);
-                return (CustomWrapperSchemaParameter[]) ArrayUtils.add(VDPSchemaUtils.buildSchemaParameterParquet(
-                    javaSchema.getElements()), filePath);
+                return (CustomWrapperSchemaParameter[]) ArrayUtils.add(schemaParameters, filePath);
             } else {
-                return VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
+                return schemaParameters;
             }
 
         } catch (final NoSuchElementException e) {
@@ -331,6 +337,34 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                     + " is the minimum level of parallelism that is accepted for the read option selected");
             }
         }
+    }
+
+    private static boolean isSchemaField(final String field, final CustomWrapperSchemaParameter[] schemaParameters) {
+
+        for(final CustomWrapperSchemaParameter parameter : schemaParameters) {
+            if (field.equals(parameter.getName())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static String toString(final CustomWrapperSchemaParameter[] schemaParameters) {
+
+        final StringBuilder sb = new StringBuilder();
+        final int lastParameter = schemaParameters.length - 1;
+        int i = 0;
+        for(final CustomWrapperSchemaParameter parameter : schemaParameters) {
+            sb.append(parameter.getName());
+            if (i != lastParameter) {
+                sb.append(", ");
+            }
+
+            i++;
+        }
+
+        return sb.toString();
     }
 
     private static boolean isProjected(final String field, final List<CustomWrapperFieldExpression> projectedFields) {
