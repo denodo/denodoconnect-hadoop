@@ -78,8 +78,12 @@ public final class RowGroupReaderTask implements Callable<Void> {
 
         final int lastRowGroup = this.rowGroups.size() - 1;
         final Long startingPos = this.rowGroups.get(0).getStartingPos();
-        final Long endingPos = this.rowGroups.get(lastRowGroup).getStartingPos() + this.rowGroups.get(lastRowGroup).getTotalByteSize();
+        final Long endingPos = this.rowGroups.get(lastRowGroup).getStartingPos() + this.rowGroups.get(lastRowGroup).getCompressedSize();
 
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(Thread.currentThread().getName() + " startingPos " + this.rowGroups.get(0).getStartingPos()
+                + " endingPos " + this.rowGroups.get(lastRowGroup).getStartingPos() +  " + " + this.rowGroups.get(lastRowGroup).getCompressedSize() + " = " + endingPos);
+        }
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path,
             this.includePathColumn, this.filter, this.schema, this.conditionFields, startingPos, endingPos, this.parquetMetadata);
 
