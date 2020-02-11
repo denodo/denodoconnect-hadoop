@@ -148,7 +148,6 @@ public final class RecordsAssemblerTask implements Callable<Void> {
                     this.vdpResult.addRow(rows[i], this.projectedFields);
                 }
 
-
                 Arrays.fill(rows, null);
 
                 if (LOG.isTraceEnabled()) {

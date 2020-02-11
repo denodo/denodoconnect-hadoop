@@ -132,8 +132,11 @@ public class ColumnReadingStrategy implements ReadingStrategy {
                     columnOffsets[i + 1] = columnOffsets[i] + resultsSchema.getFieldCount();
                 }
 
+                final ColumnGroupReadingStructure readingStructure = readingStructures.get(i);
+                readingStructure.reset();
+                
                 readers.add(new ColumnsReaderTask(i, this.conf, currentPath, schemasIterator.next(),
-                    resultsSchema, this.conditionFields, this.filter, readingStructures.get(i), this.parquetMetadata, this.stopRequested));
+                    resultsSchema, this.conditionFields, this.filter, readingStructure, this.parquetMetadata, this.stopRequested));
                 i++;
             }
 

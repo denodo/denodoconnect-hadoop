@@ -27,8 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 public final class ColumnGroupReadingStructure {
 
-    private int queueSize;
-    private int chunkSize;
 
     private volatile boolean noMoreData;
     private volatile boolean finished;
@@ -39,16 +37,14 @@ public final class ColumnGroupReadingStructure {
     public ColumnGroupReadingStructure(final int chunkSize, final int queueSize) {
         super();
 
-        this.queueSize = queueSize;
-        this.chunkSize = chunkSize;
         this.noMoreData = false;
         this.finished = false;
 
-        this.buffers = new ArrayBlockingQueue<>(this.queueSize);
-        this.data = new ArrayBlockingQueue<>(this.queueSize);
+        this.buffers = new ArrayBlockingQueue<>(queueSize);
+        this.data = new ArrayBlockingQueue<>(queueSize);
 
-        for (int i = 0 ; i < this.queueSize; i++) {
-            final Object[][] buffer = new Object[this.chunkSize][];
+        for (int i = 0 ; i < queueSize; i++) {
+            final Object[][] buffer = new Object[chunkSize][];
             this.buffers.add(buffer);
         }
 
@@ -90,6 +86,10 @@ public final class ColumnGroupReadingStructure {
         return this.data.offer(chunk, 100, TimeUnit.MILLISECONDS);
     }
 
+    public void reset() {
+        this.noMoreData = false;
+        this.finished = false;
+    }
 
 
 }
