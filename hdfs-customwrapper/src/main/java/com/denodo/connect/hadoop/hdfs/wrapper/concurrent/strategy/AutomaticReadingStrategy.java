@@ -48,9 +48,9 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(AutomaticReadingStrategy.class);
 
 
-    private static final int COLS_THRESHOLD = 3;  // ??
-    private static final int ROWGROUPS_THRESHOLD = 10; // ??
-    private static final int ROWGROUP_ROWS_THRESHOLD = 1000; // ??
+    private static final int COLS_THRESHOLD = 3;
+    private static final int ROWGROUPS_THRESHOLD = 10;
+    private static final int ROWGROUP_ROWS_THRESHOLD = 1000;
 
     private final PathIterator pathIterator;
     private final Configuration conf;
