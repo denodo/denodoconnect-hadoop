@@ -1,3 +1,7 @@
+20200213
+--------
+- #46212 - Add multithread support in parquet readings
+
 20191119
 --------
 - #45469 - Add "IAM Role to Assume" to Parquet/S3 wrapper
