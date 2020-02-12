@@ -1,6 +1,7 @@
 20200213
 --------
 - #46212 - Add multithread support in parquet readings
+- #46837 - Google Cloud: Error reading files with white spaces in the file name
 
 20191119
 --------
