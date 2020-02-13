@@ -2,6 +2,7 @@
 --------
 - #46212 - Add multithread support in parquet readings
 - #46837 - Google Cloud: Error reading files with white spaces in the file name
+- #44669 - DFSListFilesWrapper:change the data type of size field
 
 20191119
 --------

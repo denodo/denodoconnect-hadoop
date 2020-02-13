@@ -132,7 +132,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                 false, true, CustomWrapperInputParameterTypeFactory.routeType(
                     new RouteType [] {RouteType.LOCAL, RouteType.HTTP, RouteType.FTP})),
             new CustomWrapperInputParameter(THREADPOOL_SIZE,
-                "Number of threads in the pool (default is 20)",
+                "Number of threads in the pool",
                 false, true, CustomWrapperInputParameterTypeFactory.integerType())
     };
 
