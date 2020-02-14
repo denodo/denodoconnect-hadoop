@@ -21,7 +21,6 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -35,8 +34,8 @@ import org.apache.parquet.schema.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.denodo.connect.hadoop.hdfs.reader.ParquetSchemaHolder;
 import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaBuilder;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManager;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderTask;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
@@ -51,28 +50,28 @@ public class FileReadingStrategy implements ReadingStrategy {
     private final Configuration conf;
     private final MessageType schema;
     private final List<CustomWrapperFieldExpression> projectedFields;
-    private final List<String> conditionFields;
+    private final List<String> conditionExcludingProjectedFields;
     private final Filter filter;
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
-    private final int parallelism;
+    private final int parallelismLevel;
     private final ReaderManager readerManager;
     private final AtomicBoolean stopRequested;
 
     public FileReadingStrategy(final PathIterator pathIterator, final Configuration conf,
-        final ParquetSchemaBuilder schemaBuilder, final List<CustomWrapperFieldExpression> projectedFields,
-        final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelism,
-        final ReaderManager readerManager, final AtomicBoolean stopRequested) throws IOException {
+        final ParquetSchemaHolder schemaHolder, final List<CustomWrapperFieldExpression> projectedFields,
+        final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelismLevel,
+        final ReaderManager readerManager, final AtomicBoolean stopRequested) {
 
         this.pathIterator = pathIterator;
         this.conf = conf;
-        this.schema = schemaBuilder.getProjectedSchema();
+        this.schema = schemaHolder.getQuerySchema();
         this.projectedFields = projectedFields;
-        this.conditionFields = schemaBuilder.getConditionFields();
+        this.conditionExcludingProjectedFields = schemaHolder.getConditionExcludingProjectedFields();
         this.filter = filter;
         this.includePathColumn = includePathColumn;
         this.result = result;
-        this.parallelism = parallelism;
+        this.parallelismLevel = parallelismLevel;
         this.readerManager = readerManager;
         this.stopRequested = stopRequested;
     }
@@ -83,19 +82,19 @@ public class FileReadingStrategy implements ReadingStrategy {
         final long start = System.currentTimeMillis();
 
         if (LOG.isTraceEnabled()) {
-            LOG.trace("Reading by file with parallelism level " + this.parallelism);
+            LOG.trace("Reading by file with parallelism level " + this.parallelismLevel);
         }
 
-        final Collection<Callable> readers = new ArrayList<>(this.parallelism);
+        final Collection<Callable> readers = new ArrayList<>(this.parallelismLevel);
         while (this.pathIterator.hasNext() && !this.stopRequested.get()) {
 
             int i = 0;
-            while (this.pathIterator.hasNext() && i < this.parallelism) {
+            while (this.pathIterator.hasNext() && i < this.parallelismLevel) {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("Reader task: " + i);
                 }
                 readers.add(new ReaderTask(this.conf, this.pathIterator.next(), this.schema, this.includePathColumn,
-                    this.conditionFields, this.filter, this.projectedFields, this.result));
+                    this.conditionExcludingProjectedFields, this.filter, this.projectedFields, this.result));
                 i++;
             }
 

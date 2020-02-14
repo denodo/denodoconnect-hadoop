@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat.Filter;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +50,6 @@ public final class ColumnsReaderTask implements Callable<Void> {
     private final MessageType readingSchema;
     private final List<String> conditionFields;
     private final Filter filter;
-    private ParquetMetadata parquetMetadata;
 
     private final ColumnGroupReadingStructure readingStructure;
     private final int skippedColumnIndex;
@@ -62,7 +60,7 @@ public final class ColumnsReaderTask implements Callable<Void> {
     public ColumnsReaderTask(final int readerIndex, final Configuration conf, final Path path, final MessageType readingSchema,
                              final MessageType resultsSchema, final List<String> conditionFields,
                              final Filter filter, final ColumnGroupReadingStructure readingStructure,
-                             final ParquetMetadata parquetMetadata, final AtomicBoolean stopRequested) {
+                             final AtomicBoolean stopRequested) {
 
         super();
 
@@ -76,7 +74,6 @@ public final class ColumnsReaderTask implements Callable<Void> {
         this.readingSchema = readingSchema;
         this.conditionFields = conditionFields;
         this.filter = filter;
-        this.parquetMetadata = parquetMetadata;
 
         this.readingStructure = readingStructure;
         this.skippedColumnIndex = getSkippedColumnsIndex(readingSchema, resultsSchema);
@@ -109,7 +106,7 @@ public final class ColumnsReaderTask implements Callable<Void> {
         // includePathValues is always false, it is returned to VDP by the RecordsAssemblerTask as it has always
         // the same value for each file
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path, false,
-            this.filter, this.readingSchema, this.conditionFields, null, null, this.parquetMetadata);
+            this.filter, this.readingSchema, this.conditionFields);
 
         if (this.stopRequested.get()) {
             if (LOG.isTraceEnabled()) {

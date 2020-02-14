@@ -36,7 +36,6 @@ import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.api.ReadSupport;
 import org.apache.parquet.hadoop.example.GroupReadSupport;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
@@ -61,19 +60,22 @@ public class HDFSParquetFileReader implements HDFSFileReader {
 
     private Long startingPos;
     private Long endingPos;
-    private ParquetMetadata parquetMetadata;
+
+    public HDFSParquetFileReader(final Configuration conf, final Path path,  final boolean includePathValue,
+        final FilterCompat.Filter filter, final MessageType parquetSchema, final List<String> conditionFields) throws IOException {
+
+        this(conf, path, includePathValue, filter, parquetSchema, conditionFields, null, null);
+    }
 
     public HDFSParquetFileReader(final Configuration conf, final Path path,  final boolean includePathValue,
         final FilterCompat.Filter filter, final MessageType parquetSchema, final List<String> conditionFields,
-        final Long startingPos, final Long endingPos, final ParquetMetadata parquetMetadata)
-        throws IOException {
+        final Long startingPos, final Long endingPos) throws IOException {
 
         this.pathValue = path.toString();
         this.includePathValue = includePathValue;
         this.conditionFields = conditionFields;
         this.startingPos = startingPos;
         this.endingPos = endingPos;
-        this.parquetMetadata = parquetMetadata;
 
         openReader(path, conf, filter, parquetSchema);
 
@@ -93,9 +95,7 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             } if (this.startingPos != null && this.endingPos != null) {
                 dataFileBuilder.withFileRange(this.startingPos, this.endingPos);
             }
-       //     if (this.parquetMetadata != null) {
-       //          dataFileBuilder.withFooter(this.parquetMetadata);
-       //     }
+
             this.dataFileReader = dataFileBuilder.build();
         } catch (final IOException e) {
             throw new IOException("'" + path + "': " + e.getMessage(), e); // Add the file name causing the error for an user friendly exception message

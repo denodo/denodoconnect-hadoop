@@ -23,7 +23,6 @@ package com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy;
 
 import static java.lang.Math.min;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,15 +34,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat.Filter;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Types.MessageTypeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.denodo.connect.hadoop.hdfs.reader.ParquetSchemaHolder;
 import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaBuilder;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ColumnGroupReadingStructure;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ColumnsReaderTask;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManager;
@@ -59,35 +57,33 @@ public class ColumnReadingStrategy implements ReadingStrategy {
     private static final int READING_CHUNK_QUEUE_SIZE = 3;
     private final PathIterator pathIterator;
     private final Configuration conf;
-    private final MessageType fileSchema;
+    private final MessageType parquetSchema;
     private final List<CustomWrapperFieldExpression> projectedFields;
-    private final List<String> conditionIncludingProjectedFields;
     private final List<String> conditionFields;
+    private final List<String> conditionExcludingProjectedFields;
     private final Filter filter;
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
-    private final int parallelism;
-    private final ParquetMetadata parquetMetadata;
+    private final int parallelismLevel;
     private final ReaderManager readerManager;
     private final AtomicBoolean stopRequested;
 
 
     public ColumnReadingStrategy(final PathIterator pathIterator, final Configuration conf,
-        final ParquetSchemaBuilder schemaBuilder, final List<CustomWrapperFieldExpression> projectedFields,
-        final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelism,
-        final ReaderManager readerManager, final AtomicBoolean stopRequested) throws IOException {
+        final ParquetSchemaHolder schemaHolder, final List<CustomWrapperFieldExpression> projectedFields,
+        final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelismLevel,
+        final ReaderManager readerManager, final AtomicBoolean stopRequested) {
 
         this.pathIterator = pathIterator;
         this.conf = conf;
-        this.fileSchema = schemaBuilder.getFileSchema();
+        this.parquetSchema = schemaHolder.getFileSchema();
         this.projectedFields = projectedFields;
-        this.conditionIncludingProjectedFields = schemaBuilder.getConditionsIncludingProjectedFields();
-        this.conditionFields = schemaBuilder.getConditionFields();
+        this.conditionFields = schemaHolder.getConditionFields();
+        this.conditionExcludingProjectedFields = schemaHolder.getConditionExcludingProjectedFields();
         this.filter = filter;
         this.includePathColumn = includePathColumn;
         this.result = result;
-        this.parallelism = parallelism;
-        this.parquetMetadata = schemaBuilder.getFooter();
+        this.parallelismLevel = parallelismLevel;
         this.readerManager = readerManager;
         this.stopRequested = stopRequested;
     }
@@ -98,16 +94,16 @@ public class ColumnReadingStrategy implements ReadingStrategy {
         final long start = System.currentTimeMillis();
 
         if (LOG.isTraceEnabled()) {
-            LOG.trace("Reading by column with parallelism level " + this.parallelism);
+            LOG.trace("Reading by column with parallelism level " + this.parallelismLevel);
         }
 
-        final int readersParallelism = this.parallelism - 1; // the one we substract here is for the RecordsAssembleTask
+        final int readersParallelism = this.parallelismLevel - 1; // the one we substract here is for the RecordsAssembleTask
         final Collection<Callable> readers = new ArrayList<>(readersParallelism);
 
-        final MessageType projectedSchema = buildProjectedSchema(this.fileSchema, this.projectedFields);
+        final MessageType projectedSchema = buildProjectedSchema(this.parquetSchema, this.projectedFields);
         final List<List<Type>> columnGroups = splitSchema(projectedSchema, readersParallelism);
         final List<MessageType> schemasWithoutConditions = buildSchemas(projectedSchema.getName(), columnGroups);
-        addConditions(columnGroups, this.conditionIncludingProjectedFields, this.fileSchema);
+        addConditions(columnGroups, this.conditionFields, this.parquetSchema);
         final List<MessageType> schemas = buildSchemas(projectedSchema.getName(), columnGroups);
 
         final List<ColumnGroupReadingStructure> readingStructures = new ArrayList<>(schemas.size());
@@ -136,7 +132,7 @@ public class ColumnReadingStrategy implements ReadingStrategy {
                 readingStructure.reset();
                 
                 readers.add(new ColumnsReaderTask(i, this.conf, currentPath, schemasIterator.next(),
-                    resultsSchema, this.conditionFields, this.filter, readingStructure, this.parquetMetadata, this.stopRequested));
+                    resultsSchema, this.conditionExcludingProjectedFields, this.filter, readingStructure, this.stopRequested));
                 i++;
             }
 
@@ -193,11 +189,11 @@ public class ColumnReadingStrategy implements ReadingStrategy {
      * when reading column values from a parquet file.
      */
     private static void addConditions(final List<List<Type>> columnGroups, final List<String> conditionFields,
-        final MessageType fileSchema) {
+        final MessageType parquetSchema) {
 
         for (final List<Type> columnGroup: columnGroups) {
             for (final String conditionField : conditionFields) {
-                final Type conditionType = fileSchema.getType(conditionField);
+                final Type conditionType = parquetSchema.getType(conditionField);
                 if (! columnGroup.contains(conditionType)) {
                     columnGroup.add(conditionType);
                 }
