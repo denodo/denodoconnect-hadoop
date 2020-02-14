@@ -44,6 +44,7 @@ import static org.apache.parquet.filter2.predicate.FilterApi.notEq;
 import static org.apache.parquet.filter2.predicate.FilterApi.or;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,8 +64,11 @@ import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.GroupType;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Type.Repetition;
+import org.apache.thrift.Option.Some;
 
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.util.type.ParquetTypeUtils;
@@ -202,7 +206,8 @@ public class ParquetSchemaUtils {
         schemaElement.add(new SchemaElement(field.getName(), ParquetTypeUtils.toJava(field), field.asPrimitiveType().getPrimitiveTypeName(), isNullable));
     }
 
-    public static FilterPredicate buildFilter(final CustomWrapperCondition vdpCondition, final SchemaElement schema) throws CustomWrapperException {
+    public static FilterPredicate buildFilter(final CustomWrapperCondition vdpCondition, final MessageType parquetSchema)
+        throws CustomWrapperException {
 
         if (vdpCondition != null) {
             if (vdpCondition.isAndCondition()) {
@@ -210,10 +215,10 @@ public class ParquetSchemaUtils {
                 final List<FilterPredicate> filterPredicates  = new ArrayList<>();
                 for (final CustomWrapperCondition condition : andCondition.getConditions()) {
                     if (condition.isSimpleCondition()) {
-                        final FilterPredicate filterPredicate = generateSimpleFilterPredicate(condition, schema);
+                        final FilterPredicate filterPredicate = buildSimpleFilter(condition, parquetSchema);
                         filterPredicates.add(filterPredicate);
                     } else {
-                        final FilterPredicate filterPredicateComplex = buildFilter(condition, schema);
+                        final FilterPredicate filterPredicateComplex = buildFilter(condition, parquetSchema);
                         filterPredicates.add(filterPredicateComplex);
                     }
                 }
@@ -231,10 +236,10 @@ public class ParquetSchemaUtils {
                 final List<FilterPredicate> filterPredicates  = new ArrayList<>();
                 for (final CustomWrapperCondition condition : orCondition.getConditions()) {
                     if (condition.isSimpleCondition()) {
-                        final FilterPredicate filterPredicate = generateSimpleFilterPredicate(condition, schema);
+                        final FilterPredicate filterPredicate = buildSimpleFilter(condition, parquetSchema);
                         filterPredicates.add(filterPredicate);
                     } else {
-                        final FilterPredicate filterPredicateComplex = buildFilter(condition, schema);
+                        final FilterPredicate filterPredicateComplex = buildFilter(condition, parquetSchema);
                         filterPredicates.add(filterPredicateComplex);
                     }
                 }
@@ -248,7 +253,7 @@ public class ParquetSchemaUtils {
                     throw new CustomWrapperException("Error obtaining the FilterPredicate for the and condition \"" + orCondition.toString() + '"');
                 }
             } else if (vdpCondition.isSimpleCondition()) {
-                return generateSimpleFilterPredicate(vdpCondition, schema);
+                return buildSimpleFilter(vdpCondition, parquetSchema);
             } else {
                 throw new CustomWrapperException("Condition \"" + vdpCondition.toString() + "\" not allowed");
             }
@@ -258,34 +263,20 @@ public class ParquetSchemaUtils {
         }
     }
 
-    private static SchemaElement getSchemaField(final String field, final SchemaElement schema) {
-        if (schema != null) {
-            final String[] fields = field.split("\\.",2);
-            for (final SchemaElement element : schema.getElements()){
-                if (fields.length == 1 && element.getName().equals(fields[0])) {
-                    return element;
-                } else if (fields.length > 1 && element.getName().equals(fields[0])) {
-                    return getSchemaField(fields[1],element);
-                }
-            }
-        }
-        return null;
-    }
-
-    private static FilterPredicate generateSimpleFilterPredicate(final CustomWrapperCondition condition, final SchemaElement schema) {
+    private static FilterPredicate buildSimpleFilter(final CustomWrapperCondition condition, final MessageType parquetSchema) {
 
         FilterPredicate filterPredicate = null;
 
         final CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) condition;
         final String operator = simpleCondition.getOperator();
-        final String field = simpleCondition.getField().toString();
-        final SchemaElement element = getSchemaField(field, schema);
+        final String fieldName = simpleCondition.getField().toString();
+        final Type fieldType = getFieldType(fieldName, parquetSchema);
 
         for (final CustomWrapperExpression expression : simpleCondition.getRightExpression()) {
 
-            if (expression.isSimpleExpression()) {
+            if (expression.isSimpleExpression() && fieldType.isPrimitive()) {
                 final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) expression;
-                final Pair<Column, Comparable> filterValues = getFilterValues(field, simpleExpression, element);
+                final Pair<Column, Comparable> filterValues = getFilterValues(simpleExpression, fieldName, fieldType);
 
                 switch (operator) {
                     case OPERATOR_EQ:
@@ -323,36 +314,45 @@ public class ParquetSchemaUtils {
     }
     //
 
-    private static Pair<Column, Comparable> getFilterValues(final String field, final CustomWrapperSimpleExpression simpleExpression,
-        final SchemaElement element) {
+    private static Type getFieldType(final String fieldName, final MessageType parquetSchema) {
+        return parquetSchema.getType(fieldName);
+    }
+
+    private static Pair<Column, Comparable> getFilterValues(final CustomWrapperSimpleExpression simpleExpression,
+        final String fieldName, final Type fieldType) {
 
         Pair<Column, Comparable> pair = null;
-
-        if (simpleExpression.getValue() instanceof Integer || simpleExpression.getValue() instanceof Short
-            || (element != null && (element.getType().equals(Integer.class) || element.getType().equals(Short.class)))) {
-
-            pair = Pair.of((Column) intColumn(field), (Comparable) simpleExpression.getValue());
-        } else if (simpleExpression.getValue() instanceof Long || (element != null && element.getType().equals(Long.class))) {
-
-            pair = Pair.of((Column) longColumn(field), (Comparable) simpleExpression.getValue());
-        } else if (simpleExpression.getValue() instanceof Double || (element != null && element.getType().equals(Double.class))) {
-
-            pair = Pair.of((Column) doubleColumn(field), (Comparable) simpleExpression.getValue());
-        } else if (simpleExpression.getValue() instanceof Float || (element != null && element.getType().equals(Float.class))) {
-
-            pair  = Pair.of((Column) floatColumn(field), (Comparable) simpleExpression.getValue());
-        } else if (simpleExpression.getValue() instanceof Boolean || (element != null && element.getType().equals(Boolean.class))) {
-
-            pair = Pair.of((Column) booleanColumn(field), (Comparable) simpleExpression.getValue());
-        } else if (simpleExpression.getValue() instanceof Date || (element != null && element.getType().equals(Date.class))) {
-
+        final PrimitiveTypeName primitiveTypeName = fieldType.asPrimitiveType().getPrimitiveTypeName();
+        if (simpleExpression.getValue() instanceof Date) {
             // Adds 1 day because the 1970-01-01 counter starts at 0
-            pair = Pair.of((Column) intColumn(field), simpleExpression.getValue() == null ? null
-                : (Comparable) (((Date) simpleExpression.getValue()).getTime() / (1000 * 60 * 60 * 24) + 1));
-        } else {
+            pair = Pair.of((Column) intColumn(fieldName), (Comparable) (((Date) simpleExpression.getValue()).getTime() / (24 * 60 * 60 * 1000) + 1));
 
-            pair = Pair.of((Column) binaryColumn(field), simpleExpression.getValue() == null ? null : (Comparable) Binary.fromString(simpleExpression.getValue().toString()));
+        } else if (simpleExpression.getValue() instanceof BigDecimal) {
+            final int scale = fieldType.asPrimitiveType().getDecimalMetadata().getScale();
+            pair = Pair.of((Column) intColumn(fieldName), (Comparable) ((BigDecimal) simpleExpression.getValue()).setScale(scale).unscaledValue());
+
+        } else if (simpleExpression.getValue() instanceof Integer || simpleExpression.getValue() instanceof Short
+                || PrimitiveTypeName.INT32.equals(primitiveTypeName)) {
+                pair = Pair.of((Column) intColumn(fieldName), (Comparable) simpleExpression.getValue());
+
+        } else if (simpleExpression.getValue() instanceof Long || PrimitiveTypeName.INT64.equals(primitiveTypeName)) {
+            pair = Pair.of((Column) longColumn(fieldName), (Comparable) simpleExpression.getValue());
+
+        } else if (simpleExpression.getValue() instanceof Double || PrimitiveTypeName.DOUBLE.equals(primitiveTypeName)) {
+            pair = Pair.of((Column) doubleColumn(fieldName), (Comparable) simpleExpression.getValue());
+
+        } else if (simpleExpression.getValue() instanceof Float || PrimitiveTypeName.FLOAT.equals(primitiveTypeName)) {
+            pair = Pair.of((Column) floatColumn(fieldName), (Comparable) simpleExpression.getValue());
+
+        } else if (simpleExpression.getValue() instanceof Boolean || PrimitiveTypeName.BOOLEAN.equals(primitiveTypeName)) {
+            pair = Pair.of((Column) booleanColumn(fieldName), (Comparable) simpleExpression.getValue());
+
+        } else {
+            pair = Pair.of((Column) binaryColumn(fieldName),
+                simpleExpression.getValue() == null ? null : (Comparable) Binary.fromString(simpleExpression.getValue().toString()));
+
         }
+
 
         return pair;
     }

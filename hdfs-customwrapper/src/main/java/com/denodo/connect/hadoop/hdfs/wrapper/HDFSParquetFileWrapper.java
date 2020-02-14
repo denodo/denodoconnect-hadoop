@@ -54,6 +54,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.filter2.compat.FilterCompat;
+import org.apache.parquet.filter2.compat.FilterCompat.Filter;
 import org.apache.parquet.filter2.predicate.FilterPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,7 @@ import org.slf4j.LoggerFactory;
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaBuilder;
+import com.denodo.connect.hadoop.hdfs.reader.ParquetSchemaHolder;
 import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManagerFactory;
@@ -168,19 +169,19 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             final Configuration conf = getHadoopConfiguration(inputValues);
             final Path path = new Path(inputValues.get(PARQUET_FILE_PATH));
             final String fileNamePattern = inputValues.get(FILE_NAME_PATTERN);
-            final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(INCLUDE_PATH_COLUMN));
-            final String clusteringField = inputValues.get(CLUSTERING_FIELD);
 
             pathIterator = new PathIterator(conf, path, fileNamePattern, null);
-            final ParquetSchemaBuilder schemaBuilder = new ParquetSchemaBuilder(conf, pathIterator.next(), null, null);
-
-            final SchemaElement javaSchema = schemaBuilder.getSchema();
+            final ParquetSchemaHolder schemaHolder = new ParquetSchemaHolder(conf, pathIterator.next(), null, null);
+            final SchemaElement javaSchema = schemaHolder.getWrapperSchema();
             final CustomWrapperSchemaParameter[] schemaParameters = VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
+
+            final String clusteringField = inputValues.get(CLUSTERING_FIELD);
             if (clusteringField != null && !isSchemaField(clusteringField, schemaParameters)) {
                 throw new IllegalArgumentException('\'' + clusteringField + "' is not a valid field from the schema: "
                     + toString(schemaParameters));
             }
 
+            final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(INCLUDE_PATH_COLUMN));
             if (includePathColumn) {
                 final CustomWrapperSchemaParameter filePath = new CustomWrapperSchemaParameter(Parameter.FULL_PATH,
                     Types.VARCHAR, null, false, CustomWrapperSchemaParameter.NOT_SORTABLE,
@@ -193,8 +194,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         } catch (final NoSuchElementException e) {
             throw new CustomWrapperException("There are no files in " + inputValues.get(PARQUET_FILE_PATH)
             + (StringUtils.isNotBlank(inputValues.get(FILE_NAME_PATTERN))
-                ? " matching the provided file pattern: " + inputValues.get(FILE_NAME_PATTERN)
-                : ""));
+                ? " matching the provided file pattern: " + inputValues.get(FILE_NAME_PATTERN) : ""));
         } catch (final Exception e) {
             LOG.error("Error building wrapper schema", e);
             throw new CustomWrapperException(e.getMessage(), e);
@@ -224,8 +224,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         final String fileNamePattern = inputValues.get(FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(INCLUDE_PATH_COLUMN))
             && isProjected(Parameter.FULL_PATH, projectedFields);
-        final String readOptions = inputValues.get(PARALLELISM_TYPE);
-        final int parallelism = inputValues.get(PARALLELISM_LEVEL) == null ? DEFAULT_PARALLELISM
+        final String parallelismType = inputValues.get(PARALLELISM_TYPE);
+        final int parallelismLevel = inputValues.get(PARALLELISM_LEVEL) == null ? DEFAULT_PARALLELISM
             : Integer.parseInt(inputValues.get(PARALLELISM_LEVEL));
         final String fileSystemURI = inputValues.get(FILESYSTEM_URI);
         final int threadPoolSize = inputValues.get(THREADPOOL_SIZE) == null ? DEFAULT_POOL_SIZE
@@ -235,50 +235,39 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         try {
 
             pathIterator = new PathIterator(conf, path, fileNamePattern, null);
-            final ParquetSchemaBuilder schemaBuilder = new ParquetSchemaBuilder(conf, pathIterator.next(), projectedFields, condition);
-            SchemaElement schema = null;
-            if (schemaBuilder.hasNullValueInConditions()) {
-                schema = schemaBuilder.getSchema();
-            }
-
-            final FilterPredicate filterPredicate = ParquetSchemaUtils.buildFilter(condition.getComplexCondition(), schema);
-            FilterCompat.Filter filter = null;
-            if (filterPredicate != null) {
-                filter = FilterCompat.get(filterPredicate);
-            }
+            final ParquetSchemaHolder schemaHolder = new ParquetSchemaHolder(conf, pathIterator.next(), projectedFields, condition);
+            final Filter filter = getFilter(condition, schemaHolder);
 
             pathIterator.reset();
-
             ReadingStrategy readingStrategy = null;
-
-            switch (readOptions) {
+            switch (parallelismType) {
                 case AUTOMATIC_PARALLELISM:
                     final String clusteringField = inputValues.get(CLUSTERING_FIELD);
-                    readingStrategy = new AutomaticReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields,
-                        filter, includePathColumn, result, parallelism, fileSystemURI, threadPoolSize,
+                    readingStrategy = new AutomaticReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
+                        filter, includePathColumn, result, parallelismLevel, fileSystemURI, threadPoolSize,
                         clusteringField, pathIterator.isRootDirectory(), condition.getComplexCondition(), this.stopRequested);
 
                     break;
                 case ROW_PARALLEL:
-                    readingStrategy = new RowGroupReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields,
-                        filter, includePathColumn, result, parallelism, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
+                    readingStrategy = new RowGroupReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
+                        filter, includePathColumn, result, parallelismLevel, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
                         this.stopRequested);
 
                     break;
                 case FILE_PARALLEL:
-                    readingStrategy = new FileReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields, filter,
-                        includePathColumn, result, parallelism, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
+                    readingStrategy = new FileReadingStrategy(pathIterator, conf, schemaHolder, projectedFields, filter,
+                        includePathColumn, result, parallelismLevel, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
                         this.stopRequested);
 
                     break;
                 case COLUMN_PARALLEL:
-                    readingStrategy = new ColumnReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields,
-                        filter, includePathColumn, result, parallelism, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
+                    readingStrategy = new ColumnReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
+                        filter, includePathColumn, result, parallelismLevel, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
                         this.stopRequested);
 
                     break;
                 default:
-                    readingStrategy = new NonConcurrentReadingStrategy(pathIterator, conf, schemaBuilder, projectedFields,
+                    readingStrategy = new NonConcurrentReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
                         filter, includePathColumn, result, this.stopRequested);
 
                     break;
@@ -368,4 +357,16 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         return false;
     }
 
+    private Filter getFilter(final CustomWrapperConditionHolder condition, final ParquetSchemaHolder schemaHolder)
+        throws CustomWrapperException {
+
+        Filter filter = null;
+
+        final FilterPredicate filterPredicate = ParquetSchemaUtils.buildFilter(condition.getComplexCondition(), schemaHolder.getFileSchema());
+        if (filterPredicate != null) {
+            filter = FilterCompat.get(filterPredicate);
+        }
+
+        return filter;
+    }
 }

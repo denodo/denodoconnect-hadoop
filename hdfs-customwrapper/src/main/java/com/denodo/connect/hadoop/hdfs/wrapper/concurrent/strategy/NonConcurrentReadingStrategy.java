@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
 import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaBuilder;
+import com.denodo.connect.hadoop.hdfs.reader.ParquetSchemaHolder;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
@@ -46,22 +46,22 @@ public class NonConcurrentReadingStrategy implements ReadingStrategy {
     private final Configuration conf;
     private final MessageType schema;
     private final List<CustomWrapperFieldExpression> projectedFields;
-    private final List<String> conditionFields;
+    private final List<String> conditionExcludingProjectedFields;
     private final Filter filter;
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
     private final AtomicBoolean stopRequested;
 
     public NonConcurrentReadingStrategy(final PathIterator pathIterator, final Configuration conf,
-        final ParquetSchemaBuilder schemaBuilder, final List<CustomWrapperFieldExpression> projectedFields,
+        final ParquetSchemaHolder schemaHolder, final List<CustomWrapperFieldExpression> projectedFields,
         final Filter filter, final boolean includePathColumn, final CustomWrapperResult result,
-        final AtomicBoolean stopRequested) throws IOException {
+        final AtomicBoolean stopRequested) {
 
         this.pathIterator = pathIterator;
         this.conf = conf;
-        this.schema = schemaBuilder.getProjectedSchema();
+        this.schema = schemaHolder.getQuerySchema();
         this.projectedFields = projectedFields;
-        this.conditionFields = schemaBuilder.getConditionFields();
+        this.conditionExcludingProjectedFields = schemaHolder.getConditionExcludingProjectedFields();
         this.filter = filter;
         this.includePathColumn = includePathColumn;
         this.result = result;
@@ -76,7 +76,7 @@ public class NonConcurrentReadingStrategy implements ReadingStrategy {
 
         while (this.pathIterator.hasNext()) {
             final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.pathIterator.next(),
-                this.includePathColumn, this.filter, this.schema, this.conditionFields, null, null, null);
+                this.includePathColumn, this.filter, this.schema, this.conditionExcludingProjectedFields);
 
             Object parquetData = reader.read();
             while (parquetData != null && !this.stopRequested.get()) {

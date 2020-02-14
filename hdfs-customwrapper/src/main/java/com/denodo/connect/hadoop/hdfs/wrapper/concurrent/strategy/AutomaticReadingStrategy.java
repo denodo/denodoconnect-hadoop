@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaBuilder;
+import com.denodo.connect.hadoop.hdfs.reader.ParquetSchemaHolder;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManagerFactory;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
@@ -54,7 +54,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
 
     private final PathIterator pathIterator;
     private final Configuration conf;
-    private final ParquetSchemaBuilder schemaBuilder;
+    private final ParquetSchemaHolder parquetSchemaHolder;
     private final List<CustomWrapperFieldExpression> projectedFields;
     private final Filter filter;
     private final boolean includePathColumn;
@@ -73,14 +73,14 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
     private final AtomicBoolean stopRequested;
 
     public AutomaticReadingStrategy(final PathIterator pathIterator, final Configuration conf,
-        final ParquetSchemaBuilder schemaBuilder, final List<CustomWrapperFieldExpression> projectedFields,
+        final ParquetSchemaHolder schemaHolder, final List<CustomWrapperFieldExpression> projectedFields,
         final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelism,
         final String fileSystemURI, final int threadPoolSize, final String clusteringField, final boolean rootIsDir,
-        final CustomWrapperCondition wrapperCondition, final AtomicBoolean stopRequested) throws IOException {
+        final CustomWrapperCondition wrapperCondition, final AtomicBoolean stopRequested) {
 
         this.pathIterator = pathIterator;
         this.conf = conf;
-        this.schemaBuilder = schemaBuilder;
+        this.parquetSchemaHolder = schemaHolder;
         this.projectedFields = projectedFields;
         this.filter = filter;
         this.includePathColumn = includePathColumn;
@@ -90,8 +90,8 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
         this.threadPoolSize = threadPoolSize;
 
         this.clusteringField = clusteringField;
-        this.numCols = schemaBuilder.getProjectedSchema().getColumns().size();
-        this.rowGroups = schemaBuilder.getRowGroups();
+        this.numCols = schemaHolder.getQuerySchema().getColumns().size();
+        this.rowGroups = schemaHolder.getRowGroups();
         this.numRowGroups = this.rowGroups.size();
         this.rootIsDir = rootIsDir;
         this.wrapperCondition = wrapperCondition;
@@ -108,32 +108,32 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
 
     }
 
-    private ReadingStrategy selectReadingStrategy() throws IOException {
+    private ReadingStrategy selectReadingStrategy() {
 
         ReadingStrategy readingStrategy = null;
 
         if (this.clusteringField != null && isRequiredCondition(this.clusteringField, this.wrapperCondition)  && this.numCols > COLS_THRESHOLD) {
-            readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
+            readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else if (this.rootIsDir) { // rootIsDir: naive approach to check if num_files > 1, because 'file name pattern' would affect to the total count
-            readingStrategy = new FileReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
+            readingStrategy = new FileReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else if (this.numRowGroups > 1 && (findAnyGt(this.rowGroups, ROWGROUP_ROWS_THRESHOLD) || this.numRowGroups > ROWGROUPS_THRESHOLD)) {
-            readingStrategy = new RowGroupReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
+            readingStrategy = new RowGroupReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else if (this.numCols > COLS_THRESHOLD) {
-            readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
+            readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else {
-            readingStrategy = new NonConcurrentReadingStrategy(this.pathIterator, this.conf, this.schemaBuilder,
+            readingStrategy = new NonConcurrentReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.stopRequested);
         }
 
