@@ -93,7 +93,7 @@ public final class Parameter {
     public static final String NOT_PARALLEL = "No Parallelism";
     public static final String AUTOMATIC_PARALLELISM = "Automatic";
     public static final String PARALLELISM_LEVEL = "Parallelism level";
-    public static final String CLUSTERING_FIELD = "Cluster/partition field";
+    public static final String CLUSTER_PARTITION_FIELDS = "Cluster/partition fields";
     public static final String THREADPOOL_SIZE = "Thread Pool size";
 
     public static final String ACCESS_KEY_ID = "Access Key ID";
