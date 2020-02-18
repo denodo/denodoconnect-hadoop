@@ -23,7 +23,7 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 
 
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.AUTOMATIC_PARALLELISM;
-import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.CLUSTERING_FIELD;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.CLUSTER_PARTITION_FIELDS;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.COLUMN_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILESYSTEM_URI;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_NAME_PATTERN;
@@ -121,8 +121,8 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             new CustomWrapperInputParameter(THREADPOOL_SIZE,
                 "Number of threads in the pool",
                 false, CustomWrapperInputParameterTypeFactory.integerType()),
-            new CustomWrapperInputParameter(CLUSTERING_FIELD,
-                "File/s sorted by this field ",
+            new CustomWrapperInputParameter(CLUSTER_PARTITION_FIELDS,
+                "Files sorted by this field/s (separated by commas) ",
                 false, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.CORE_SITE_PATH,
                 "Local route of core-site.xml configuration file ",
@@ -175,9 +175,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             final SchemaElement javaSchema = schemaHolder.getWrapperSchema();
             final CustomWrapperSchemaParameter[] schemaParameters = VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
 
-            final String clusteringField = inputValues.get(CLUSTERING_FIELD);
-            if (clusteringField != null && !isSchemaField(clusteringField, schemaParameters)) {
-                throw new IllegalArgumentException('\'' + clusteringField + "' is not a valid field from the schema: "
+            final String clusteringFields = inputValues.get(CLUSTER_PARTITION_FIELDS);
+            if (clusteringFields != null && !isSchemaField(clusteringFields, schemaParameters)) {
+                throw new IllegalArgumentException('\'' + clusteringFields + "' is/are not valid for the schema: "
                     + toString(schemaParameters));
             }
 
@@ -242,10 +242,10 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             ReadingStrategy readingStrategy = null;
             switch (parallelismType) {
                 case AUTOMATIC_PARALLELISM:
-                    final String clusteringField = inputValues.get(CLUSTERING_FIELD);
+                    final String clusteringFields = inputValues.get(CLUSTER_PARTITION_FIELDS);
                     readingStrategy = new AutomaticReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
                         filter, includePathColumn, result, parallelismLevel, fileSystemURI, threadPoolSize,
-                        clusteringField, pathIterator.isRootDirectory(), condition.getComplexCondition(), this.stopRequested);
+                        clusteringFields, pathIterator.isRootDirectory(), condition.getComplexCondition(), this.stopRequested);
 
                     break;
                 case ROW_PARALLEL:
@@ -318,15 +318,24 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         }
     }
 
-    private static boolean isSchemaField(final String field, final CustomWrapperSchemaParameter[] schemaParameters) {
+    private static boolean isSchemaField(final String fields, final CustomWrapperSchemaParameter[] schemaParameters) {
 
-        for(final CustomWrapperSchemaParameter parameter : schemaParameters) {
-            if (field.equals(parameter.getName())) {
-                return true;
+        final String[] fragmentsFields = fields.split(",");
+        boolean found = false;
+        for (final String field : fragmentsFields) {
+            for (int i = 0; i < schemaParameters.length && !found; i++) {
+                final CustomWrapperSchemaParameter parameter = schemaParameters[i];
+                if (field.trim().equals(parameter.getName())) {
+                    found = true;
+                }
             }
+             if (!found) {
+                 return false;
+             }
+             found = false;
         }
 
-        return false;
+        return true;
     }
 
     private static String toString(final CustomWrapperSchemaParameter[] schemaParameters) {

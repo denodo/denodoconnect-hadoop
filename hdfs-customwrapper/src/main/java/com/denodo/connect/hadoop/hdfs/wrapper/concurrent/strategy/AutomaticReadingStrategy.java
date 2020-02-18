@@ -63,7 +63,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
     private final String fileSystemURI;
     private final int threadPoolSize;
 
-    private final String clusteringField;
+    private final String clusteringFields;
     private final int numCols;
     private final List<BlockMetaData> rowGroups;
     private final int numRowGroups;
@@ -75,7 +75,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
     public AutomaticReadingStrategy(final PathIterator pathIterator, final Configuration conf,
         final ParquetSchemaHolder schemaHolder, final List<CustomWrapperFieldExpression> projectedFields,
         final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelism,
-        final String fileSystemURI, final int threadPoolSize, final String clusteringField, final boolean rootIsDir,
+        final String fileSystemURI, final int threadPoolSize, final String clusteringFields, final boolean rootIsDir,
         final CustomWrapperCondition wrapperCondition, final AtomicBoolean stopRequested) {
 
         this.pathIterator = pathIterator;
@@ -89,7 +89,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
         this.fileSystemURI = fileSystemURI;
         this.threadPoolSize = threadPoolSize;
 
-        this.clusteringField = clusteringField;
+        this.clusteringFields = clusteringFields;
         this.numCols = schemaHolder.getQuerySchema().getColumns().size();
         this.rowGroups = schemaHolder.getRowGroups();
         this.numRowGroups = this.rowGroups.size();
@@ -112,7 +112,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
 
         ReadingStrategy readingStrategy = null;
 
-        if (this.clusteringField != null && isRequiredCondition(this.clusteringField, this.wrapperCondition)  && this.numCols > COLS_THRESHOLD) {
+        if (this.clusteringFields != null && areRequiredCondition(this.clusteringFields, this.wrapperCondition)  && this.numCols > COLS_THRESHOLD) {
             readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
@@ -149,6 +149,18 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
 
         for (final BlockMetaData blockMetaData : rowGroups) {
             if (blockMetaData.getRowCount() > rowgroupRowsThreshold) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean areRequiredCondition(final String fields, final CustomWrapperCondition wrapperCondition) {
+
+        final String[] fragmentFields = fields.split(",");
+        for (final String field : fragmentFields) {
+            if (isRequiredCondition(field.trim(), wrapperCondition)) {
                 return true;
             }
         }
