@@ -21,12 +21,23 @@
  */
 package com.denodo.connect.hadoop.hdfs.util.type;
 
+import static org.apache.parquet.schema.LogicalTypeAnnotation.bsonType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.dateType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.jsonType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.listType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.mapType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.parquet.io.api.Binary;
-import org.apache.parquet.schema.OriginalType;
+import org.apache.parquet.schema.LogicalTypeAnnotation.DecimalLogicalTypeAnnotation;
+import org.apache.parquet.schema.LogicalTypeAnnotation.TimeLogicalTypeAnnotation;
+import org.apache.parquet.schema.LogicalTypeAnnotation.TimestampLogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 
@@ -42,48 +53,60 @@ public final class ParquetTypeUtils {
     }
 
     public static Class<?> toJava(final Type type) {
-        if(type.isPrimitive()){
+        if (type.isPrimitive()){
             final PrimitiveTypeName primitiveTypeName= type.asPrimitiveType().getPrimitiveTypeName();
-            if(primitiveTypeName.equals(PrimitiveTypeName.BINARY)) {
-                if(type.getOriginalType()!=null){
-                    if(type.getOriginalType().equals(OriginalType.UTF8)){
-                        return String.class;
-                    } if(type.getOriginalType().equals(OriginalType.JSON)){
-                        return String.class;
-                    } if(type.getOriginalType().equals(OriginalType.BSON)){
-                        return String.class;
-                    }
-
+            if (primitiveTypeName.equals(PrimitiveTypeName.BINARY)) {
+                if (stringType().equals(type.getLogicalTypeAnnotation())) {
+                    return String.class;
+                } else if (jsonType().equals(type.getLogicalTypeAnnotation())) {
+                    return String.class;
+                } else if (bsonType().equals(type.getLogicalTypeAnnotation())) {
+                    return String.class;
                 }
+
                 return ByteBuffer.class; 
 
-            }else if(primitiveTypeName.equals(PrimitiveTypeName.BOOLEAN)) {
+            } else if (primitiveTypeName.equals(PrimitiveTypeName.BOOLEAN)) {
                 return Boolean.class;
-            }else if(primitiveTypeName.equals(PrimitiveTypeName.DOUBLE)) {
+
+            } else if (primitiveTypeName.equals(PrimitiveTypeName.DOUBLE)) {
                 return Double.class;
-            }else if(primitiveTypeName.equals(PrimitiveTypeName.FLOAT)) {
+
+            } else if (primitiveTypeName.equals(PrimitiveTypeName.FLOAT)) {
                 return Float.class;
-            }else if(primitiveTypeName.equals(PrimitiveTypeName.INT32)) {
-                if (OriginalType.DECIMAL.equals(type.getOriginalType())) {
+
+            } else if (primitiveTypeName.equals(PrimitiveTypeName.INT32)) {
+                if (type.getLogicalTypeAnnotation() instanceof DecimalLogicalTypeAnnotation) {
                     return java.math.BigDecimal.class;
-                } else if (OriginalType.DATE.equals(type.getOriginalType())) {
+                } else if (dateType().equals(type.getLogicalTypeAnnotation())) {
                     return java.util.Date.class;
+                } else if (type.getLogicalTypeAnnotation() instanceof TimeLogicalTypeAnnotation) {
+                    return Time.class;
                 }
                 return Integer.class;
-            }else if(primitiveTypeName.equals(PrimitiveTypeName.INT64)) {
-                //we dont differentiate INT64 from TIMESTAMP_MILLIS original types
-                return Long.class;
-            }else if(primitiveTypeName.equals(PrimitiveTypeName.INT96)) {
+
+            } else if(primitiveTypeName.equals(PrimitiveTypeName.INT64)) {
+                if (type.getLogicalTypeAnnotation() instanceof DecimalLogicalTypeAnnotation) {
+                    return java.math.BigDecimal.class;
+                } else if (type.getLogicalTypeAnnotation() instanceof TimeLogicalTypeAnnotation) {
+                    return Time.class;
+                } else if (type.getLogicalTypeAnnotation() instanceof TimestampLogicalTypeAnnotation) {
+                    return Timestamp.class;
+                } else {
+                    return Long.class;
+                }
+
+            } else if(primitiveTypeName.equals(PrimitiveTypeName.INT96)) {
                 // As stated in PARQUET-323, Parquet `INT96` was originally introduced to represent nanosecond
                 // timestamp in Impala for some historical reasons.  It's not recommended to be used for any
                 // other types and will probably be deprecated in some future version of parquet-format spec.
                 return java.sql.Timestamp.class;
-            } else if(primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
-                if (OriginalType.DECIMAL.equals(type.getOriginalType())) {
+            } else if (primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
+                if (type.getLogicalTypeAnnotation() instanceof DecimalLogicalTypeAnnotation) {
                     return java.math.BigDecimal.class;
                 }
                 return byte[].class;
-            }else{
+            } else {
                 throw new IllegalArgumentException("Unknown type: " + type.getName());
             }
         }
@@ -95,7 +118,7 @@ public final class ParquetTypeUtils {
      * This method check if the field is a group
      */
     public static boolean isGroup(final Type field) {
-        return !field.asGroupType().getFields().isEmpty() && field.getOriginalType() == null;
+        return !field.asGroupType().getFields().isEmpty() && field.getLogicalTypeAnnotation()== null;
 
     }
     
@@ -103,8 +126,7 @@ public final class ParquetTypeUtils {
      * This method check if the field is a Map
      */
     public static boolean isMap(final Type field) {
-        return !field.asGroupType().getFields().isEmpty() && field.getOriginalType() != null
-                && field.getOriginalType().equals(OriginalType.MAP);
+        return !field.asGroupType().getFields().isEmpty() && mapType().equals(field.getLogicalTypeAnnotation());
 
     }
 
@@ -112,8 +134,7 @@ public final class ParquetTypeUtils {
      * This method check if the field is a List
      */
     public static boolean isList(final Type field) {
-        return !field.asGroupType().getFields().isEmpty() && field.getOriginalType() != null
-                && field.getOriginalType().equals(OriginalType.LIST);
+        return !field.asGroupType().getFields().isEmpty() && listType().equals(field.getLogicalTypeAnnotation());
 
     }
 
