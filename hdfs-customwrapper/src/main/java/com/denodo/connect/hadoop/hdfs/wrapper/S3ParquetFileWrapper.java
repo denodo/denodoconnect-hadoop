@@ -71,7 +71,7 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
                 false, CustomWrapperInputParameterTypeFactory.booleanType(false)),
             new CustomWrapperInputParameter(PARALLELISM_TYPE,
                 "Type of parallelism, if any ",
-                true, CustomWrapperInputParameterTypeFactory.enumStringType(
+                false, CustomWrapperInputParameterTypeFactory.enumStringType(
                 new String[] {NOT_PARALLEL, AUTOMATIC_PARALLELISM, FILE_PARALLEL, ROW_PARALLEL, COLUMN_PARALLEL})),
             new CustomWrapperInputParameter(PARALLELISM_LEVEL,
                 "Level of parallelism ",
