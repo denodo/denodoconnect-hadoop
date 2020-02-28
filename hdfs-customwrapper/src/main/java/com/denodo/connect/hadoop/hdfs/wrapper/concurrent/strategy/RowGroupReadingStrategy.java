@@ -57,7 +57,6 @@ public class RowGroupReadingStrategy implements ReadingStrategy {
     private final Configuration conf;
     private final MessageType schema;
     private final List<CustomWrapperFieldExpression> projectedFields;
-    private final List<String> conditionExcludingProjectedFields;
     private final Filter filter;
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
@@ -75,7 +74,6 @@ public class RowGroupReadingStrategy implements ReadingStrategy {
         this.conf = conf;
         this.schema = schemaHolder.getQuerySchema();
         this.projectedFields = projectedFields;
-        this.conditionExcludingProjectedFields = schemaHolder.getConditionExcludingProjectedFields();
         this.filter = filter;
         this.includePathColumn = includePathColumn;
         this.result = result;
@@ -111,7 +109,7 @@ public class RowGroupReadingStrategy implements ReadingStrategy {
                 final Iterator<List<BlockMetaData>> rowGroupListIterator = rowGroupsList.iterator();
                 while (rowGroupListIterator.hasNext() && !this.stopRequested.get()) {
                     readers.add(new RowGroupReaderTask(this.conf, currentPath, this.schema, this.includePathColumn,
-                        this.conditionExcludingProjectedFields, this.filter, this.projectedFields, this.result, rowGroupListIterator.next()));
+                        this.filter, this.projectedFields, this.result, rowGroupListIterator.next()));
                 }
 
                 if (!this.stopRequested.get()) {

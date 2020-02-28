@@ -22,7 +22,6 @@
 package com.denodo.connect.hadoop.hdfs.wrapper.concurrent;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.reader.HDFSParquetFileReader;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
 /**
  * It is a Callable<Void> instead a Runnable because Callable can throw checked exceptions.
@@ -48,19 +48,18 @@ public final class ColumnsReaderTask implements Callable<Void> {
     private final Configuration conf;
     private final Path path;
     private final MessageType readingSchema;
-    private final List<String> conditionFields;
+    private final boolean includePathValue;
     private final Filter filter;
+    private final List<CustomWrapperFieldExpression> projectedFields;
 
     private final ColumnGroupReadingStructure readingStructure;
-    private final int skippedColumnIndex;
 
     private final AtomicBoolean stopRequested;
 
 
     public ColumnsReaderTask(final int readerIndex, final Configuration conf, final Path path, final MessageType readingSchema,
-                             final MessageType resultsSchema, final List<String> conditionFields,
-                             final Filter filter, final ColumnGroupReadingStructure readingStructure,
-                             final AtomicBoolean stopRequested) {
+        final boolean includePathValue, final Filter filter, final List<CustomWrapperFieldExpression> projectedFields,
+        final ColumnGroupReadingStructure readingStructure, final AtomicBoolean stopRequested) {
 
         super();
 
@@ -72,25 +71,14 @@ public final class ColumnsReaderTask implements Callable<Void> {
 
         this.path = path;
         this.readingSchema = readingSchema;
-        this.conditionFields = conditionFields;
+        this.includePathValue = includePathValue;
         this.filter = filter;
+        this.projectedFields = projectedFields;
 
         this.readingStructure = readingStructure;
-        this.skippedColumnIndex = getSkippedColumnsIndex(readingSchema, resultsSchema);
 
         this.stopRequested = stopRequested;
 
-    }
-
-    private int getSkippedColumnsIndex(final MessageType readingSchema, final MessageType resultsSchema) {
-
-        int skippedColumnIndex = 0;
-        final int fieldDifference = readingSchema.getFieldCount() - resultsSchema.getFieldCount();
-        if (fieldDifference > 0) {
-            skippedColumnIndex = readingSchema.getFieldCount() - fieldDifference;
-        }
-
-        return skippedColumnIndex;
     }
 
 
@@ -103,10 +91,8 @@ public final class ColumnsReaderTask implements Callable<Void> {
         final long start = System.currentTimeMillis();
         long rowCount = 0;
 
-        // includePathValues is always false, it is returned to VDP by the RecordsAssemblerTask as it has always
-        // the same value for each file
-        final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path, false,
-            this.filter, this.readingSchema, this.conditionFields);
+        final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path, this.includePathValue,
+            this.filter, this.readingSchema, this.projectedFields);
 
         if (this.stopRequested.get()) {
             if (LOG.isTraceEnabled()) {
@@ -129,12 +115,7 @@ public final class ColumnsReaderTask implements Callable<Void> {
                 int chunkIndex = 0;
                 while (parquetData != null && chunkIndex < chunk.length && !this.stopRequested.get()) {
 
-                    Object[] columnValues = (Object[]) parquetData;
-                    if (this.skippedColumnIndex != 0) {
-                        columnValues = Arrays.copyOf(columnValues, this.skippedColumnIndex);
-                    }
-
-                    chunk[chunkIndex++] = columnValues;
+                    chunk[chunkIndex++] = (Object[]) parquetData;
 
                     rowCount++;
 

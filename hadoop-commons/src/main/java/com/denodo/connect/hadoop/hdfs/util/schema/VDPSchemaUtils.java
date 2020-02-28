@@ -1,12 +1,14 @@
 package com.denodo.connect.hadoop.hdfs.util.schema;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.parquet.schema.PrimitiveType;
 
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.util.type.TypeUtils;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperSchemaParameter;
+import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
 
 public final class VDPSchemaUtils {
@@ -108,6 +110,52 @@ public final class VDPSchemaUtils {
         }
 
     }
-    
-    
+
+    public static boolean isProjected(final String field, final List<CustomWrapperFieldExpression> projectedFields) {
+
+        for (final CustomWrapperFieldExpression projectedField : projectedFields) {
+            if (field.equals(projectedField.getName())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean isSchemaField(final String fields, final CustomWrapperSchemaParameter[] schemaParameters) {
+
+        final String[] fragmentsFields = fields.split(",");
+        boolean found = false;
+        for (final String field : fragmentsFields) {
+            for (int i = 0; i < schemaParameters.length && !found; i++) {
+                final CustomWrapperSchemaParameter parameter = schemaParameters[i];
+                if (field.trim().equals(parameter.getName())) {
+                    found = true;
+                }
+            }
+            if (!found) {
+                return false;
+            }
+            found = false;
+        }
+
+        return true;
+    }
+
+    public static String toString(final CustomWrapperSchemaParameter[] schemaParameters) {
+
+        final StringBuilder sb = new StringBuilder();
+        final int lastParameter = schemaParameters.length - 1;
+        int i = 0;
+        for(final CustomWrapperSchemaParameter parameter : schemaParameters) {
+            sb.append(parameter.getName());
+            if (i != lastParameter) {
+                sb.append(", ");
+            }
+
+            i++;
+        }
+
+        return sb.toString();
+    }
 }

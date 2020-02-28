@@ -23,7 +23,9 @@ package com.denodo.connect.hadoop.hdfs.util.io;
 
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -31,11 +33,12 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
 
 
 public class PathIterator implements Iterator<Path> {
@@ -45,7 +48,7 @@ public class PathIterator implements Iterator<Path> {
 
     private RemoteIterator<LocatedFileStatus> fileIterator;
     private FileSystem fileSystem;
-    private PathFilter fileFilter;
+    private FileFilter fileFilter;
 
     private Path path;
     private Path cursor;
@@ -157,5 +160,11 @@ public class PathIterator implements Iterator<Path> {
 
     public boolean isRootDirectory() throws IOException {
         return this.fileSystem.getFileStatus(this.path).isDirectory();
+    }
+
+    public void addPartitionConditionsInfo(final List<String> partitionFields, final Collection<String> conditionFields,
+        final CustomWrapperConditionHolder conditionHolder) {
+
+        this.fileFilter.addPartitionConditions(partitionFields, conditionFields, conditionHolder.getComplexCondition());
     }
 }

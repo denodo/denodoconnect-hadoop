@@ -114,7 +114,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
 
         if (this.clusteringFields != null && areRequiredCondition(this.clusteringFields, this.wrapperCondition)  && this.numCols > COLS_THRESHOLD) {
             readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
-                this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
+                this.projectedFields, this.filter, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else if (this.rootIsDir) { // rootIsDir: naive approach to check if num_files > 1, because 'file name pattern' would affect to the total count
@@ -129,7 +129,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
 
         } else if (this.numCols > COLS_THRESHOLD) {
             readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
-                this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
+                this.projectedFields, this.filter, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
         } else {

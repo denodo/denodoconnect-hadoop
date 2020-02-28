@@ -49,21 +49,19 @@ public final class RowGroupReaderTask implements Callable<Void> {
     private final Path path;
     private final MessageType schema;
     private final boolean includePathColumn;
-    private final List<String> conditionFields;
     private final Filter filter;
     private final List<CustomWrapperFieldExpression> projectedFields;
     private final CustomWrapperResult result;
     private final List<BlockMetaData> rowGroups;
 
     public RowGroupReaderTask(final Configuration conf, final Path path, final MessageType schema, final boolean includePathColumn,
-        final List<String> conditionFields, final Filter filter, final List<CustomWrapperFieldExpression> projectedFields,
+        final Filter filter, final List<CustomWrapperFieldExpression> projectedFields,
         final CustomWrapperResult result, final List<BlockMetaData> rowGroups) {
 
         this.conf = conf;
         this.path = path;
         this.schema = schema;
         this.includePathColumn = includePathColumn;
-        this.conditionFields = conditionFields;
         this.filter = filter;
         this.projectedFields = projectedFields;
         this.result = result;
@@ -82,7 +80,7 @@ public final class RowGroupReaderTask implements Callable<Void> {
                 + " endingPos " + this.rowGroups.get(lastRowGroup).getStartingPos() +  " + " + this.rowGroups.get(lastRowGroup).getCompressedSize() + " = " + endingPos);
         }
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path,
-            this.includePathColumn, this.filter, this.schema, this.conditionFields, startingPos, endingPos);
+            this.includePathColumn, this.filter, this.schema, this.projectedFields, startingPos, endingPos);
 
         Object parquetData = reader.read();
         long row = 0;
