@@ -12,9 +12,12 @@
  */
 package com.denodo.connect.hadoop.hdfs.reader;
 
+import static org.apache.parquet.schema.Type.Repetition.REQUIRED;
+import static org.apache.parquet.schema.Types.buildMessage;
+
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
@@ -29,32 +32,29 @@ import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Types;
 
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
+import com.denodo.connect.hadoop.hdfs.util.io.ConditionUtils;
+import com.denodo.connect.hadoop.hdfs.util.io.PartitionUtils;
 import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditionHolder;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperOrCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleCondition;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
 public class ParquetSchemaHolder {
 
-
     private MessageType fileSchema;
+    private MessageType partitionSchema;
     private MessageType querySchema;
     private List<BlockMetaData> rowGroups;
     private ParquetMetadata footer;
     private List<CustomWrapperFieldExpression> projectedFields;
-    private List<String> conditionFields;
-    private List<String> conditionExcludingProjectedFields;
+    private Collection<String> simpleConditions;
 
 
     public ParquetSchemaHolder(final Configuration conf, final Path path, final List<CustomWrapperFieldExpression> projectedFields,
         final CustomWrapperConditionHolder condition) throws IOException {
 
-        this.projectedFields = projectedFields != null ? projectedFields : Collections.emptyList();
-        this.conditionFields = condition != null ? getConditionFields(condition.getComplexCondition()): Collections.emptyList();
-        this.conditionExcludingProjectedFields = excludeProjectedFields(this.conditionFields, projectedFields);
+        this.projectedFields = projectedFields != null ? projectedFields : new ArrayList<CustomWrapperFieldExpression>(0);
+        this.simpleConditions = condition != null ? ConditionUtils.getSimpleConditionFields(condition.getComplexCondition()):
+            new ArrayList<String>(0);
 
         readMetadata(conf, path);
     }
@@ -65,10 +65,12 @@ public class ParquetSchemaHolder {
 
     public SchemaElement getWrapperSchema() {
 
-        final boolean isMandatory = this.fileSchema.getRepetition() == Type.Repetition.REQUIRED;
+        final boolean isMandatory = this.fileSchema.getRepetition() == REQUIRED;
         final SchemaElement schemaElement = new SchemaElement(this.fileSchema.getName(), Object.class, isMandatory);
 
-        return ParquetSchemaUtils.buildSchema(this.fileSchema, schemaElement);
+        final MessageType wrapperSchema =  this.partitionSchema != null ? this.fileSchema.union(this.partitionSchema, false) : this.fileSchema;
+
+        return ParquetSchemaUtils.buildSchema(wrapperSchema, schemaElement);
     }
 
     public MessageType getQuerySchema() {
@@ -83,12 +85,24 @@ public class ParquetSchemaHolder {
         return this.footer;
     }
 
-    public List<String> getConditionFields() {
-        return this.conditionFields;
+    public Collection<String> getConditionFields() {
+        return this.simpleConditions;
     }
 
-    public List<String> getConditionExcludingProjectedFields() {
-        return this.conditionExcludingProjectedFields;
+    public List<String> getPartitionFields() {
+
+        final List<String> partitionFields = new ArrayList<>();
+
+        final List<Type> partitionTypes = this.partitionSchema.getFields();
+        if (!partitionTypes.isEmpty() && !this.simpleConditions.isEmpty()) {
+            for (final Type partitionType : partitionTypes) {
+                if (this.simpleConditions.contains(partitionType.getName())) {
+                    partitionFields.add(partitionType.getName());
+                }
+            }
+        }
+
+        return partitionFields;
     }
 
     private void readMetadata(final Configuration configuration, final Path filePath) throws IOException {
@@ -98,8 +112,21 @@ public class ParquetSchemaHolder {
             this.footer = parquetFileReader.getFooter();
             this.rowGroups = parquetFileReader.getRowGroups();
             this.fileSchema = this.footer.getFileMetaData().getSchema();
+            this.partitionSchema = getPartitionMetadata(filePath);
             this.querySchema = schemaWithProjectedAndConditionFields(this.fileSchema);
         }
+    }
+
+    private static MessageType getPartitionMetadata(final Path path) {
+
+        MessageType partitionSchema = null;
+
+        final List<Type> partitionFields = PartitionUtils.getPartitionFields(path);
+        if (!partitionFields.isEmpty()) {
+            partitionSchema = new MessageType("PartitionSchema", partitionFields);
+        }
+
+        return partitionSchema;
     }
 
     private MessageType schemaWithProjectedAndConditionFields(final MessageType schema) {
@@ -115,7 +142,7 @@ public class ParquetSchemaHolder {
             }
         }
 
-        for (final String conditionField : this.conditionExcludingProjectedFields) {
+        for (final String conditionField : excludeProjectedFields(this.simpleConditions, this.projectedFields)) {
             try {
                 final Type schemaField = schema.getType(conditionField);
                 newSchema.addField(schemaField);
@@ -127,65 +154,7 @@ public class ParquetSchemaHolder {
         return newSchema.named("schema");
     }
 
-    /**
-     * Get the condition field names excluding compound fields (compound fields are not included in projections).
-     */
-    private List<String> getConditionFields(final CustomWrapperCondition condition) throws IOException {
-
-        final List<String> conditionFields = new ArrayList<>();
-        if (condition != null) {
-            if (condition.isAndCondition()) {
-                final CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) condition;
-                for (final CustomWrapperCondition c : andCondition.getConditions()) {
-                    if (c.isSimpleCondition()) {
-                        final String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
-                        //We only add fieldName to conditionFields if it is not a compound type and if it is not already included.
-                        if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1) {
-                            conditionFields.add(fieldName);
-                        }
-
-                    } else {
-                        final List<String> fieldsName = this.getConditionFields(c);
-                        for (final String fieldName : fieldsName) {
-                            if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1) {
-                                conditionFields.add(fieldName);
-                            }
-                        }
-                    }
-                }
-            } else if (condition.isOrCondition()) {
-                final CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) condition;
-                for (final CustomWrapperCondition c : orCondition.getConditions()) {
-                    if (c.isSimpleCondition()) {
-                        final String fieldName = ((CustomWrapperSimpleCondition) c).getField().toString();
-                        if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1){
-                            conditionFields.add(fieldName);
-                        }
-
-                    } else {
-                        final List<String> fieldsName = this.getConditionFields(c);
-                        for (final String fieldName : fieldsName) {
-                            if (!conditionFields.contains(fieldName) && fieldName.split("\\.").length == 1) {
-                                conditionFields.add(fieldName);
-                            }
-                        }
-                    }
-                }
-            } else if (condition.isSimpleCondition()) {
-                final String fieldName = ((CustomWrapperSimpleCondition) condition).getField().toString();
-                if (fieldName.split("\\.").length == 1){
-                    conditionFields.add(fieldName);
-                }
-
-            } else {
-                throw new IOException("Condition \"" + condition.toString() + "\" not allowed");
-            }
-        }
-
-        return  conditionFields;
-    }
-
-    private static List<String> excludeProjectedFields(final List<String> conditionFields,
+    private static List<String> excludeProjectedFields(final Collection<String> conditionFields,
         final List<CustomWrapperFieldExpression> projectedFields) {
 
             final List<String> conditionsExcludingProjectedFields = new ArrayList<>(conditionFields);
@@ -197,5 +166,13 @@ public class ParquetSchemaHolder {
             }
 
         return conditionsExcludingProjectedFields;
+    }
+
+    public void updateCondition(final CustomWrapperConditionHolder condition) {
+
+        this.simpleConditions = condition != null ? ConditionUtils.getSimpleConditionFields(condition.getComplexCondition())
+            : new ArrayList<String>(0);
+        this.querySchema = schemaWithProjectedAndConditionFields(this.fileSchema);
+
     }
 }

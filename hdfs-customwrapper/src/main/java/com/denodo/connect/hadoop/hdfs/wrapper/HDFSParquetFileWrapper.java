@@ -30,8 +30,8 @@ import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_NAME_
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.INCLUDE_PATH_COLUMN;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.NOT_PARALLEL;
-import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_TYPE;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_LEVEL;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_TYPE;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARQUET_FILE_PATH;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.ROW_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.THREADPOOL_SIZE;
@@ -44,6 +44,8 @@ import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperConditi
 
 import java.io.IOException;
 import java.sql.Types;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -61,9 +63,9 @@ import org.slf4j.LoggerFactory;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
-import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
 import com.denodo.connect.hadoop.hdfs.reader.ParquetSchemaHolder;
-import com.denodo.connect.hadoop.hdfs.util.schema.ParquetSchemaUtils;
+import com.denodo.connect.hadoop.hdfs.util.io.ConditionUtils;
+import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
 import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManagerFactory;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy.AutomaticReadingStrategy;
@@ -176,9 +178,9 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             final CustomWrapperSchemaParameter[] schemaParameters = VDPSchemaUtils.buildSchemaParameterParquet(javaSchema.getElements());
 
             final String clusteringFields = inputValues.get(CLUSTER_PARTITION_FIELDS);
-            if (clusteringFields != null && !isSchemaField(clusteringFields, schemaParameters)) {
+            if (clusteringFields != null && !VDPSchemaUtils.isSchemaField(clusteringFields, schemaParameters)) {
                 throw new IllegalArgumentException('\'' + clusteringFields + "' is/are not valid for the schema: "
-                    + toString(schemaParameters));
+                    + VDPSchemaUtils.toString(schemaParameters));
             }
 
             final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(INCLUDE_PATH_COLUMN));
@@ -219,11 +221,12 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
         validateConcurrentConfiguration(inputValues);
 
+
         final Configuration conf = getHadoopConfiguration(inputValues);
         final Path path = new Path(inputValues.get(PARQUET_FILE_PATH));
         final String fileNamePattern = inputValues.get(FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(INCLUDE_PATH_COLUMN))
-            && isProjected(Parameter.FULL_PATH, projectedFields);
+            && VDPSchemaUtils.isProjected(Parameter.FULL_PATH, projectedFields);
         final String parallelismType = (inputValues.get(PARALLELISM_TYPE) != null) ? inputValues.get(PARALLELISM_TYPE): NOT_PARALLEL;
         final int parallelismLevel = inputValues.get(PARALLELISM_LEVEL) == null ? DEFAULT_PARALLELISM
             : Integer.parseInt(inputValues.get(PARALLELISM_LEVEL));
@@ -236,16 +239,18 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
             pathIterator = new PathIterator(conf, path, fileNamePattern, null);
             final ParquetSchemaHolder schemaHolder = new ParquetSchemaHolder(conf, pathIterator.next(), projectedFields, condition);
-            final Filter filter = getFilter(condition, schemaHolder);
+            final CustomWrapperConditionHolder fixedCondition = fixWrapperConditionWithPartitionInfo(pathIterator, condition, schemaHolder);
 
+            final Filter filter = getFilter(fixedCondition, schemaHolder);
             pathIterator.reset();
+
             ReadingStrategy readingStrategy = null;
             switch (parallelismType) {
                 case AUTOMATIC_PARALLELISM:
                     final String clusteringFields = inputValues.get(CLUSTER_PARTITION_FIELDS);
                     readingStrategy = new AutomaticReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
                         filter, includePathColumn, result, parallelismLevel, fileSystemURI, threadPoolSize,
-                        clusteringFields, pathIterator.isRootDirectory(), condition.getComplexCondition(), this.stopRequested);
+                        clusteringFields, pathIterator.isRootDirectory(), fixedCondition.getComplexCondition(), this.stopRequested);
 
                     break;
                 case ROW_PARALLEL:
@@ -262,7 +267,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                     break;
                 case COLUMN_PARALLEL:
                     readingStrategy = new ColumnReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
-                        filter, includePathColumn, result, parallelismLevel, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
+                        filter, result, parallelismLevel, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
                         this.stopRequested);
 
                     break;
@@ -319,60 +324,36 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
         }
     }
 
-    private static boolean isSchemaField(final String fields, final CustomWrapperSchemaParameter[] schemaParameters) {
+    /*
+     * If some of the VDP conditions are related to the partitioning conditions of the dataset:
+     *  - these conditions will be given to the PathIterator for pruning the partitions.
+     *  - these conditions will be removed from the CustomWrapperCondition, as they cannot be applied to Parquet files,
+     *        only to the directory names of the partition
+     */
+    private static CustomWrapperConditionHolder fixWrapperConditionWithPartitionInfo(final PathIterator pathIterator,
+        final CustomWrapperConditionHolder condition, final ParquetSchemaHolder schemaHolder) {
 
-        final String[] fragmentsFields = fields.split(",");
-        boolean found = false;
-        for (final String field : fragmentsFields) {
-            for (int i = 0; i < schemaParameters.length && !found; i++) {
-                final CustomWrapperSchemaParameter parameter = schemaParameters[i];
-                if (field.trim().equals(parameter.getName())) {
-                    found = true;
-                }
-            }
-             if (!found) {
-                 return false;
-             }
-             found = false;
+        final List<String> partitionFields = schemaHolder.getPartitionFields();
+        final Collection<String> conditionFields = schemaHolder.getConditionFields();
+
+        if (Collections.disjoint(partitionFields, conditionFields)) {
+            return condition;
         }
 
-        return true;
+        pathIterator.addPartitionConditionsInfo(partitionFields, conditionFields, condition);
+        final CustomWrapperConditionHolder fixedCondition = ConditionUtils.removeConditions(condition, partitionFields);
+        schemaHolder.updateCondition(fixedCondition);
+
+        return fixedCondition;
+
     }
 
-    private static String toString(final CustomWrapperSchemaParameter[] schemaParameters) {
-
-        final StringBuilder sb = new StringBuilder();
-        final int lastParameter = schemaParameters.length - 1;
-        int i = 0;
-        for(final CustomWrapperSchemaParameter parameter : schemaParameters) {
-            sb.append(parameter.getName());
-            if (i != lastParameter) {
-                sb.append(", ");
-            }
-
-            i++;
-        }
-
-        return sb.toString();
-    }
-
-    private static boolean isProjected(final String field, final List<CustomWrapperFieldExpression> projectedFields) {
-
-        for (final CustomWrapperFieldExpression projectedField : projectedFields) {
-            if (field.equals(projectedField.getName())) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private Filter getFilter(final CustomWrapperConditionHolder condition, final ParquetSchemaHolder schemaHolder)
+    private static Filter getFilter(final CustomWrapperConditionHolder condition, final ParquetSchemaHolder schemaHolder)
         throws CustomWrapperException {
 
         Filter filter = null;
 
-        final FilterPredicate filterPredicate = ParquetSchemaUtils.buildFilter(condition.getComplexCondition(), schemaHolder.getFileSchema());
+        final FilterPredicate filterPredicate = ConditionUtils.buildFilter(condition.getComplexCondition(), schemaHolder.getFileSchema());
         if (filterPredicate != null) {
             filter = FilterCompat.get(filterPredicate);
         }

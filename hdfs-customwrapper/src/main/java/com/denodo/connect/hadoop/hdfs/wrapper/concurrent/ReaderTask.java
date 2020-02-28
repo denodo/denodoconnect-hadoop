@@ -48,21 +48,19 @@ public final class ReaderTask implements Callable<Void> {
     private final Path path;
     private final MessageType schema;
     private final boolean includePathColumn;
-    private final List<String> conditionFields;
     private final Filter filter;
     private final List<CustomWrapperFieldExpression> projectedFields;
     private final CustomWrapperResult result;
 
 
     public ReaderTask(final Configuration conf, final Path path, final MessageType schema, final boolean includePathColumn,
-        final List<String> conditionFields, final Filter filter, final List<CustomWrapperFieldExpression> projectedFields,
+        final Filter filter, final List<CustomWrapperFieldExpression> projectedFields,
         final CustomWrapperResult result) {
 
         this.conf = conf;
         this.path = path;
         this.schema = schema;
         this.includePathColumn = includePathColumn;
-        this.conditionFields = conditionFields;
         this.filter = filter;
         this.projectedFields = projectedFields;
         this.result = result;
@@ -77,7 +75,7 @@ public final class ReaderTask implements Callable<Void> {
         long row = 0;
 
         final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.path,
-            this.includePathColumn, this.filter, this.schema, this.conditionFields);
+            this.includePathColumn, this.filter, this.schema, this.projectedFields);
         Object parquetData = reader.read();
         while (parquetData != null ) {
 

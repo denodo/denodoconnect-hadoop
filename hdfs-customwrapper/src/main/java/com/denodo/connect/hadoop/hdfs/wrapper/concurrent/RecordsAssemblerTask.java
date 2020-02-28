@@ -47,19 +47,16 @@ public final class RecordsAssemblerTask implements Callable<Void> {
     private final List<CustomWrapperFieldExpression> projectedFields;
     private final List<ColumnGroupReadingStructure> readingStructures;
     private int[] columnOffsets;
-    private final String fullPathColumn;
     private final AtomicBoolean stopRequested;
 
 
     public RecordsAssemblerTask(final CustomWrapperResult vdpResult, final List<CustomWrapperFieldExpression> projectedFields,
-        final List<ColumnGroupReadingStructure> readingStructures, final int[] columnOffsets, final String fullPathColumn,
-        final AtomicBoolean stopRequested) {
+        final List<ColumnGroupReadingStructure> readingStructures, final int[] columnOffsets, final AtomicBoolean stopRequested) {
 
         this.vdpResult = vdpResult;
         this.projectedFields = projectedFields;
         this.readingStructures = readingStructures;
         this.columnOffsets = columnOffsets;
-        this.fullPathColumn = fullPathColumn;
         this.stopRequested = stopRequested;
 
     }
@@ -124,7 +121,7 @@ public final class RecordsAssemblerTask implements Callable<Void> {
                         numRead = numReadByReader;
                     } else if (numRead != numReadByReader) {
                         // TODO Stop all other threads!
-                        throw new RuntimeException("Some readers returned" + numRead + " while others returned " + numReadByReader);
+                        throw new RuntimeException("Some readers returned " + numRead + " while others returned " + numReadByReader);
                     }
 
                 }
@@ -142,9 +139,6 @@ public final class RecordsAssemblerTask implements Callable<Void> {
             if (numRead > 0) {
 
                 for (int i = 0; i < numRead; i++) {
-                    if (this.fullPathColumn != null) {
-                        rows[i][rowSize - 1] = this.fullPathColumn;
-                    }
                     this.vdpResult.addRow(rows[i], this.projectedFields);
                 }
 

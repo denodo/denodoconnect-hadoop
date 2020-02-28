@@ -40,8 +40,10 @@ import org.apache.parquet.schema.Types.MessageTypeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
 import com.denodo.connect.hadoop.hdfs.reader.ParquetSchemaHolder;
 import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
+import com.denodo.connect.hadoop.hdfs.util.schema.VDPSchemaUtils;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ColumnGroupReadingStructure;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ColumnsReaderTask;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManager;
@@ -55,14 +57,13 @@ public class ColumnReadingStrategy implements ReadingStrategy {
 
     public static final int READING_CHUNK_SIZE = 20000;
     private static final int READING_CHUNK_QUEUE_SIZE = 3;
+
     private final PathIterator pathIterator;
     private final Configuration conf;
     private final MessageType parquetSchema;
     private final List<CustomWrapperFieldExpression> projectedFields;
-    private final List<String> conditionFields;
-    private final List<String> conditionExcludingProjectedFields;
+    private final Collection<String> conditionFields;
     private final Filter filter;
-    private final boolean includePathColumn;
     private final CustomWrapperResult result;
     private final int parallelismLevel;
     private final ReaderManager readerManager;
@@ -71,7 +72,7 @@ public class ColumnReadingStrategy implements ReadingStrategy {
 
     public ColumnReadingStrategy(final PathIterator pathIterator, final Configuration conf,
         final ParquetSchemaHolder schemaHolder, final List<CustomWrapperFieldExpression> projectedFields,
-        final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelismLevel,
+        final Filter filter, final CustomWrapperResult result, final int parallelismLevel,
         final ReaderManager readerManager, final AtomicBoolean stopRequested) {
 
         this.pathIterator = pathIterator;
@@ -79,9 +80,7 @@ public class ColumnReadingStrategy implements ReadingStrategy {
         this.parquetSchema = schemaHolder.getFileSchema();
         this.projectedFields = projectedFields;
         this.conditionFields = schemaHolder.getConditionFields();
-        this.conditionExcludingProjectedFields = schemaHolder.getConditionExcludingProjectedFields();
         this.filter = filter;
-        this.includePathColumn = includePathColumn;
         this.result = result;
         this.parallelismLevel = parallelismLevel;
         this.readerManager = readerManager;
@@ -100,44 +99,45 @@ public class ColumnReadingStrategy implements ReadingStrategy {
         final int readersParallelism = this.parallelismLevel - 1; // the one we substract here is for the RecordsAssembleTask
         final Collection<Callable> readers = new ArrayList<>(readersParallelism);
 
-        final MessageType projectedSchema = buildProjectedSchema(this.parquetSchema, this.projectedFields);
-        final List<List<Type>> columnGroups = splitSchema(projectedSchema, readersParallelism);
-        final List<MessageType> schemasWithoutConditions = buildSchemas(projectedSchema.getName(), columnGroups);
-        addConditions(columnGroups, this.conditionFields, this.parquetSchema);
-        final List<MessageType> schemas = buildSchemas(projectedSchema.getName(), columnGroups);
+        final List<List<CustomWrapperFieldExpression>> splitProjections = split(this.projectedFields, readersParallelism);
+        final List<List<Type>> splitSchemas = getSplitSchemas(this.parquetSchema, splitProjections);
+        addConditions(splitSchemas, this.conditionFields, this.parquetSchema);
+        final List<MessageType> schemasWithConditions = buildSchemas(this.parquetSchema.getName(), splitSchemas);
 
-        final List<ColumnGroupReadingStructure> readingStructures = new ArrayList<>(schemas.size());
-        for (int i = 0; i < schemas.size(); i++) {
+        final List<ColumnGroupReadingStructure> readingStructures = new ArrayList<>(schemasWithConditions.size());
+        for (int i = 0; i < schemasWithConditions.size(); i++) {
             readingStructures.add(new ColumnGroupReadingStructure(READING_CHUNK_SIZE, READING_CHUNK_QUEUE_SIZE));
         }
 
+
         while (this.pathIterator.hasNext() && !this.stopRequested.get()) {
             final Path currentPath = this.pathIterator.next();
-            final Iterator<MessageType> schemasIterator = schemas.iterator();
+            final Iterator<MessageType> schemasWithConditionsIt = schemasWithConditions.iterator();
 
             int i = 0;
-            final int [] columnOffsets = new int[schemasWithoutConditions.size()];
+            final int [] columnOffsets = new int[schemasWithConditions.size()];
             columnOffsets[i] = 0;
-            while (schemasIterator.hasNext() && !this.stopRequested.get()) {
+            while (schemasWithConditionsIt.hasNext() && !this.stopRequested.get()) {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("Reader task: " + i);
                 }
 
-                final MessageType resultsSchema = schemasWithoutConditions.get(i);
+                final List<CustomWrapperFieldExpression> splitProjection = splitProjections.get(i);
                 if ((i + 1) < columnOffsets.length) {
-                    columnOffsets[i + 1] = columnOffsets[i] + resultsSchema.getFieldCount();
+                    columnOffsets[i + 1] = columnOffsets[i] + splitProjection.size();
                 }
 
                 final ColumnGroupReadingStructure readingStructure = readingStructures.get(i);
                 readingStructure.reset();
-                
-                readers.add(new ColumnsReaderTask(i, this.conf, currentPath, schemasIterator.next(),
-                    resultsSchema, this.conditionExcludingProjectedFields, this.filter, readingStructure, this.stopRequested));
+
+                readers.add(new ColumnsReaderTask(i, this.conf, currentPath, schemasWithConditionsIt.next(),
+                    VDPSchemaUtils.isProjected(Parameter.FULL_PATH, splitProjection), this.filter, splitProjection,
+                    readingStructure, this.stopRequested));
                 i++;
             }
 
             readers.add(new RecordsAssemblerTask(this.result, this.projectedFields, readingStructures, columnOffsets,
-                this.includePathColumn ? currentPath.toString() : null, this.stopRequested));
+                this.stopRequested));
 
             if (!this.stopRequested.get()) {
                 this.readerManager.execute(readers);
@@ -151,36 +151,40 @@ public class ColumnReadingStrategy implements ReadingStrategy {
         }
     }
 
-    private static MessageType buildProjectedSchema(final MessageType fileSchema,
-        final List<CustomWrapperFieldExpression> projectedFields) {
+    private static List<List<Type>> getSplitSchemas(final MessageType fileSchema,
+        final List<List<CustomWrapperFieldExpression>> splitProjections) {
 
-        final MessageTypeBuilder schemaBuilder = org.apache.parquet.schema.Types.buildMessage();
-        for (final CustomWrapperFieldExpression projectedField : projectedFields) {
-            if (fileSchema.containsField(projectedField.getName())) {
-                schemaBuilder.addField(fileSchema.getType(projectedField.getName()));
+        final List<List<Type>> splitSchemas = new ArrayList<>(splitProjections.size());
+        for (final List<CustomWrapperFieldExpression> splitProjection : splitProjections) {
+            final List<Type> splitSchema = new ArrayList<>(splitProjection.size());
+            for (final CustomWrapperFieldExpression projectedField : splitProjection) {
+                if (fileSchema.containsField(projectedField.getName())) {
+                    splitSchema.add(fileSchema.getType(projectedField.getName()));
+                }
             }
+
+            splitSchemas.add(splitSchema);
         }
 
-        return schemaBuilder.named(fileSchema.getName());
+        return splitSchemas;
     }
 
-    private static List<List<Type>> splitSchema(final MessageType schema, final int parallelism) {
+    private static <E> List<List<E>> split(final List<? extends E> objects, final int parallelism) {
 
-        final int columns = schema.getFieldCount();
+        final int totalObjects = objects.size();
         int totalGroups = parallelism;
-        if (columns < parallelism) {
-            totalGroups = columns;
+        if (totalObjects < parallelism) {
+            totalGroups = totalObjects;
         }
-        final int div = columns / totalGroups;
-        final int mod = columns % totalGroups;
+        final int div = totalObjects / totalGroups;
+        final int mod = totalObjects % totalGroups;
 
-        final List<List<Type>> columnGroups = new ArrayList<>(totalGroups);
-        final List<Type> fields = schema.getFields();
+        final List<List<E>> groups = new ArrayList<>(totalGroups);
         for (int i = 0; i < totalGroups; i++) {
-            columnGroups.add(new ArrayList<>(fields.subList(i * div + min(i, mod), (i + 1) * div + min(i + 1, mod))));
+            groups.add(new ArrayList<>(objects.subList(i * div + min(i, mod), (i + 1) * div + min(i + 1, mod))));
         }
 
-        return columnGroups;
+        return groups;
 
     }
 
@@ -188,7 +192,7 @@ public class ColumnReadingStrategy implements ReadingStrategy {
      * Condition fields are added to each columnGroup that is going to be read, so the proper filtering is done
      * when reading column values from a parquet file.
      */
-    private static void addConditions(final List<List<Type>> columnGroups, final List<String> conditionFields,
+    private static void addConditions(final List<List<Type>> columnGroups, final Collection<String> conditionFields,
         final MessageType parquetSchema) {
 
         for (final List<Type> columnGroup: columnGroups) {

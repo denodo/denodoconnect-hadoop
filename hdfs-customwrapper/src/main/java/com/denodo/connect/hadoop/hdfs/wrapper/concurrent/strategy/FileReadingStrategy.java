@@ -50,7 +50,6 @@ public class FileReadingStrategy implements ReadingStrategy {
     private final Configuration conf;
     private final MessageType schema;
     private final List<CustomWrapperFieldExpression> projectedFields;
-    private final List<String> conditionExcludingProjectedFields;
     private final Filter filter;
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
@@ -67,7 +66,6 @@ public class FileReadingStrategy implements ReadingStrategy {
         this.conf = conf;
         this.schema = schemaHolder.getQuerySchema();
         this.projectedFields = projectedFields;
-        this.conditionExcludingProjectedFields = schemaHolder.getConditionExcludingProjectedFields();
         this.filter = filter;
         this.includePathColumn = includePathColumn;
         this.result = result;
@@ -94,7 +92,7 @@ public class FileReadingStrategy implements ReadingStrategy {
                     LOG.trace("Reader task: " + i);
                 }
                 readers.add(new ReaderTask(this.conf, this.pathIterator.next(), this.schema, this.includePathColumn,
-                    this.conditionExcludingProjectedFields, this.filter, this.projectedFields, this.result));
+                    this.filter, this.projectedFields, this.result));
                 i++;
             }
 

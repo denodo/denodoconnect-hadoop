@@ -22,63 +22,23 @@
 package com.denodo.connect.hadoop.hdfs.util.schema;
 
 
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GT;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LE;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_LT;
-import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_NE;
-import static org.apache.parquet.filter2.predicate.FilterApi.and;
-import static org.apache.parquet.filter2.predicate.FilterApi.binaryColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.booleanColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.doubleColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.eq;
-import static org.apache.parquet.filter2.predicate.FilterApi.floatColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.gt;
-import static org.apache.parquet.filter2.predicate.FilterApi.gtEq;
-import static org.apache.parquet.filter2.predicate.FilterApi.intColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.longColumn;
-import static org.apache.parquet.filter2.predicate.FilterApi.lt;
-import static org.apache.parquet.filter2.predicate.FilterApi.ltEq;
-import static org.apache.parquet.filter2.predicate.FilterApi.notEq;
-import static org.apache.parquet.filter2.predicate.FilterApi.or;
-
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.parquet.filter2.predicate.FilterPredicate;
-import org.apache.parquet.filter2.predicate.Operators.Column;
-import org.apache.parquet.filter2.predicate.Operators.SupportsEqNotEq;
-import org.apache.parquet.filter2.predicate.Operators.SupportsLtGt;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
-import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.GroupType;
-import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Type.Repetition;
-import org.apache.thrift.Option.Some;
 
 import com.denodo.connect.hadoop.hdfs.commons.schema.SchemaElement;
 import com.denodo.connect.hadoop.hdfs.util.type.ParquetTypeUtils;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperOrCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleCondition;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperExpression;
-import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperSimpleExpression;
 
 public class ParquetSchemaUtils {
 
@@ -206,156 +166,6 @@ public class ParquetSchemaUtils {
         schemaElement.add(new SchemaElement(field.getName(), ParquetTypeUtils.toJava(field), field.asPrimitiveType().getPrimitiveTypeName(), isNullable));
     }
 
-    public static FilterPredicate buildFilter(final CustomWrapperCondition vdpCondition, final MessageType parquetSchema)
-        throws CustomWrapperException {
-
-        if (vdpCondition != null) {
-            if (vdpCondition.isAndCondition()) {
-                final CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) vdpCondition;
-                final List<FilterPredicate> filterPredicates  = new ArrayList<>();
-                for (final CustomWrapperCondition condition : andCondition.getConditions()) {
-                    if (condition.isSimpleCondition()) {
-                        final FilterPredicate filterPredicate = buildSimpleFilter(condition, parquetSchema);
-                        filterPredicates.add(filterPredicate);
-                    } else {
-                        final FilterPredicate filterPredicateComplex = buildFilter(condition, parquetSchema);
-                        filterPredicates.add(filterPredicateComplex);
-                    }
-                }
-                if (filterPredicates.size() >= 2) {
-                    FilterPredicate filterPredicate = filterPredicates.get(0);
-                    for (int i = 1; i < filterPredicates.size(); i++) {
-                        filterPredicate = and(filterPredicate,filterPredicates.get(i));
-                    }
-                    return  filterPredicate;
-                } else {
-                    throw new CustomWrapperException("Error obtaining the FilterPredicate for the and condition \"" + andCondition.toString() + '"');
-                }
-            } else if (vdpCondition.isOrCondition()) {
-                final CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) vdpCondition;
-                final List<FilterPredicate> filterPredicates  = new ArrayList<>();
-                for (final CustomWrapperCondition condition : orCondition.getConditions()) {
-                    if (condition.isSimpleCondition()) {
-                        final FilterPredicate filterPredicate = buildSimpleFilter(condition, parquetSchema);
-                        filterPredicates.add(filterPredicate);
-                    } else {
-                        final FilterPredicate filterPredicateComplex = buildFilter(condition, parquetSchema);
-                        filterPredicates.add(filterPredicateComplex);
-                    }
-                }
-                if (filterPredicates.size() >= 2) {
-                    FilterPredicate filterPredicate = filterPredicates.get(0);
-                    for (int i = 1; i < filterPredicates.size(); i++) {
-                        filterPredicate = or(filterPredicate,filterPredicates.get(i));
-                    }
-                    return  filterPredicate;
-                } else {
-                    throw new CustomWrapperException("Error obtaining the FilterPredicate for the and condition \"" + orCondition.toString() + '"');
-                }
-            } else if (vdpCondition.isSimpleCondition()) {
-                return buildSimpleFilter(vdpCondition, parquetSchema);
-            } else {
-                throw new CustomWrapperException("Condition \"" + vdpCondition.toString() + "\" not allowed");
-            }
-
-        } else {
-            return null;
-        }
-    }
-
-    private static FilterPredicate buildSimpleFilter(final CustomWrapperCondition condition, final MessageType parquetSchema) {
-
-        FilterPredicate filterPredicate = null;
-
-        final CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) condition;
-        final String operator = simpleCondition.getOperator();
-        final String fieldName = simpleCondition.getField().toString();
-        final Type fieldType = getFieldType(fieldName, parquetSchema);
-
-        for (final CustomWrapperExpression expression : simpleCondition.getRightExpression()) {
-
-            if (expression.isSimpleExpression() && fieldType.isPrimitive()) {
-                final CustomWrapperSimpleExpression simpleExpression = (CustomWrapperSimpleExpression) expression;
-                final Pair<Column, Comparable> filterValues = getFilterValues(simpleExpression, fieldName, fieldType);
-
-                switch (operator) {
-                    case OPERATOR_EQ:
-                        filterPredicate = eq(upcastEqNotEq(filterValues.getLeft()), filterValues.getRight());
-                        break;
-                    case OPERATOR_NE:
-                        filterPredicate = notEq(upcastEqNotEq(filterValues.getLeft()), filterValues.getRight());
-                        break;
-                    case OPERATOR_LT:
-                        filterPredicate = lt(upcastLtGt(filterValues.getLeft()), filterValues.getRight());
-                        break;
-                    case OPERATOR_LE:
-                        filterPredicate = ltEq(upcastLtGt(filterValues.getLeft()), filterValues.getRight());
-                        break;
-                    case OPERATOR_GT:
-                        filterPredicate = gt(upcastLtGt(filterValues.getLeft()), filterValues.getRight());
-                        break;
-                    case OPERATOR_GE:
-                        filterPredicate = gtEq(upcastLtGt(filterValues.getLeft()), filterValues.getRight());
-                        break;
-                }
-            }
-        }
-
-        return filterPredicate;
-    }
-
-    // Helper methods because intersection types in casts are not supported at java 7.
-    private static <Q extends Column & SupportsEqNotEq> Q upcastEqNotEq(final Object in) {
-        return (Q) in;
-    }
-
-    private static <Q extends Column & SupportsLtGt> Q upcastLtGt(final Object in) {
-        return (Q) in;
-    }
-    //
-
-    private static Type getFieldType(final String fieldName, final MessageType parquetSchema) {
-        return parquetSchema.getType(fieldName);
-    }
-
-    private static Pair<Column, Comparable> getFilterValues(final CustomWrapperSimpleExpression simpleExpression,
-        final String fieldName, final Type fieldType) {
-
-        Pair<Column, Comparable> pair = null;
-        final PrimitiveTypeName primitiveTypeName = fieldType.asPrimitiveType().getPrimitiveTypeName();
-        if (simpleExpression.getValue() instanceof Date) {
-            // Adds 1 day because the 1970-01-01 counter starts at 0
-            pair = Pair.of((Column) intColumn(fieldName), (Comparable) (((Date) simpleExpression.getValue()).getTime() / (24 * 60 * 60 * 1000) + 1));
-
-        } else if (simpleExpression.getValue() instanceof BigDecimal) {
-            final int scale = fieldType.asPrimitiveType().getDecimalMetadata().getScale();
-            pair = Pair.of((Column) intColumn(fieldName), (Comparable) ((BigDecimal) simpleExpression.getValue()).setScale(scale).unscaledValue());
-
-        } else if (simpleExpression.getValue() instanceof Integer || simpleExpression.getValue() instanceof Short
-                || PrimitiveTypeName.INT32.equals(primitiveTypeName)) {
-                pair = Pair.of((Column) intColumn(fieldName), (Comparable) simpleExpression.getValue());
-
-        } else if (simpleExpression.getValue() instanceof Long || PrimitiveTypeName.INT64.equals(primitiveTypeName)) {
-            pair = Pair.of((Column) longColumn(fieldName), (Comparable) simpleExpression.getValue());
-
-        } else if (simpleExpression.getValue() instanceof Double || PrimitiveTypeName.DOUBLE.equals(primitiveTypeName)) {
-            pair = Pair.of((Column) doubleColumn(fieldName), (Comparable) simpleExpression.getValue());
-
-        } else if (simpleExpression.getValue() instanceof Float || PrimitiveTypeName.FLOAT.equals(primitiveTypeName)) {
-            pair = Pair.of((Column) floatColumn(fieldName), (Comparable) simpleExpression.getValue());
-
-        } else if (simpleExpression.getValue() instanceof Boolean || PrimitiveTypeName.BOOLEAN.equals(primitiveTypeName)) {
-            pair = Pair.of((Column) booleanColumn(fieldName), (Comparable) simpleExpression.getValue());
-
-        } else {
-            pair = Pair.of((Column) binaryColumn(fieldName),
-                simpleExpression.getValue() == null ? null : (Comparable) Binary.fromString(simpleExpression.getValue().toString()));
-
-        }
-
-
-        return pair;
-    }
 
     public static List<BlockMetaData> getRowGroups(final Configuration configuration, final Path filePath) throws IOException {
         List<BlockMetaData> rowGroups  = null;

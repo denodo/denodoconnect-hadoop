@@ -23,7 +23,7 @@ package com.denodo.connect.hadoop.hdfs.wrapper;
 
 
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.AUTOMATIC_PARALLELISM;
-import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.CLUSTERING_FIELD;
+import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.CLUSTER_PARTITION_FIELDS;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.COLUMN_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.NOT_PARALLEL;
@@ -79,7 +79,7 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
             new CustomWrapperInputParameter(THREADPOOL_SIZE,
                 "Number of threads in the pool",
                 false, CustomWrapperInputParameterTypeFactory.integerType()),
-            new CustomWrapperInputParameter(CLUSTERING_FIELD,
+            new CustomWrapperInputParameter(CLUSTER_PARTITION_FIELDS,
                 "File/s sorted by this field ",
                 false, CustomWrapperInputParameterTypeFactory.stringType()),
             new CustomWrapperInputParameter(Parameter.ACCESS_KEY_ID,

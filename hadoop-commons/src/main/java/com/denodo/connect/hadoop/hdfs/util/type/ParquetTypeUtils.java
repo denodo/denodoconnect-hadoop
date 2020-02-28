@@ -27,25 +27,40 @@ import static org.apache.parquet.schema.LogicalTypeAnnotation.jsonType;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.listType;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.mapType;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
+import static org.apache.parquet.schema.LogicalTypeAnnotation.timeType;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.LogicalTypeAnnotation.DecimalLogicalTypeAnnotation;
 import org.apache.parquet.schema.LogicalTypeAnnotation.TimeLogicalTypeAnnotation;
 import org.apache.parquet.schema.LogicalTypeAnnotation.TimestampLogicalTypeAnnotation;
+import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
+import org.apache.parquet.schema.Types;
 
 public final class ParquetTypeUtils {
 
     private static final int JULIAN_EPOCH_OFFSET_DAYS = 2_440_588;
     private static final long MILLIS_IN_DAY = TimeUnit.DAYS.toMillis(1);
     private static final long NANOS_PER_MILLISECOND = TimeUnit.MILLISECONDS.toNanos(1);
+
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private static final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
 
     private ParquetTypeUtils() {
@@ -160,6 +175,120 @@ public final class ParquetTypeUtils {
 
     private static long julianDayToMillis(final int julianDay) {
         return (julianDay - JULIAN_EPOCH_OFFSET_DAYS) * MILLIS_IN_DAY;
+    }
+
+    public static PrimitiveType inferParquetType(final String name, final String value) {
+
+
+        try {
+            Integer.parseInt(value);
+            return Types.optional(INT32).named(name);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            Long.parseLong(value);
+            return Types.optional(INT64).named(name);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            Float.parseFloat(value);
+            return Types.optional(FLOAT).named(name);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            Double.parseDouble(value);
+            return Types.optional(DOUBLE).named(name);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            new BigDecimal(value);
+            return Types.optional(INT64).named(name);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            synchronized (dateFormat) {
+                dateFormat.parse(value);
+            }
+            return Types.optional(INT32).as(dateType()).named(name);
+        } catch (final ParseException e) {
+            // ignore
+        }
+
+        try {
+            synchronized (timeFormat) {
+                timeFormat.parse(value);
+            }
+            return Types.optional(INT32).as(timeType(true, LogicalTypeAnnotation.TimeUnit.MILLIS)).named(name);
+        } catch (final ParseException e) {
+            // ignore
+        }
+
+        return Types.optional(BINARY).as(stringType()).named(name);
+
+    }
+
+    public static Comparable inferParquetValue(final String value) {
+
+
+        try {
+            return Integer.parseInt(value);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            return Long.parseLong(value);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            return Float.parseFloat(value);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            return Double.parseDouble(value);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            return new BigDecimal(value);
+        } catch (final NumberFormatException e) {
+            // ignore
+        }
+
+        try {
+            synchronized (dateFormat) {
+                return dateFormat.parse(value);
+            }
+        } catch (final ParseException e) {
+            // ignore
+        }
+
+        try {
+            synchronized (timeFormat) {
+                return timeFormat.parse(value);
+            }
+
+        } catch (final ParseException e) {
+            // ignore
+        }
+
+        return value;
+
     }
 }
 

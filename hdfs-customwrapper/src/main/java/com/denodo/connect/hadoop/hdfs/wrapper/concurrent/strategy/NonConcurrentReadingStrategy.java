@@ -46,7 +46,6 @@ public class NonConcurrentReadingStrategy implements ReadingStrategy {
     private final Configuration conf;
     private final MessageType schema;
     private final List<CustomWrapperFieldExpression> projectedFields;
-    private final List<String> conditionExcludingProjectedFields;
     private final Filter filter;
     private final boolean includePathColumn;
     private final CustomWrapperResult result;
@@ -61,7 +60,6 @@ public class NonConcurrentReadingStrategy implements ReadingStrategy {
         this.conf = conf;
         this.schema = schemaHolder.getQuerySchema();
         this.projectedFields = projectedFields;
-        this.conditionExcludingProjectedFields = schemaHolder.getConditionExcludingProjectedFields();
         this.filter = filter;
         this.includePathColumn = includePathColumn;
         this.result = result;
@@ -76,7 +74,7 @@ public class NonConcurrentReadingStrategy implements ReadingStrategy {
 
         while (this.pathIterator.hasNext()) {
             final HDFSParquetFileReader reader = new HDFSParquetFileReader(this.conf, this.pathIterator.next(),
-                this.includePathColumn, this.filter, this.schema, this.conditionExcludingProjectedFields);
+                this.includePathColumn, this.filter, this.schema, this.projectedFields);
 
             Object parquetData = reader.read();
             while (parquetData != null && !this.stopRequested.get()) {
