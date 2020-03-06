@@ -11,12 +11,13 @@
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20200213</version>
+    <version>20200309</version>
 
     <properties>
         <aws.sdk.version>1.11.589</aws.sdk.version>
         <avro.version>1.8.2</avro.version>
         <commons-codec.version>1.10</commons-codec.version>
+        <commons-collections.version>3.2.2</commons-collections.version>
         <commons-io.version>2.6</commons-io.version>
         <commons-lang.version>3.8.1</commons-lang.version>
         <gcs.version>hadoop3-1.9.17</gcs.version>
@@ -594,6 +595,12 @@
             <artifactId>denodo-hadoop-commons-7.0</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${commons-collections.version}</version>
+      </dependency>
         
       <dependency>
         <groupId>commons-io</groupId>
