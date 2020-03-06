@@ -1,5 +1,5 @@
-CURRENT
--------
+20200309
+--------
 - #47337 - Support for Hive-style partitioning of Parquet datasets
 
 20200213
