@@ -94,11 +94,13 @@ public class ParquetSchemaHolder {
 
         final List<String> partitionFields = new ArrayList<>();
 
-        final List<Type> partitionTypes = this.partitionSchema.getFields();
-        if (!partitionTypes.isEmpty() && !this.simpleConditions.isEmpty()) {
-            for (final Type partitionType : partitionTypes) {
-                if (this.simpleConditions.contains(partitionType.getName())) {
-                    partitionFields.add(partitionType.getName());
+        if (this.partitionSchema != null) {
+            final List<Type> partitionTypes = this.partitionSchema.getFields();
+            if (!partitionTypes.isEmpty() && !this.simpleConditions.isEmpty()) {
+                for (final Type partitionType : partitionTypes) {
+                    if (this.simpleConditions.contains(partitionType.getName())) {
+                        partitionFields.add(partitionType.getName());
+                    }
                 }
             }
         }

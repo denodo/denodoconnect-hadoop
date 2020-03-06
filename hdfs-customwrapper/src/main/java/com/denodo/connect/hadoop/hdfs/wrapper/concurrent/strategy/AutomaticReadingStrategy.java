@@ -22,6 +22,7 @@
 package com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,15 +33,12 @@ import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
 import com.denodo.connect.hadoop.hdfs.reader.ParquetSchemaHolder;
+import com.denodo.connect.hadoop.hdfs.util.io.ConditionUtils;
+import com.denodo.connect.hadoop.hdfs.util.io.PathIterator;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.ReaderManagerFactory;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperResult;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperAndCondition;
 import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperNotCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperOrCondition;
-import com.denodo.vdb.engine.customwrapper.condition.CustomWrapperSimpleCondition;
 import com.denodo.vdb.engine.customwrapper.expression.CustomWrapperFieldExpression;
 
 public class AutomaticReadingStrategy implements ReadingStrategy {
@@ -67,7 +65,6 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
     private final int numCols;
     private final List<BlockMetaData> rowGroups;
     private final int numRowGroups;
-    private final boolean rootIsDir;
     private final CustomWrapperCondition wrapperCondition;
 
     private final AtomicBoolean stopRequested;
@@ -75,7 +72,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
     public AutomaticReadingStrategy(final PathIterator pathIterator, final Configuration conf,
         final ParquetSchemaHolder schemaHolder, final List<CustomWrapperFieldExpression> projectedFields,
         final Filter filter, final boolean includePathColumn, final CustomWrapperResult result, final int parallelism,
-        final String fileSystemURI, final int threadPoolSize, final String clusteringFields, final boolean rootIsDir,
+        final String fileSystemURI, final int threadPoolSize, final String clusteringFields,
         final CustomWrapperCondition wrapperCondition, final AtomicBoolean stopRequested) {
 
         this.pathIterator = pathIterator;
@@ -93,7 +90,6 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
         this.numCols = schemaHolder.getQuerySchema().getColumns().size();
         this.rowGroups = schemaHolder.getRowGroups();
         this.numRowGroups = this.rowGroups.size();
-        this.rootIsDir = rootIsDir;
         this.wrapperCondition = wrapperCondition;
 
         this.stopRequested = stopRequested;
@@ -108,7 +104,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
 
     }
 
-    private ReadingStrategy selectReadingStrategy() {
+    private ReadingStrategy selectReadingStrategy() throws IOException {
 
         ReadingStrategy readingStrategy = null;
 
@@ -117,7 +113,7 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
                 this.projectedFields, this.filter, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
-        } else if (this.rootIsDir) { // rootIsDir: naive approach to check if num_files > 1, because 'file name pattern' would affect to the total count
+        } else if (parallelismLevelCouldExploitNumFiles()) {
             readingStrategy = new FileReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
@@ -145,6 +141,10 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
 
     }
 
+    private boolean parallelismLevelCouldExploitNumFiles() throws IOException {
+        return this.pathIterator.getFileCount() > this.parallelism / 2;
+    }
+
     private static boolean findAnyGt(final List<BlockMetaData> rowGroups, final int rowgroupRowsThreshold) {
 
         for (final BlockMetaData blockMetaData : rowGroups) {
@@ -156,11 +156,12 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
         return false;
     }
 
-    private static boolean areRequiredCondition(final String fields, final CustomWrapperCondition wrapperCondition) {
+    private static boolean areRequiredCondition(final String fields, final CustomWrapperCondition condition) {
 
-        final String[] fragmentFields = fields.split(",");
-        for (final String field : fragmentFields) {
-            if (isRequiredCondition(field.trim(), wrapperCondition)) {
+        final Collection<String> conditionFields = ConditionUtils.getSimpleConditionFields(condition);
+        final String[] clusteringFields = fields.split(",");
+        for (final String clusteringField : clusteringFields) {
+            if (conditionFields.contains(clusteringField.trim())) {
                 return true;
             }
         }
@@ -168,46 +169,4 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
         return false;
     }
 
-    private static boolean isRequiredCondition(final String field, final CustomWrapperCondition wrapperCondition) {
-
-        final boolean required = false;
-        if (wrapperCondition != null) {
-
-            if (wrapperCondition.isSimpleCondition()) {
-                final CustomWrapperSimpleCondition simpleCondition = (CustomWrapperSimpleCondition) wrapperCondition;
-
-                return field.equals(simpleCondition.getField().toString());
-
-            }  else if (wrapperCondition.isNotCondition()) {
-                final CustomWrapperNotCondition notCondition = (CustomWrapperNotCondition) wrapperCondition;
-                final CustomWrapperCondition condition = notCondition.getCondition();
-
-                return isRequiredCondition(field, condition);
-
-            } else if (wrapperCondition.isAndCondition()) {
-                final CustomWrapperAndCondition andCondition = (CustomWrapperAndCondition) wrapperCondition;
-                final List<CustomWrapperCondition> conditions = andCondition.getConditions();
-                for (final CustomWrapperCondition condition : conditions) {
-                    if (isRequiredCondition(field, condition)) {
-                        return true;
-                    }
-
-                }
-
-            } else if (wrapperCondition.isOrCondition()) {
-                final CustomWrapperOrCondition orCondition = (CustomWrapperOrCondition) wrapperCondition;
-                final List<CustomWrapperCondition> conditions = orCondition.getConditions();
-                for (final CustomWrapperCondition condition : conditions) {
-                    if (! isRequiredCondition(field, condition)) {
-                        return false;
-                    }
-                }
-
-            }
-
-        }
-
-        return required;
-
-    }
 }

@@ -260,7 +260,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                     final String clusteringFields = inputValues.get(CLUSTER_PARTITION_FIELDS);
                     readingStrategy = new AutomaticReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
                         filter, includePathColumn, result, parallelismLevel, fileSystemURI, threadPoolSize,
-                        clusteringFields, pathIterator.isRootDirectory(), conditionHolder.getComplexCondition(), this.stopRequested);
+                        clusteringFields, fixedCondition.getComplexCondition(), this.stopRequested);
 
                     break;
                 case ROW_PARALLEL:

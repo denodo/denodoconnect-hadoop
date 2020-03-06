@@ -158,8 +158,8 @@ public class PathIterator implements Iterator<Path> {
         this.cursor = null;
     }
 
-    public boolean isRootDirectory() throws IOException {
-        return this.fileSystem.getFileStatus(this.path).isDirectory();
+    public long getFileCount() throws IOException {
+        return this.fileSystem.listStatus(this.path).length;
     }
 
     public void addPartitionConditionsInfo(final List<String> partitionFields, final Collection<String> conditionFields,
