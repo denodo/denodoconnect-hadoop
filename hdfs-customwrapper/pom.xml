@@ -7,11 +7,11 @@
     <!-- *************************** -->
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
-    <artifactId>denodo-hdfs-customwrapper-7.0</artifactId>
+    <artifactId>denodo-hdfs-customwrapper-8.0</artifactId>
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20200309</version>
+    <version>20200313</version>
 
     <properties>
         <aws.sdk.version>1.11.589</aws.sdk.version>
@@ -28,7 +28,7 @@
         <log4j2.version>2.8.2</log4j2.version>
         <parquet.version>1.11.0</parquet.version>
         <slf4j.version>1.7.10</slf4j.version>     
-        <vdp.version>7.0.5</vdp.version>
+        <vdp.version>8.0.0-Beta-20200313</vdp.version>
         <java.version>1.8</java.version>
         <errorprone.javac.version>9+181-r4173-1</errorprone.javac.version>
         <errorprone.core.version>2.3.2</errorprone.core.version>
@@ -226,7 +226,7 @@
                       <goal>copy-dependencies</goal>
                     </goals>
                     <configuration>
-                      <includeArtifactIds>denodo-hadoop-commons-7.0</includeArtifactIds>
+                      <includeArtifactIds>denodo-hadoop-commons-8.0</includeArtifactIds>
                       <classifier>sources</classifier>
                       <outputDirectory>${project.build.directory}</outputDirectory>
                     </configuration>
@@ -592,7 +592,7 @@
       
         <dependency>
             <groupId>com.denodo.connect.hadoop</groupId>
-            <artifactId>denodo-hadoop-commons-7.0</artifactId>
+            <artifactId>denodo-hadoop-commons-8.0</artifactId>
             <version>${project.version}</version>
         </dependency>
 

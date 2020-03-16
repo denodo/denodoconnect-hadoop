@@ -7,11 +7,11 @@
     <!-- *************************** -->
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.denodo.connect.hadoop</groupId>
-    <artifactId>denodo-hadoop-commons-7.0</artifactId>
+    <artifactId>denodo-hadoop-commons-8.0</artifactId>
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20200309</version>
+    <version>20200313</version>
 
     <properties>
         <avro.version>1.8.2</avro.version>
@@ -23,7 +23,7 @@
         <junit.version>4.13</junit.version>
         <log4j2.version>2.8.2</log4j2.version>
         <slf4j.version>1.7.10</slf4j.version>   
-        <vdp.version>7.0.5</vdp.version>
+        <vdp.version>8.0.0-Beta-20200313</vdp.version>
         <parquet.version>1.11.0</parquet.version>
         <java.version>1.8</java.version>
         <errorprone.javac.version>9+181-r4173-1</errorprone.javac.version>
