@@ -32,7 +32,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
-import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Type.Repetition;
@@ -169,7 +168,7 @@ public class ParquetSchemaUtils {
 
     public static List<BlockMetaData> getRowGroups(final Configuration configuration, final Path filePath) throws IOException {
         List<BlockMetaData> rowGroups  = null;
-        try (final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath, configuration))) {
+        try (final ParquetFileReader parquetFileReader = ParquetFileReader.open(configuration, filePath)) {
 
             rowGroups = parquetFileReader.getRowGroups();
         }

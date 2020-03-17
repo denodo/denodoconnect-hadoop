@@ -47,8 +47,6 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
 
 
     private static final int COLS_THRESHOLD = 3;
-    private static final int ROWGROUPS_THRESHOLD = 10;
-    private static final int ROWGROUP_ROWS_THRESHOLD = 1000;
 
     private final PathIterator pathIterator;
     private final Configuration conf;
@@ -118,11 +116,6 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
                 this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
                 ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
 
-        } else if (this.numRowGroups > 1 && (findAnyGt(this.rowGroups, ROWGROUP_ROWS_THRESHOLD) || this.numRowGroups > ROWGROUPS_THRESHOLD)) {
-            readingStrategy = new RowGroupReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
-                this.projectedFields, this.filter, this.includePathColumn, this.result, this.parallelism,
-                ReaderManagerFactory.get(this.fileSystemURI, this.threadPoolSize), this.stopRequested);
-
         } else if (this.numCols > COLS_THRESHOLD) {
             readingStrategy = new ColumnReadingStrategy(this.pathIterator, this.conf, this.parquetSchemaHolder,
                 this.projectedFields, this.filter, this.result, this.parallelism,
@@ -145,16 +138,6 @@ public class AutomaticReadingStrategy implements ReadingStrategy {
         return this.pathIterator.getFileCount() > this.parallelism / 2;
     }
 
-    private static boolean findAnyGt(final List<BlockMetaData> rowGroups, final int rowgroupRowsThreshold) {
-
-        for (final BlockMetaData blockMetaData : rowGroups) {
-            if (blockMetaData.getRowCount() > rowgroupRowsThreshold) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     private static boolean areRequiredCondition(final String fields, final CustomWrapperCondition condition) {
 

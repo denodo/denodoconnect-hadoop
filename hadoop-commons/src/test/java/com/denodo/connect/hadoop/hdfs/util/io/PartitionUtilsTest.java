@@ -23,7 +23,6 @@ package com.denodo.connect.hadoop.hdfs.util.io;
 
 import static com.denodo.connect.hadoop.hdfs.util.io.PartitionUtils.getPartitionFields;
 import static com.denodo.connect.hadoop.hdfs.util.io.PartitionUtils.getPartitionValues;
-import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 
@@ -32,6 +31,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.schema.OriginalType;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Types;
 import org.junit.Assert;
@@ -45,7 +45,7 @@ public class PartitionUtilsTest {
         final Path path = new Path("s3a://denodo/elb_partition/name=elb_demo_002/response_code=404/elb_logs_002__25630654204875.dat");
 
         final List<Type> expectedTypes = new ArrayList<>(2);
-        expectedTypes.add(Types.optional(BINARY).as(stringType()).named("name"));
+        expectedTypes.add(Types.optional(BINARY).as(OriginalType.UTF8).named("name"));
         expectedTypes.add(Types.optional(INT32).named("response_code"));
 
         Assert.assertEquals(expectedTypes, getPartitionFields(path));

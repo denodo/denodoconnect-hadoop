@@ -11,7 +11,7 @@
     <name>${project.artifactId}</name>
     <description>${project.artifactId}</description>
     <packaging>jar</packaging>
-    <version>20200309</version>
+    <version>20200317</version>
 
     <properties>
         <aws.sdk.version>1.11.589</aws.sdk.version>
@@ -20,7 +20,7 @@
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-io.version>2.6</commons-io.version>
         <commons-lang.version>3.8.1</commons-lang.version>
-        <hadoop.version>3.2.1</hadoop.version>
+        <hadoop.version>2.10.0</hadoop.version>   <!-- hadoop 2.x.x have to be used, as they are compatible with java 7 -->
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version>
         <httpclient.version>4.5.2</httpclient.version>  <!-- minimin required by aws-sdk  -->
         <httpcore.version>4.4.4</httpcore.version>  
@@ -30,7 +30,7 @@
         <jetty.version>6.1.26</jetty.version>    
         <slf4j.version>1.7.10</slf4j.version> 
         <vdp.version>6.0.0</vdp.version>
-        <parquet.version>1.11.0</parquet.version>
+      <parquet.version>1.9.0</parquet.version> <!-- This is the last version compatible with java 7 -->
         <java.version>1.8</java.version>
         <errorprone.javac.version>9+181-r4173-1</errorprone.javac.version>
         <errorprone.core.version>2.3.2</errorprone.core.version>

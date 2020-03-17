@@ -25,7 +25,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InvalidRecordException;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
@@ -109,7 +108,7 @@ public class ParquetSchemaHolder {
 
     private void readMetadata(final Configuration configuration, final Path filePath) throws IOException {
 
-        try (final ParquetFileReader parquetFileReader = ParquetFileReader.open(HadoopInputFile.fromPath(filePath, configuration))) {
+        try (final ParquetFileReader parquetFileReader = ParquetFileReader.open(configuration, filePath)) {
 
             this.footer = parquetFileReader.getFooter();
             this.rowGroups = parquetFileReader.getRowGroups();

@@ -29,7 +29,6 @@ import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.FILE_PARAL
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.NOT_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_LEVEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_TYPE;
-import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.ROW_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.THREADPOOL_SIZE;
 
 import java.io.InputStream;
@@ -72,7 +71,7 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
             new CustomWrapperInputParameter(PARALLELISM_TYPE,
                 "Type of parallelism, if any ",
                 false, CustomWrapperInputParameterTypeFactory.enumStringType(
-                new String[] {NOT_PARALLEL, AUTOMATIC_PARALLELISM, FILE_PARALLEL, ROW_PARALLEL, COLUMN_PARALLEL})),
+                new String[] {NOT_PARALLEL, AUTOMATIC_PARALLELISM, FILE_PARALLEL, COLUMN_PARALLEL})),
             new CustomWrapperInputParameter(PARALLELISM_LEVEL,
                 "Level of parallelism ",
                 false, CustomWrapperInputParameterTypeFactory.integerType()),

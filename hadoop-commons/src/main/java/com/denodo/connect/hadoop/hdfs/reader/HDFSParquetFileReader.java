@@ -21,16 +21,11 @@
  */
 package com.denodo.connect.hadoop.hdfs.reader;
 
-import static org.apache.parquet.schema.LogicalTypeAnnotation.bsonType;
-import static org.apache.parquet.schema.LogicalTypeAnnotation.dateType;
-import static org.apache.parquet.schema.LogicalTypeAnnotation.jsonType;
-import static org.apache.parquet.schema.LogicalTypeAnnotation.stringType;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -45,11 +40,8 @@ import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.api.ReadSupport;
 import org.apache.parquet.hadoop.example.GroupReadSupport;
 import org.apache.parquet.io.api.Binary;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
-import org.apache.parquet.schema.LogicalTypeAnnotation.DecimalLogicalTypeAnnotation;
-import org.apache.parquet.schema.LogicalTypeAnnotation.TimeLogicalTypeAnnotation;
-import org.apache.parquet.schema.LogicalTypeAnnotation.TimestampLogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.OriginalType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Type.Repetition;
@@ -71,27 +63,14 @@ public class HDFSParquetFileReader implements HDFSFileReader {
     private List<CustomWrapperFieldExpression> projectedFields;
     private String pathValue;
 
-    private Long startingPos;
-    private Long endingPos;
-
     private Map<String, Object> additionalValuesByName;
 
     public HDFSParquetFileReader(final Configuration conf, final Path path,  final boolean includePathValue,
         final FilterCompat.Filter filter, final MessageType querySchema, final List<CustomWrapperFieldExpression> projectedFields)
         throws IOException {
 
-        this(conf, path, includePathValue, filter, querySchema, projectedFields, null, null);
-    }
-
-    public HDFSParquetFileReader(final Configuration conf, final Path path,  final boolean includePathValue,
-        final FilterCompat.Filter filter, final MessageType querySchema, final List<CustomWrapperFieldExpression> projectedFields,
-        final Long startingPos, final Long endingPos) throws IOException {
-
         this.pathValue = path.toString();
         this.projectedFields = projectedFields;
-        this.startingPos = startingPos;
-        this.endingPos = endingPos;
-
         this.additionalValuesByName = getAdditionalValuesByName(path, includePathValue, projectedFields, querySchema);
 
         openReader(path, conf, filter, querySchema);
@@ -144,8 +123,6 @@ public class HDFSParquetFileReader implements HDFSFileReader {
 
             if (filter != null) {
                 dataFileBuilder.withFilter(filter);
-            } if (this.startingPos != null && this.endingPos != null) {
-                dataFileBuilder.withFileRange(this.startingPos, this.endingPos);
             }
 
             this.dataFileReader = dataFileBuilder.build();
@@ -272,9 +249,9 @@ public class HDFSParquetFileReader implements HDFSFileReader {
             try {
 
                 if (PrimitiveTypeName.BINARY.equals(primitiveTypeName)) {
-                    if (stringType().equals(field.getLogicalTypeAnnotation())
-                        || jsonType().equals(field.getLogicalTypeAnnotation())
-                        || bsonType().equals(field.getLogicalTypeAnnotation())) {
+                    if (OriginalType.UTF8.equals(field.getOriginalType())
+                        || OriginalType.JSON.equals(field.getOriginalType())
+                        || OriginalType.BSON.equals(field.getOriginalType())) {
                         return datum.getString(field.getName(), 0);
 
                     } else {
@@ -291,43 +268,32 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                     return datum.getFloat(field.getName(), 0);
                     
                 } else if (PrimitiveTypeName.INT32.equals(primitiveTypeName)) {
-                    if (field.getLogicalTypeAnnotation() instanceof DecimalLogicalTypeAnnotation) {
-                        final int scale = ((DecimalLogicalTypeAnnotation) field.asPrimitiveType().getLogicalTypeAnnotation()).getScale();
+                    if (OriginalType.DECIMAL.equals(field.getOriginalType())) {
+                        final int scale = field.asPrimitiveType().getDecimalMetadata().getScale();
                         return new BigDecimal(BigInteger.valueOf(datum.getInteger(field.getName(), 0)), scale);
 
-                    } else if (dateType().equals(field.getLogicalTypeAnnotation())) {
+                    } else if (OriginalType.DATE.equals(field.getOriginalType())) {
                         //   DATE fields really holds the number of days since 1970-01-01
                         final int days = datum.getInteger(field.getName(), 0);
                         // We need to add one day because the index start in 0.
                         final long daysMillis = TimeUnit.DAYS.toMillis(days + 1);
                         return new Date(daysMillis);
 
-                    } else if (field.getLogicalTypeAnnotation() instanceof TimeLogicalTypeAnnotation) {
-                        final long millisAfterMidnight = datum.getInteger(field.getName(), 0);
+                    } else if (OriginalType.TIME_MILLIS.equals(field.getOriginalType())) {
+                        final long millisAfterMidnight = datum.getLong(field.getName(), 0);
                         return new Time(millisAfterMidnight);
-
                     } else {
                         return datum.getInteger(field.getName(), 0);
                     }
                     
                 } else if (PrimitiveTypeName.INT64.equals(primitiveTypeName)) {
-                    if (field.getLogicalTypeAnnotation() instanceof DecimalLogicalTypeAnnotation) {
-                        final int scale = ((DecimalLogicalTypeAnnotation) field.asPrimitiveType().getLogicalTypeAnnotation()).getScale();
-                        return new BigDecimal(BigInteger.valueOf(datum.getLong(field.getName(), 0)), scale);
+                    if (OriginalType.DECIMAL.equals(field.getOriginalType())) {
+                        final int scale = field.asPrimitiveType().getDecimalMetadata().getScale();
+                        return new BigDecimal(BigInteger.valueOf(datum.getInteger(field.getName(), 0)), scale);
 
-                    } else if (field.getLogicalTypeAnnotation() instanceof TimeLogicalTypeAnnotation) {
+                    } else if (OriginalType.TIME_MICROS.equals(field.getOriginalType())) {
                         final long millisAfterMidnight = TimeUnit.MICROSECONDS.toMillis(datum.getLong(field.getName(), 0));
                         return new Time(millisAfterMidnight);
-
-                    } else if (field.getLogicalTypeAnnotation() instanceof TimestampLogicalTypeAnnotation) {
-                        final LogicalTypeAnnotation.TimeUnit unit =
-                            ((TimestampLogicalTypeAnnotation) field.asPrimitiveType().getLogicalTypeAnnotation()).getUnit();
-                        long milliseconds = datum.getLong(field.getName(), 0);
-                        if (unit.equals(LogicalTypeAnnotation.TimeUnit.MICROS)) {
-                            milliseconds = TimeUnit.MICROSECONDS.toMillis(milliseconds);
-                        }
-
-                        return new Timestamp(milliseconds);
 
                     } else {
                         return datum.getLong(field.getName(), 0);
@@ -339,8 +305,8 @@ public class HDFSParquetFileReader implements HDFSFileReader {
                     return new Date(timestampMillis);
                     
                 } else if (primitiveTypeName.equals(PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)) {
-                    if (field.getLogicalTypeAnnotation() instanceof DecimalLogicalTypeAnnotation) {
-                        final int scale = ((DecimalLogicalTypeAnnotation) field.asPrimitiveType().getLogicalTypeAnnotation()).getScale();
+                    if (OriginalType.DECIMAL.equals(field.getOriginalType())) {
+                        final int scale = field.asPrimitiveType().getDecimalMetadata().getScale();
                         return new BigDecimal(new BigInteger(datum.getBinary(field.getName(), 0).getBytes()), scale);
                     }
 

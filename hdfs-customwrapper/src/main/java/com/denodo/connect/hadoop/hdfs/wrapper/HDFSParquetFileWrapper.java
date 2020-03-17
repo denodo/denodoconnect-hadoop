@@ -33,7 +33,6 @@ import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.NOT_PARALL
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_LEVEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARALLELISM_TYPE;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.PARQUET_FILE_PATH;
-import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.ROW_PARALLEL;
 import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.THREADPOOL_SIZE;
 import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_EQ;
 import static com.denodo.vdb.engine.customwrapper.condition.CustomWrapperCondition.OPERATOR_GE;
@@ -73,7 +72,6 @@ import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy.ColumnReadingS
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy.FileReadingStrategy;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy.NonConcurrentReadingStrategy;
 import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy.ReadingStrategy;
-import com.denodo.connect.hadoop.hdfs.wrapper.concurrent.strategy.RowGroupReadingStrategy;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperConfiguration;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
 import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
@@ -116,7 +114,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             new CustomWrapperInputParameter(PARALLELISM_TYPE,
                 "Type of parallelism, if any ",
                 false, CustomWrapperInputParameterTypeFactory.enumStringType(
-                    new String[] {NOT_PARALLEL, AUTOMATIC_PARALLELISM, FILE_PARALLEL, ROW_PARALLEL, COLUMN_PARALLEL})),
+                    new String[] {NOT_PARALLEL, AUTOMATIC_PARALLELISM, FILE_PARALLEL, COLUMN_PARALLEL})),
             new CustomWrapperInputParameter(PARALLELISM_LEVEL,
                 "Level of parallelism ",
                 false, CustomWrapperInputParameterTypeFactory.integerType()),
@@ -251,12 +249,6 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
                     readingStrategy = new AutomaticReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
                         filter, includePathColumn, result, parallelismLevel, fileSystemURI, threadPoolSize,
                         clusteringFields, fixedCondition.getComplexCondition(), this.stopRequested);
-
-                    break;
-                case ROW_PARALLEL:
-                    readingStrategy = new RowGroupReadingStrategy(pathIterator, conf, schemaHolder, projectedFields,
-                        filter, includePathColumn, result, parallelismLevel, ReaderManagerFactory.get(fileSystemURI, threadPoolSize),
-                        this.stopRequested);
 
                     break;
                 case FILE_PARALLEL:
