@@ -68,7 +68,11 @@ public class HDFSDelimitedFileReader extends AbstractHDFSFileReader {
         if (codec != null) {
             is = codec.createInputStream(is); // for reading compressed files
         }
-        this.reader = new CSVReader(new InputStreamReader(new BOMInputStream(is)), this.csvConfig);
+        if(this.csvConfig.isFileEncoding()){
+            this.reader = new CSVReader(new InputStreamReader(new BOMInputStream(is),this.csvConfig.getFileEncoding()), this.csvConfig);
+        } else {
+            this.reader = new CSVReader(new InputStreamReader(new BOMInputStream(is)), this.csvConfig);
+        }
     }
     
     @Override

@@ -76,7 +76,9 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
             new CustomWrapperInputParameter(Parameter.HEADER, "The file has header ",
                 true, true, CustomWrapperInputParameterTypeFactory.booleanType(true)),
             new CustomWrapperInputParameter(Parameter.IGNORE_MATCHING_ERRORS, "Ignore the lines of this file that do not have the expected number of columns ",
-                false, true, CustomWrapperInputParameterTypeFactory.booleanType(true))
+                false, true, CustomWrapperInputParameterTypeFactory.booleanType(true)),
+            new CustomWrapperInputParameter(Parameter.FILE_ENCODING, "The file encoding, system encoding is used by default.",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType())
     };
 
 
@@ -187,7 +189,8 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
                 inputValues.get(Parameter.ESCAPE),
                 Boolean.parseBoolean(inputValues.get(Parameter.IGNORE_SPACES)),
                 Boolean.parseBoolean(inputValues.get(Parameter.HEADER)),
-                inputValues.get(Parameter.NULL_VALUE));
+                inputValues.get(Parameter.NULL_VALUE),
+                inputValues.get(Parameter.FILE_ENCODING));
     }
 
     @Override
