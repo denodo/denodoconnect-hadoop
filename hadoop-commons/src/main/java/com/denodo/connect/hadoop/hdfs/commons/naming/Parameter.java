@@ -60,6 +60,7 @@ public final class Parameter {
     public static final String IGNORE_MATCHING_ERRORS = "Ignore matching errors";
     public static final String FILE_PATH = "Path";
     public static final String FILE_NAME_PATTERN = "File name pattern";
+    public static final String FILE_ENCODING = "File encoding";
 
     public static final String DELETE_AFTER_READING = "Delete after reading";
 
