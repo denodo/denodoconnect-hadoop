@@ -95,7 +95,9 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
             new CustomWrapperInputParameter(Parameter.HEADER, "The file has header ",
                 true, true, CustomWrapperInputParameterTypeFactory.booleanType(true)),
             new CustomWrapperInputParameter(Parameter.DELETE_AFTER_READING, "Delete the file after reading it? ",
-                true, true, CustomWrapperInputParameterTypeFactory.booleanType(false))
+                true, true, CustomWrapperInputParameterTypeFactory.booleanType(false)),
+            new CustomWrapperInputParameter(Parameter.FILE_ENCODING, "The file encoding, system encoding is used by default.",
+                false, true, CustomWrapperInputParameterTypeFactory.stringType())
         };
     }
 
@@ -169,7 +171,11 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
 
             final URI openURI = URIUtils.getWebHDFSOpenURI(host, port, user, filePath);
             final InputStream is = HTTPUtils.requestGet(openURI, httpClient);
-            br = new BufferedReader(new InputStreamReader(is));
+            if(csvConfig.isFileEncoding()){
+                br = new BufferedReader(new InputStreamReader(is, csvConfig.getFileEncoding()));
+            } else {
+                br = new BufferedReader(new InputStreamReader(is));
+            }
             csvReader = new CSVReader(br, csvConfig);
             if (header && csvReader.hasNext()) {
                 csvReader.next(); // skip header
@@ -219,7 +225,11 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
 
             final URI openURI = URIUtils.getWebHDFSOpenURI(host, port, user, filePath);
             final InputStream is = HTTPUtils.requestGet(openURI, httpClient);
-            br = new BufferedReader(new InputStreamReader(is));
+            if(csvConfig.isFileEncoding()){
+                br = new BufferedReader(new InputStreamReader(is, csvConfig.getFileEncoding()));
+            } else {
+                br = new BufferedReader(new InputStreamReader(is));
+            }
             csvReader = new CSVReader(br, csvConfig);
 
             if (csvReader.hasNext()) {
@@ -249,7 +259,8 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
                 inputValues.get(Parameter.ESCAPE),
                 Boolean.parseBoolean(inputValues.get(Parameter.IGNORE_SPACES)),
                 Boolean.parseBoolean(inputValues.get(Parameter.HEADER)),
-                inputValues.get(Parameter.NULL_VALUE));
+                inputValues.get(Parameter.NULL_VALUE),
+                inputValues.get(Parameter.FILE_ENCODING));
     }
     
     private static List<String> buildSyntheticHeader(final int size) {

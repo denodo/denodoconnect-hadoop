@@ -34,11 +34,12 @@ public class CSVConfig {
     private final boolean ignoreSpaces;
     private final boolean header;
     private final String nullValue;
+    private final String fileEncoding;
     
 
 
     public CSVConfig(final String separator, final String quote, final String commentMarker, final String escape, final boolean ignoreSpaces,
-            final boolean header, final String nullValue) {
+            final boolean header, final String nullValue, final String fileEncoding) {
 
         this.separator = handleInvisibleChars(separator);
         this.quote = CharUtils.toCharacterObject(quote);
@@ -47,6 +48,7 @@ public class CSVConfig {
         this.ignoreSpaces = ignoreSpaces;
         this.header = header;
         this.nullValue = nullValue;
+        this.fileEncoding = fileEncoding;
     }
 
     public boolean isSeparator() {
@@ -91,6 +93,14 @@ public class CSVConfig {
     
     public String getNullValue() {
         return this.nullValue;
+    }
+
+    public boolean isFileEncoding() {
+        return this.fileEncoding != null;
+    }
+
+    public String getFileEncoding() {
+        return this.fileEncoding;
     }
     
     private Character handleInvisibleChars(final String sep) {
