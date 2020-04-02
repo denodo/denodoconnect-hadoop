@@ -242,7 +242,7 @@ public abstract class AbstractSecureHadoopWrapper extends AbstractCustomWrapper 
 
     protected Configuration getHadoopConfiguration(final Map<String, String> inputValues) throws CustomWrapperException {
 
-        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
+        final String fileSystemURI = StringUtils.trim(inputValues.get(Parameter.FILESYSTEM_URI));
 
         final CustomWrapperInputParameterValue coreSitePathValue = getInputParameterValue(Parameter.CORE_SITE_PATH);
         InputStream coreSiteIs = null;

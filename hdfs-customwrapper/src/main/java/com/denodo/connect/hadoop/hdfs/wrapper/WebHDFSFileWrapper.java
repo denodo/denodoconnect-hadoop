@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,7 +159,7 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
         final String host = inputValues.get(Parameter.HOST_IP);
         final int port = Integer.parseInt(inputValues.get(Parameter.HOST_PORT));
         final String user = inputValues.get(Parameter.USER);
-        String filePath = inputValues.get(Parameter.FILE_PATH);
+        String filePath = StringUtils.trim(inputValues.get(Parameter.FILE_PATH));
         filePath = normalizePath(filePath);
         final CSVConfig csvConfig = getConfig(inputValues);
         final boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
@@ -214,7 +215,7 @@ public class WebHDFSFileWrapper extends AbstractCustomWrapper {
         final String host = inputValues.get(Parameter.HOST_IP);
         final int port = Integer.parseInt(inputValues.get(Parameter.HOST_PORT));
         final String user = inputValues.get(Parameter.USER);
-        String filePath = inputValues.get(Parameter.FILE_PATH);
+        String filePath = StringUtils.trim(inputValues.get(Parameter.FILE_PATH));
         filePath = normalizePath(filePath);
         final CSVConfig csvConfig = getConfig(inputValues);
 
