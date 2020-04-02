@@ -100,7 +100,25 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         final boolean isNullable = true;
         final boolean isMandatory = true;
         boolean includePathColumn = false;
+
+        final String separator = inputValues.get(Parameter.SEPARATOR);
+        final String quote = inputValues.get(Parameter.QUOTE);
+        final String commentMarker = inputValues.get(Parameter.COMMENT_MARKER);
+        final String escape = inputValues.get(Parameter.ESCAPE);
+        final String nullValue = inputValues.get(Parameter.NULL_VALUE);
+        final boolean ignoreSpaces = Boolean.parseBoolean(inputValues.get(Parameter.IGNORE_SPACES));
         final boolean header = Boolean.parseBoolean(inputValues.get(Parameter.HEADER));
+
+        if ((StringUtils.isNotBlank(separator)) && separator.length() > 1
+            && !isInvisibleChars(separator) && (StringUtils.isNotBlank(quote) || StringUtils.isNotBlank(commentMarker)
+            || StringUtils.isNotBlank(escape) || StringUtils.isNotBlank(nullValue) || ignoreSpaces == true
+            || header == true)) {
+
+            throw new CustomWrapperException("When a separator larger than one character is broken compatibility " +
+                "with the standard comma-separated-value cannot be kept and therefore parameters Quote, Comment Marker, " +
+                "Escape, Null value, Ignore Spaces and Header are not supported");
+        }
+
         Object[] headerNames = readHeader(inputValues);
         if (!header) {
             headerNames = buildSyntheticHeader(headerNames.length);
@@ -125,6 +143,22 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
                 CustomWrapperSchemaParameter.NOT_SORTABLE, !isUpdateable, isNullable, !isMandatory);
         }
         return headerSchema;
+    }
+
+    private boolean isInvisibleChars(final String sep) {
+        switch (sep) {
+            case "\\t":
+                return true;
+            case "\\n":
+                return true;
+            case "\\r":
+                return true;
+            case "\\f":
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     private Object[] readHeader(final Map<String, String> inputValues) throws CustomWrapperException {

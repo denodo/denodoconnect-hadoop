@@ -24,6 +24,7 @@ package com.denodo.connect.hadoop.hdfs.util.csv;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,6 +33,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
 import com.denodo.connect.hadoop.hdfs.commons.exception.InternalErrorException;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -42,22 +44,86 @@ public class CSVReader implements Iterator<List<String>> {
 
     private CSVParser parser;
     private Iterator<CSVRecord> iterator;
+    private boolean hasMultiCharSeparator = false;
+
+    private CSVLineIterator csvLineIterator;
+    private final CSVConfig csvConfig;
     
     public CSVReader(final Reader reader, final CSVConfig csvConfig) throws IOException {
 
-        this.parser = getFormat(csvConfig).parse(reader);
-        this.iterator = this.parser.iterator();
+        this.csvConfig = csvConfig;
+        this.hasMultiCharSeparator= checkMultiCharSeparator(csvConfig);
+        if (this.hasMultiCharSeparator) {
+            this.csvLineIterator = new CSVLineIterator(reader);
+        } else {
+            this.parser = getFormat(csvConfig).parse(reader);
+            this.iterator = this.parser.iterator();
+        }
         if (!hasNext()) {
             throw new InternalErrorException("Empty delimited file.");
         }
-        
+
+
+    }
+
+    private boolean checkMultiCharSeparator(CSVConfig csvConfig) {
+        if (hasMultiCharSeparator || ((csvConfig.isSeparator()) && csvConfig.getSeparator().length() > 1
+            && !isInvisibleChars(csvConfig.getSeparator()))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean isInvisibleChars(final String sep) {
+        switch (sep) {
+            case "\\t":
+                return true;
+            case "\\n":
+                return true;
+            case "\\r":
+                return true;
+            case "\\f":
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    private Character handleInvisibleChars(final String sep) {
+
+        if (StringUtils.isEmpty(sep)) {
+            return null;
+        }
+
+        final char c;
+        switch (sep) {
+            case "\\t":
+                c = '\t';
+                break;
+            case "\\n":
+                c = '\n';
+                break;
+            case "\\r":
+                c = '\r';
+                break;
+            case "\\f":
+                c = '\f';
+                break;
+
+            default:
+                c = sep.charAt(0);
+        }
+
+        return Character.valueOf(c);
     }
     
     private CSVFormat getFormat(final CSVConfig config) {
         
         CSVFormat format = CSVFormat.RFC4180;
         if (config.isSeparator()) {
-            format = format.withDelimiter(config.getSeparator());
+            format = format.withDelimiter(handleInvisibleChars(config.getSeparator()));
         }
 
         if (config.isQuote()) {
@@ -82,7 +148,11 @@ public class CSVReader implements Iterator<List<String>> {
     @Override
     public boolean hasNext() {
         try {
-            return this.iterator.hasNext();
+            if (this.hasMultiCharSeparator) {
+                return this.csvLineIterator.hasNext();
+            } else {
+                return this.iterator.hasNext();
+            }
         } catch (final Exception e) {
             close();
             throw new InternalErrorException("Error accessing delimited data", e); 
@@ -99,7 +169,11 @@ public class CSVReader implements Iterator<List<String>> {
     public List<String> next() {
         
         try {
-            return toList(this.iterator.next());
+            if (this.hasMultiCharSeparator) {
+                return  stringToList((String) this.csvLineIterator.next());
+            } else {
+                return toList(this.iterator.next());
+            }
         } catch (final Exception e) {
             close();
             throw new InternalErrorException("Error accessing delimited data", e); 
@@ -113,7 +187,11 @@ public class CSVReader implements Iterator<List<String>> {
     public void close() {
         
         try {
-            this.parser.close();
+            if (this.hasMultiCharSeparator) {
+                csvLineIterator.close();
+            } else {
+                this.parser.close();
+            }
         } catch (final IOException e) {
             // ignore
         }
@@ -126,6 +204,20 @@ public class CSVReader implements Iterator<List<String>> {
             asList.add(item);
         }
         
+        return asList;
+    }
+
+    private List<String> stringToList(String line) {
+
+        final List<String> asList;
+        if (this.csvConfig.isSeparator()) {
+            String separator = this.csvConfig.getSeparator();
+            String[] valuesArray = StringUtils.splitByWholeSeparatorPreserveAllTokens(line,separator);
+            asList = Arrays.asList(valuesArray);
+        } else {
+            String[] valuesArray = line.split(",");
+            asList = Arrays.asList(valuesArray);
+        }
         return asList;
     }
 
