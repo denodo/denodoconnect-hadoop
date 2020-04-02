@@ -1,3 +1,9 @@
+20200402
+--------
+- #47711 - Feature to configure the encoding of files on AWS S3 using HDFS custom wrapper
+- #44973 - HDFS Parquet file wrapper issue due to not trim() input field
+- #44891 - Support delimiters of multiple characters in the HDFSDelimitedTextFileWrapper
+
 20200309
 --------
 - #47337 - Support for Hive-style partitioning of Parquet datasets
