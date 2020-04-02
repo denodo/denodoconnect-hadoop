@@ -111,12 +111,10 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
 
         if ((StringUtils.isNotBlank(separator)) && separator.length() > 1
             && !isInvisibleChars(separator) && (StringUtils.isNotBlank(quote) || StringUtils.isNotBlank(commentMarker)
-            || StringUtils.isNotBlank(escape) || StringUtils.isNotBlank(nullValue) || ignoreSpaces == true
-            || header == true)) {
-
+            || StringUtils.isNotBlank(escape) || StringUtils.isNotBlank(nullValue) || ignoreSpaces == true)) {
             throw new CustomWrapperException("When a separator larger than one character is broken compatibility " +
                 "with the standard comma-separated-value cannot be kept and therefore parameters Quote, Comment Marker, " +
-                "Escape, Null value, Ignore Spaces and Header are not supported");
+                "Escape, Null value and Ignore Spaces are not supported");
         }
 
         Object[] headerNames = readHeader(inputValues);
