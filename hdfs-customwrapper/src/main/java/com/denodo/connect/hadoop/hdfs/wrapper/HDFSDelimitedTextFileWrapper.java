@@ -232,7 +232,7 @@ public class HDFSDelimitedTextFileWrapper extends AbstractHDFSKeyValueFileWrappe
         throws IOException, InterruptedException, CustomWrapperException {
         
         final Configuration conf = getHadoopConfiguration(inputValues);
-        final String inputFilePath = inputValues.get(Parameter.FILE_PATH);
+        final String inputFilePath = StringUtils.trim(inputValues.get(Parameter.FILE_PATH));
         final Path path = new Path(inputFilePath);
         
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);

@@ -167,7 +167,7 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
             validateConcurrentConfiguration(inputValues);
             
             final Configuration conf = getHadoopConfiguration(inputValues);
-            final Path path = new Path(inputValues.get(PARQUET_FILE_PATH));
+            final Path path = new Path(StringUtils.trim(inputValues.get(PARQUET_FILE_PATH)));
             final String fileNamePattern = inputValues.get(FILE_NAME_PATTERN);
 
             pathIterator = new PathIterator(conf, path, fileNamePattern, null);
@@ -221,14 +221,14 @@ public class HDFSParquetFileWrapper extends AbstractSecureHadoopWrapper {
 
 
         final Configuration conf = getHadoopConfiguration(inputValues);
-        final Path path = new Path(inputValues.get(PARQUET_FILE_PATH));
+        final Path path = new Path(StringUtils.trim(inputValues.get(PARQUET_FILE_PATH)));
         final String fileNamePattern = inputValues.get(FILE_NAME_PATTERN);
         final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(INCLUDE_PATH_COLUMN))
             && VDPSchemaUtils.isProjected(Parameter.FULL_PATH, projectedFields);
         final String parallelismType = (inputValues.get(PARALLELISM_TYPE) != null) ? inputValues.get(PARALLELISM_TYPE): NOT_PARALLEL;
         final int parallelismLevel = inputValues.get(PARALLELISM_LEVEL) == null ? DEFAULT_PARALLELISM
             : Integer.parseInt(inputValues.get(PARALLELISM_LEVEL));
-        final String fileSystemURI = inputValues.get(FILESYSTEM_URI);
+        final String fileSystemURI = StringUtils.trim(inputValues.get(Parameter.FILESYSTEM_URI));
         final int threadPoolSize = inputValues.get(THREADPOOL_SIZE) == null ? DEFAULT_POOL_SIZE
             : Integer.parseInt(inputValues.get(THREADPOOL_SIZE));
 

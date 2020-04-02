@@ -34,6 +34,7 @@ import static com.denodo.connect.hadoop.hdfs.commons.naming.Parameter.THREADPOOL
 import java.io.InputStream;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
 import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
@@ -110,7 +111,7 @@ public class S3ParquetFileWrapper extends HDFSParquetFileWrapper {
     @Override
     protected Configuration getHadoopConfiguration(final Map<String, String> inputValues) throws CustomWrapperException {
 
-        final String fileSystemURI = inputValues.get(Parameter.FILESYSTEM_URI);
+        final String fileSystemURI = StringUtils.trim(inputValues.get(Parameter.FILESYSTEM_URI));
 
         final CustomWrapperInputParameterValue coreSitePathValue = getInputParameterValue(Parameter.CORE_SITE_PATH);
         InputStream coreSiteIs = null;
