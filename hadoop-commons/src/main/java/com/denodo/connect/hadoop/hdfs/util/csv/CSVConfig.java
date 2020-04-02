@@ -27,7 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 public class CSVConfig {
     
     
-    private final Character separator;
+    private final String separator;
     private final Character quote; 
     private final Character commentMarker; 
     private final Character escape; 
@@ -41,7 +41,7 @@ public class CSVConfig {
     public CSVConfig(final String separator, final String quote, final String commentMarker, final String escape, final boolean ignoreSpaces,
             final boolean header, final String nullValue, final String fileEncoding) {
 
-        this.separator = handleInvisibleChars(separator);
+        this.separator = separator;
         this.quote = CharUtils.toCharacterObject(quote);
         this.commentMarker = CharUtils.toCharacterObject(commentMarker);
         this.escape = CharUtils.toCharacterObject(escape);
@@ -55,7 +55,7 @@ public class CSVConfig {
         return this.separator != null;
     }
 
-    public Character getSeparator() {
+    public String getSeparator() {
         return this.separator;
     }
 
@@ -101,34 +101,6 @@ public class CSVConfig {
 
     public String getFileEncoding() {
         return this.fileEncoding;
-    }
-    
-    private Character handleInvisibleChars(final String sep) {
-        
-        if (StringUtils.isEmpty(sep)) {
-            return null;
-        }
-        
-        final char c;
-        switch (sep) {
-        case "\\t":
-            c = '\t';
-            break;
-        case "\\n":
-            c = '\n';
-            break;
-        case "\\r":
-            c = '\r';
-            break;
-        case "\\f":
-            c = '\f';
-            break;
-
-        default:
-            c = sep.charAt(0);
-        }
-        
-        return Character.valueOf(c);
     }
     
 }
