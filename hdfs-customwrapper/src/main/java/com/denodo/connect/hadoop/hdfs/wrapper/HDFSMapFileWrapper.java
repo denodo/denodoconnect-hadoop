@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
@@ -79,7 +80,7 @@ public class HDFSMapFileWrapper extends AbstractHDFSKeyValueFileWrapper {
         final String hadoopKeyClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
         final String hadoopValueClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
 
-        final String inputFilePath = inputValues.get(Parameter.FILE_PATH);
+        final String inputFilePath = StringUtils.trim(inputValues.get(Parameter.FILE_PATH));
         final Path path = new Path(inputFilePath);
         
         final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
