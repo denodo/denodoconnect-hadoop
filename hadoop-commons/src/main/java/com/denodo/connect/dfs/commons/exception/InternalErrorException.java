@@ -19,15 +19,19 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper;
+package com.denodo.connect.dfs.commons.exception;
 
 
-import com.denodo.connect.dfs.wrapper.DFSParquetFileWrapper;
+public class InternalErrorException extends RuntimeException {
 
+    private static final long serialVersionUID = 732593813938456066L;
 
-/**
- * @deprecated  As of release for Denodo 8 replaced by {@link DFSParquetFileWrapper}
- */
-@Deprecated
-public class HDFSParquetFileWrapper extends DFSParquetFileWrapper {
+    public InternalErrorException(final String msg, final Throwable nested) {
+        super(msg, nested);
+    }
+
+    public InternalErrorException(final String msg) {
+        super(msg);
+    }
+
 }

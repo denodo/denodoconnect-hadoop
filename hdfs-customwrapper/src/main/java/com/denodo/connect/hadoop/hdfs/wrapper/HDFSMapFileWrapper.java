@@ -22,71 +22,13 @@
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
 
-import java.io.IOException;
-import java.util.Map;
+import com.denodo.connect.dfs.wrapper.DFSMapFileWrapper;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-
-import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
-import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
-import com.denodo.connect.hadoop.hdfs.reader.keyvalue.HDFSMapFileReader;
-import com.denodo.connect.hadoop.hdfs.util.type.TypeUtils;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
-import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 
 /**
- * HDFS file custom Wrapper for reading map files stored in HDFS (Hadoop
- * Distributed File System).
- * <p>
- *
- * The following parameters are required: file system URI, file path,
- * Hadoop key class name and Hadoop value class name. <br/>
- *
- * Key/value pairs contained in the file will be returned by the wrapper.
- * </p>
- *
+ * @deprecated  As of release for Denodo 8 replaced by {@link DFSMapFileWrapper}
  */
-public class HDFSMapFileWrapper extends AbstractHDFSKeyValueFileWrapper {
+@Deprecated
+public class HDFSMapFileWrapper extends DFSMapFileWrapper {
 
-    private static final  CustomWrapperInputParameter[] INPUT_PARAMETERS =
-        new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(Parameter.HADOOP_KEY_CLASS,
-                "Hadoop key class", true,
-                CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.HADOOP_VALUE_CLASS,
-                "Hadoop value class", true,
-                 CustomWrapperInputParameterTypeFactory.stringType())
-        };
-
-    public HDFSMapFileWrapper() {
-        super();
-    }
-
-    @Override
-    public CustomWrapperInputParameter[] doGetInputParameters() {
-        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(super.doGetInputParameters(), INPUT_PARAMETERS);
-    }
-
-    @Override
-    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues, final boolean getSchemaParameters)
-        throws IOException, InterruptedException, CustomWrapperException {
-
-        final Configuration conf = getHadoopConfiguration(inputValues);
-
-        final String hadoopKeyClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
-        final String hadoopValueClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
-
-        final String inputFilePath = StringUtils.trim(inputValues.get(Parameter.FILE_PATH));
-        final Path path = new Path(inputFilePath);
-        
-        final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
-
-        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
-
-        return new HDFSMapFileReader(conf, hadoopKeyClass, hadoopValueClass, path, fileNamePattern, null, includePathColumn&&!getSchemaParameters);
-    }
 }

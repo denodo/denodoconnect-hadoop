@@ -3,7 +3,7 @@
  *
  *   This software is part of the DenodoConnect component collection.
  *
- *   Copyright (c) 2013, denodo technologies (http://www.denodo.com)
+ *   Copyright (c) 2020, denodo technologies (http://www.denodo.com)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -19,15 +19,12 @@
  *
  * =============================================================================
  */
-package com.denodo.connect.hadoop.hdfs.wrapper;
+package com.denodo.connect.dfs.wrapper.concurrent.strategy;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
-import com.denodo.connect.dfs.wrapper.DFSParquetFileWrapper;
+public interface ReadingStrategy {
 
-
-/**
- * @deprecated  As of release for Denodo 8 replaced by {@link DFSParquetFileWrapper}
- */
-@Deprecated
-public class HDFSParquetFileWrapper extends DFSParquetFileWrapper {
+    public void read() throws ExecutionException, IOException;
 }

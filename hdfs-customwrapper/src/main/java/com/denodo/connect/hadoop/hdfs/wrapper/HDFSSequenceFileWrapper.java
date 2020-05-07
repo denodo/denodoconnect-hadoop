@@ -21,72 +21,12 @@
  */
 package com.denodo.connect.hadoop.hdfs.wrapper;
 
-import java.io.IOException;
-import java.util.Map;
+import com.denodo.connect.dfs.wrapper.DFSSequenceFileWrapper;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-
-import com.denodo.connect.hadoop.hdfs.commons.naming.Parameter;
-import com.denodo.connect.hadoop.hdfs.reader.HDFSFileReader;
-import com.denodo.connect.hadoop.hdfs.reader.keyvalue.HDFSSequenceFileReader;
-import com.denodo.connect.hadoop.hdfs.util.type.TypeUtils;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperException;
-import com.denodo.vdb.engine.customwrapper.CustomWrapperInputParameter;
-import com.denodo.vdb.engine.customwrapper.input.type.CustomWrapperInputParameterTypeFactory;
 
 /**
- * HDFS file custom Wrapper for reading sequence files stored in HDFS (Hadoop
- * Distributed File System).
- * <p>
- *
- * The following parameters are required: file system URI, file path,
- * Hadoop key class and Hadoop value class. <br/>
- *
- * Key/value pairs contained in the file will be returned by the wrapper.
- * </p>
- *
+ * @deprecated  As of release for Denodo 8 replaced by {@link DFSSequenceFileWrapper}
  */
-public class HDFSSequenceFileWrapper extends AbstractHDFSKeyValueFileWrapper {
-
-    private static final  CustomWrapperInputParameter[] INPUT_PARAMETERS =
-        new CustomWrapperInputParameter[] {
-            new CustomWrapperInputParameter(Parameter.HADOOP_KEY_CLASS,
-                "Hadoop key class", true,
-                CustomWrapperInputParameterTypeFactory.stringType()),
-            new CustomWrapperInputParameter(Parameter.HADOOP_VALUE_CLASS,
-                "Hadoop value class", true,
-                CustomWrapperInputParameterTypeFactory.stringType())
-        };
-
-    public HDFSSequenceFileWrapper() {
-        super();
-    }
-
-    @Override
-    public CustomWrapperInputParameter[] doGetInputParameters() {
-        return (CustomWrapperInputParameter[]) ArrayUtils.addAll(super.doGetInputParameters(), INPUT_PARAMETERS);
-    }
-
-    @Override
-    public HDFSFileReader getHDFSFileReader(final Map<String, String> inputValues, final boolean getSchemaParameters)
-        throws IOException, InterruptedException, CustomWrapperException {
-
-        final Configuration conf = getHadoopConfiguration(inputValues);
-
-        final String hadoopKeyClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_KEY_CLASS));
-        final String hadoopValueClass = TypeUtils.getHadoopClass(inputValues.get(Parameter.HADOOP_VALUE_CLASS));
-
-        final String inputFilePath = StringUtils.trim(inputValues.get(Parameter.FILE_PATH));
-        final Path path = new Path(inputFilePath);
-        
-        final String fileNamePattern = inputValues.get(Parameter.FILE_NAME_PATTERN);
-
-        final boolean includePathColumn = Boolean.parseBoolean(inputValues.get(Parameter.INCLUDE_PATH_COLUMN));
-
-        return new HDFSSequenceFileReader(conf, hadoopKeyClass, hadoopValueClass, path, fileNamePattern, null, includePathColumn && !getSchemaParameters);
-    }
-
+@Deprecated
+public class HDFSSequenceFileWrapper extends DFSSequenceFileWrapper {
 }
