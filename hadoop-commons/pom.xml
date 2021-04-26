@@ -17,7 +17,7 @@
         <avro.version>1.8.2</avro.version>
         <commons-csv.version>1.4</commons-csv.version>
         <commons-collections.version>3.2.2</commons-collections.version>
-        <commons-io.version>2.6</commons-io.version>
+        <commons-io.version>2.7</commons-io.version>
         <commons-lang.version>3.8.1</commons-lang.version>
 
         <errorprone.javac.version>9+181-r4173-1</errorprone.javac.version>
