@@ -31,7 +31,7 @@
         <extension.target.update></extension.target.update>
 
         <gcs.version>hadoop3-1.9.17</gcs.version>
-        <hadoop.version>3.2.1</hadoop.version>
+        <hadoop.version>3.2.2</hadoop.version>
         <hadoop.lzo.version>0.4.20</hadoop.lzo.version>   
         <httpclient.version>4.5.2</httpclient.version>  <!-- min required by aws-sdk  -->
         <httpcore.version>4.4.4</httpcore.version>
