@@ -14,7 +14,7 @@
     <version>20190212</version>
 
     <properties>
-        <hadoop.version>2.7.4</hadoop.version>
+        <hadoop.version>3.2.3</hadoop.version>
         <hbase.version>1.4.7</hbase.version>
         <jets3t.version>0.9.4</jets3t.version>    <!--  0.9.4 Fix S3 Service - Amazon signature version 4 --> 
         <htrace.version>4.1.0-incubating</htrace.version>
