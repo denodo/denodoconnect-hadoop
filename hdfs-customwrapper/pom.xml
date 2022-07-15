@@ -14,7 +14,7 @@
     <version>20200506</version>
 
     <properties>
-        <aws.sdk.version>1.11.589</aws.sdk.version>
+        <aws.sdk.version>1.12.261</aws.sdk.version>
         <avro.version>1.8.2</avro.version>
         <commons-codec.version>1.10</commons-codec.version>
         <commons-collections.version>3.2.2</commons-collections.version>
